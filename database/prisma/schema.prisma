@@ -1,0 +1,193 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum SubscriptionTypes {
+  Free
+  Pro
+}
+
+enum AuthTypes {
+  EmailAndPassword
+  MagicLogin
+}
+
+enum TokenTypes {
+  MagicLogin
+  Refresh
+}
+
+enum CustomFieldTypes {
+  String
+  Int
+  Boolean
+}
+
+enum CustomFieldRelationsTypes {
+  User
+}
+
+enum WorkspaceConfigsTypes {
+  CustomFields
+  EmailsDomains
+  UserRoles
+}
+
+// Clients are related to Thon Labs ecosystem users
+model Client {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tokens            TokenStorage[]
+  userSubscriptions ClientSubscription[]
+  workspaces        Workspace[]
+
+  @@map("clients")
+}
+
+model ClientSubscription {
+  id                   String            @id @default(uuid())
+  subscriptionType     SubscriptionTypes
+  stripeSubscriptionId String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  clientId String?
+
+  @@map("clients_subscriptions")
+}
+
+model Workspace {
+  id        String   @id
+  name      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownerClient         Client                         @relation(fields: [ownerClientId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerClientId       String
+  environments        Environment[]
+  customFields        CustomField[]
+  emailsDomains       EmailDomain[]
+  userRoles           UserRole[]
+  environmentsConfigs WorkspaceConfigOnEnvironment[]
+
+  @@map("workspaces")
+}
+
+model CustomField {
+  id           String                    @id @default(uuid())
+  name         String
+  active       Boolean                   @default(true)
+  type         CustomFieldTypes
+  relationType CustomFieldRelationsTypes
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+
+  @@map("custom_fields")
+}
+
+model EmailDomain {
+  id         String   @id @default(uuid())
+  externalId String   @unique // Domain ID from Resend
+  domain     String   @unique
+  region     String
+  status     String
+  createdAt  DateTime
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+
+  @@map("emails_domains")
+}
+
+model UserRole {
+  id   String @id
+  name String
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+
+  users User[]
+
+  @@map("users_roles")
+}
+
+model Environment {
+  id        String    @id
+  name      String
+  authType  AuthTypes @default(EmailAndPassword)
+  active    Boolean   @default(true)
+  publicKey String    @unique
+  secretKey String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  workspace        Workspace                      @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  workspaceId      String
+  users            User[]
+  workspaceConfigs WorkspaceConfigOnEnvironment[]
+
+  @@map("environments")
+}
+
+model WorkspaceConfigOnEnvironment {
+  id            String                @default(uuid())
+  environmentId String
+  workspaceId   String
+  configId      String
+  configType    WorkspaceConfigsTypes
+  active        Boolean               @default(true)
+
+  environment Environment @relation(fields: [environmentId], references: [id])
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id])
+
+  @@id([environmentId, workspaceId])
+  @@map("workspaces_configs_on_environments")
+}
+
+// Users are related to workspaces and environments from clients
+model User {
+  id             String    @id @default(uuid())
+  fullname       String
+  email          String
+  profilePicture String?
+  password       String?
+  lastSignIn     DateTime?
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tokens        TokenStorage[]
+  environment   Environment    @relation(fields: [environmentId], references: [id])
+  environmentId String
+  role          UserRole?      @relation(fields: [userRoleId], references: [id])
+  userRoleId    String?
+
+  @@map("users")
+}
+
+model TokenStorage {
+  token     String     @id
+  expires   DateTime
+  type      TokenTypes
+  createdAt DateTime   @default(now())
+
+  client   Client? @relation(fields: [clientId], references: [id])
+  clientId String?
+  user     User?   @relation(fields: [userId], references: [id])
+  userId   String?
+
+  @@map("tokens_storage")
+}

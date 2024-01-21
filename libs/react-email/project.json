@@ -1,0 +1,28 @@
+{
+  "name": "react-email",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/react-email/src",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "@nx/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["libs/react-email/**/*.ts"]
+      }
+    },
+    "serve": {
+      "command": "email dev -p 3001",
+      "options": {
+        "cwd": "libs/react-email"
+      }
+    },
+    "export": {
+      "command": "email export",
+      "options": {
+        "cwd": "libs/react-email"
+      }
+    }
+  },
+  "tags": []
+}
