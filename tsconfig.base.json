@@ -15,8 +15,9 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@/auth/*": ["./apps/auth-services/src/*"],
       "@/emails/*": ["./libs/react-email/emails/*"],
-      "@/auth/*": ["./apps/auth-services/src/*"]
+      "@/utils/*": ["libs/utils/src/*"]
     }
   },
   "exclude": ["node_modules", "tmp"]

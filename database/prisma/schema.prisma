@@ -8,19 +8,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum SubscriptionTypes {
-  Free
-  Pro
-}
-
-enum AuthTypes {
-  EmailAndPassword
-  MagicLogin
-}
-
 enum TokenTypes {
   MagicLogin
   Refresh
+  ConfirmEmail
 }
 
 enum CustomFieldTypes {
@@ -33,56 +24,56 @@ enum CustomFieldRelationsTypes {
   User
 }
 
-enum WorkspaceConfigsTypes {
+enum ProjectConfigsTypes {
   CustomFields
   EmailsDomains
   UserRoles
 }
 
-// Clients are related to Thon Labs ecosystem users
-model Client {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  tokens            TokenStorage[]
-  userSubscriptions ClientSubscription[]
-  workspaces        Workspace[]
-
-  @@map("clients")
+enum EmailTemplates {
+  Welcome
+  MagicLink
+  ConfirmEmail
+  ForgotPassword
 }
 
-model ClientSubscription {
-  id                   String            @id @default(uuid())
-  subscriptionType     SubscriptionTypes
-  stripeSubscriptionId String?
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
+model User {
+  id                String             @id @default(uuid())
+  fullName          String?
+  email             String
+  profilePicture    String?
+  password          String?
+  lastSignIn        DateTime?
+  thonLabsUser      Boolean            @default(false)
+  active            Boolean            @default(true)
+  emailConfirmed    Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  environment       Environment?       @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  environmentId     String?
+  role              Role?              @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  roleId            String?
+  projects          Project[]
+  userSubscriptions UserSubscription[]
 
-  client   Client? @relation(fields: [clientId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  clientId String?
-
-  @@map("clients_subscriptions")
+  @@map("users")
 }
 
-model Workspace {
-  id        String   @id
-  name      String
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  ownerClient         Client                         @relation(fields: [ownerClientId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  ownerClientId       String
+model Project {
+  id                  String                       @id
+  appName             String
+  active              Boolean                      @default(true)
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+  userOwner           User                         @relation(fields: [userOwnerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userOwnerId         String
   environments        Environment[]
   customFields        CustomField[]
-  emailsDomains       EmailDomain[]
-  userRoles           UserRole[]
-  environmentsConfigs WorkspaceConfigOnEnvironment[]
+  roles               Role[]
+  environmentsConfigs ProjectConfigOnEnvironment[]
+  subscriptions       Subscription[]
 
-  @@map("workspaces")
+  @@map("projects")
 }
 
 model CustomField {
@@ -91,103 +82,121 @@ model CustomField {
   active       Boolean                   @default(true)
   type         CustomFieldTypes
   relationType CustomFieldRelationsTypes
-
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
-  workspaceId String
+  project      Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  projectId    String
 
   @@map("custom_fields")
 }
 
-model EmailDomain {
-  id         String   @id @default(uuid())
-  externalId String   @unique // Domain ID from Resend
-  domain     String   @unique
-  region     String
-  status     String
-  createdAt  DateTime
+model Role {
+  id        String  @id
+  name      String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  projectId String
+  users     User[]
 
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
-  workspaceId String
-
-  @@map("emails_domains")
+  @@map("roles")
 }
 
-model UserRole {
-  id   String @id
-  name String
+model Subscription {
+  id                            String             @id
+  name                          String
+  price                         Float
+  paymentProviderSubscriptionId String?
+  project                       Project            @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  projectId                     String
+  userSubscriptions             UserSubscription[]
 
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
-  workspaceId String
+  @@map("subscriptions")
+}
 
-  users User[]
+model UserSubscription {
+  id             String        @id @default(uuid())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  subscriptionId String
+  user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId         String?
 
-  @@map("users_roles")
+  @@map("users_subscriptions")
 }
 
 model Environment {
-  id        String    @id
-  name      String
-  authType  AuthTypes @default(EmailAndPassword)
-  active    Boolean   @default(true)
-  publicKey String    @unique
-  secretKey String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id                     String   @id
+  name                   String
+  active                 Boolean  @default(true)
+  publicKey              String   @unique
+  secretKey              String   @unique
+  tokenExpiration        String   @default("1d")
+  refreshTokenExpiration String?  @default("10d")
+  appURL                 String?
+  iv                     String
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
-  workspace        Workspace                      @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  workspaceId      String
-  users            User[]
-  workspaceConfigs WorkspaceConfigOnEnvironment[]
+  project         Project                      @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  projectId       String
+  users           User[]
+  projectConfigs  ProjectConfigOnEnvironment[]
+  emailsDomains   EmailDomain[]
+  emailsTemplates EmailTemplate[]
 
   @@map("environments")
 }
 
-model WorkspaceConfigOnEnvironment {
-  id            String                @default(uuid())
+model EmailTemplate {
+  id            String         @id @default(uuid())
+  type          EmailTemplates
+  name          String
+  subject       String
+  fromName      String
+  fromEmail     String
+  content       String         @db.LongText
+  preview       String?
+  replyTo       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  environment   Environment    @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   environmentId String
-  workspaceId   String
-  configId      String
-  configType    WorkspaceConfigsTypes
-  active        Boolean               @default(true)
 
-  environment Environment @relation(fields: [environmentId], references: [id])
-  workspace   Workspace   @relation(fields: [workspaceId], references: [id])
-
-  @@id([environmentId, workspaceId])
-  @@map("workspaces_configs_on_environments")
+  @@map("emails_templates")
 }
 
-// Users are related to workspaces and environments from clients
-model User {
-  id             String    @id @default(uuid())
-  fullname       String
-  email          String
-  profilePicture String?
-  password       String?
-  lastSignIn     DateTime?
-  active         Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  tokens        TokenStorage[]
-  environment   Environment    @relation(fields: [environmentId], references: [id])
+model EmailDomain {
+  id            String      @id @default(uuid())
+  externalId    String      @unique // Domain ID from Resend
+  domain        String      @unique
+  region        String
+  status        String
+  createdAt     DateTime
+  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   environmentId String
-  role          UserRole?      @relation(fields: [userRoleId], references: [id])
-  userRoleId    String?
 
-  @@map("users")
+  @@map("emails_domains")
+}
+
+model ProjectConfigOnEnvironment {
+  id            String              @default(uuid())
+  environmentId String
+  projectId     String
+  configId      String
+  configType    ProjectConfigsTypes
+  active        Boolean             @default(true)
+
+  environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([environmentId, projectId])
+  @@map("projects_configs_on_environments")
 }
 
 model TokenStorage {
-  token     String     @id
-  expires   DateTime
-  type      TokenTypes
-  createdAt DateTime   @default(now())
-
-  client   Client? @relation(fields: [clientId], references: [id])
-  clientId String?
-  user     User?   @relation(fields: [userId], references: [id])
-  userId   String?
+  token      String     @id
+  expires    DateTime
+  createdAt  DateTime   @default(now())
+  type       TokenTypes
+  relationId String
 
   @@map("tokens_storage")
 }

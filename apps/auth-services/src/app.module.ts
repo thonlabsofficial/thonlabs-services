@@ -6,21 +6,31 @@ import { JwtModule } from '@nestjs/jwt';
 import { SchemaValidatorGuard } from '@/auth/modules/shared/decorators/schema-validator.decorator';
 import { AuthModule } from '@/auth/modules/auth/auth.module';
 import { AuthValidationGuard } from '@/auth/modules/auth/decorators/auth-validation.decorator';
-import { ClientsModule } from './modules/clients/clients.module';
+import { NeedsSecretKeyGuard } from '@/auth/modules/shared/decorators/needs-secret-key.decorator';
+import { UserModule } from '@/auth/modules/users/user.module';
+import { ProjectModule } from '@/auth/modules/projects/project.module';
+import { EnvironmentModule } from '@/auth/modules/environments/environment.module';
+import { EmailModule } from './modules/emails/email.module';
+import { TokenStorageModule } from './modules/token-storage/token-storage.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    ThrottlerModule.forRoot([{
-      ttl: 60,
-      limit: 10,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60,
+        limit: 10,
+      },
+    ]),
     JwtModule.register({
       global: true,
-      secret: process.env.AUTHENTICATION_SECRET,
     }),
     AuthModule,
-    ClientsModule,
+    UserModule,
+    ProjectModule,
+    EnvironmentModule,
+    EmailModule,
+    TokenStorageModule,
   ],
   providers: [
     {
@@ -30,6 +40,10 @@ import { ClientsModule } from './modules/clients/clients.module';
     {
       provide: APP_GUARD,
       useClass: AuthValidationGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: NeedsSecretKeyGuard,
     },
   ],
 })

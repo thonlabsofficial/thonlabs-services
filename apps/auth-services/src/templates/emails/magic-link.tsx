@@ -6,15 +6,11 @@ import EmailBaseTemplate, {
   paragraphStyle,
 } from './email-base-template';
 
-interface Props {
-  token: string;
-}
-
-export function MagicLink({ token }: Props) {
-  const href = `${process.env.WEB_APP_DOMAIN}/api/auth/magic/authenticate?token=${token}`;
+export default function MagicLink() {
+  const href = `<%= appURL %>/api/auth/magic/authenticate/<%= token %>`;
 
   return (
-    <EmailBaseTemplate title="Your login link" preview="Hey! Ready to login?">
+    <EmailBaseTemplate title="Your login link">
       <Text style={{ ...paragraphStyle, marginBottom: '20px' }}>
         Hey there,
       </Text>
@@ -23,12 +19,7 @@ export function MagicLink({ token }: Props) {
         You can safely complete your login by clicking on button below.
       </Text>
 
-      <Button
-        pY={12}
-        pX={24}
-        style={{ ...buttonStyle, marginBottom: '32px' }}
-        href={href}
-      >
+      <Button style={{ ...buttonStyle, marginBottom: '32px' }} href={href}>
         Complete Login
       </Button>
 

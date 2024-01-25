@@ -1,4 +1,4 @@
-import { StatusCodes } from '@/auth/helpers/enums/status-codes';
+import { StatusCodes } from '@/utils/enums/errors-metadata';
 import {
   CanActivate,
   ExecutionContext,
@@ -12,8 +12,9 @@ const SCHEMA_VALIDATOR_KEY = 'schemaValidator';
 type ValidatorSources = 'body' | 'query' | 'params' | 'headers';
 
 export const SchemaValidator = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   schema: any,
-  validatorSources: ValidatorSources[] = ['body']
+  validatorSources: ValidatorSources[] = ['body'],
 ) => SetMetadata(SCHEMA_VALIDATOR_KEY, { schema, validatorSources });
 
 @Injectable()
@@ -23,7 +24,7 @@ export class SchemaValidatorGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const schemaValidatorProps = this.reflector.get(
       SCHEMA_VALIDATOR_KEY,
-      context.getHandler()
+      context.getHandler(),
     );
 
     if (!schemaValidatorProps) {

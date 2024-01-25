@@ -18,17 +18,25 @@ interface Props {
   preview?: string;
 }
 
-export function EmailBaseTemplate({
-  title,
-  children,
-  signature = 'thon-labs Team',
-  preview,
-}: Props) {
+export function EmailBaseTemplate({ title, children }: Props) {
   return (
     <Tailwind>
       <Html>
         <Head />
-        {preview && <Preview>{preview}</Preview>}
+        {'<% if (preview) %>'}
+        <div
+          style={{
+            display: 'none',
+            overflow: 'hidden',
+            lineHeight: '1px',
+            opacity: 0,
+            maxHeight: 0,
+            maxWidth: 0,
+          }}
+        >
+          {'<%= preview %>'}
+        </div>
+        {'<% endif %>'}
         <Body
           style={{
             backgroundColor: '#fff',
@@ -70,7 +78,7 @@ export function EmailBaseTemplate({
                 color: '#18181B',
               }}
             >
-              {signature}
+              Thon Labs Team
             </Text>
           </Container>
         </Body>
