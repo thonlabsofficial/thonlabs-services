@@ -131,7 +131,6 @@ model Environment {
   tokenExpiration        String   @default("1d")
   refreshTokenExpiration String?  @default("10d")
   appURL                 String?
-  iv                     String
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 

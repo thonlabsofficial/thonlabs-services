@@ -25,7 +25,6 @@ import { AuthService } from '../services/auth.service';
 import { EmailService } from '../../emails/services/email.service';
 import { TokenStorageService } from '../../token-storage/services/token-storage.service';
 import { EmailTemplates, TokenTypes } from '@prisma/client';
-import Crypt from '@/utils/services/crypt';
 
 @Controller('auth')
 export class AuthController {

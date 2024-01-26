@@ -46,6 +46,12 @@
       "options": {
         "cwd": "database"
       }
+    },
+    "reset": {
+      "command": "prisma migrate reset",
+      "options": {
+        "cwd": "database"
+      }
     }
   },
   "tags": []

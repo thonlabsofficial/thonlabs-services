@@ -16,7 +16,8 @@
     "db:create-migration": "nx run database:create-migration",
     "db:generate": "nx run database:generate",
     "db:migrate": "nx run database:migrate && pnpm db:generate",
-    "db:studio": "nx run database:studio"
+    "db:studio": "nx run database:studio",
+    "db:reset": "nx run database:reset"
   },
   "private": true,
   "dependencies": {
