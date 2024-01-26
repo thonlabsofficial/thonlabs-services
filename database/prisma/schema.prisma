@@ -120,6 +120,7 @@ model Environment {
   active                 Boolean  @default(true)
   publicKey              String   @unique
   secretKey              String   @unique
+  authKey                String
   tokenExpiration        String   @default("1d")
   refreshTokenExpiration String?  @default("10d")
   appURL                 String?

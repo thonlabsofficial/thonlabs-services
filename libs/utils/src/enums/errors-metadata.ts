@@ -30,4 +30,5 @@ export enum ErrorMessages {
   InvalidCredentials = 'Invalid credentials',
   InvalidToken = 'Invalid Token',
   InternalError = 'An internal error ocurred, try again',
+  MissingAuthSecret = 'Auth secret not found',
 }

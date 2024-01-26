@@ -29,7 +29,7 @@ export class UserService {
 
   async getByEmail(email: string, environmentId: string) {
     const data = await this.databaseService.user.findFirst({
-      where: { email, thonLabsUser: false, environmentId },
+      where: { email, environmentId },
       include: {
         environment: true,
       },
@@ -38,17 +38,17 @@ export class UserService {
     return data;
   }
 
-  async getById(id: string, thonLabsUser = false) {
+  async getById(id: string) {
     const data = await this.databaseService.user.findFirst({
-      where: { id, thonLabsUser },
+      where: { id },
     });
 
     return data;
   }
 
-  async getDetailedById(id: string, thonLabsUser = false) {
+  async getDetailedById(id: string) {
     const data = await this.databaseService.user.findFirst({
-      where: { id, thonLabsUser },
+      where: { id },
       include: {
         environment: true,
         role: true,
@@ -147,5 +147,14 @@ export class UserService {
         error: ErrorMessages.InternalError,
       };
     }
+  }
+
+  async setEnvironment(userId: string, environmentId: string) {
+    await this.databaseService.user.update({
+      where: { id: userId },
+      data: {
+        environmentId,
+      },
+    });
   }
 }

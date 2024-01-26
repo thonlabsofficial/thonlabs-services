@@ -36,7 +36,7 @@ export class AuthService {
     const user = await this.userService.getByEmail(email, environmentId);
 
     if (!user) {
-      this.logger.warn('Email not found for user');
+      this.logger.warn('Email not found');
       return error;
     }
 

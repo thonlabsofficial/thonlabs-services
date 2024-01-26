@@ -10,8 +10,9 @@ import { NeedsSecretKeyGuard } from '@/auth/modules/shared/decorators/needs-secr
 import { UserModule } from '@/auth/modules/users/user.module';
 import { ProjectModule } from '@/auth/modules/projects/project.module';
 import { EnvironmentModule } from '@/auth/modules/environments/environment.module';
-import { EmailModule } from './modules/emails/email.module';
-import { TokenStorageModule } from './modules/token-storage/token-storage.module';
+import { EmailModule } from '@/auth/modules/emails/email.module';
+import { TokenStorageModule } from '@/auth/modules/token-storage/token-storage.module';
+import { NeedsPublicKeyGuard } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
 
 @Module({
   imports: [
@@ -35,15 +36,19 @@ import { TokenStorageModule } from './modules/token-storage/token-storage.module
   providers: [
     {
       provide: APP_GUARD,
-      useClass: SchemaValidatorGuard,
-    },
-    {
-      provide: APP_GUARD,
       useClass: AuthValidationGuard,
     },
     {
       provide: APP_GUARD,
+      useClass: NeedsPublicKeyGuard,
+    },
+    {
+      provide: APP_GUARD,
       useClass: NeedsSecretKeyGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: SchemaValidatorGuard,
     },
   ],
 })

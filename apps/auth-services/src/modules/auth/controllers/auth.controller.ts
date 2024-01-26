@@ -13,7 +13,6 @@ import { PublicRoute } from '@/auth/modules/auth/decorators/auth-validation.deco
 import { signUpValidator } from '../validators/signup-validators';
 import { UserService } from '@/auth/modules/users/services/user.service';
 import { ProjectService } from '@/auth/modules/projects/services/project.service';
-import { NeedsSecretKey } from '@/auth/modules/shared/decorators/needs-secret-key.decorator';
 import { EnvironmentService } from '../../environments/services/environment.service';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import {
@@ -25,6 +24,7 @@ import { AuthService } from '../services/auth.service';
 import { EmailService } from '../../emails/services/email.service';
 import { TokenStorageService } from '../../token-storage/services/token-storage.service';
 import { EmailTemplates, TokenTypes } from '@prisma/client';
+import { NeedsPublicKey } from '../../shared/decorators/needs-public-key.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -59,16 +59,18 @@ export class AuthController {
       isThonLabs: true,
     });
 
+    await this.userService.setEnvironment(user.id, environment.id);
+
     return { user, project, environment };
   }
 
   @PublicRoute()
   @Post('/signup')
-  @NeedsSecretKey()
+  @NeedsPublicKey()
   @SchemaValidator(signUpValidator)
   public async signUp(@Body() payload, @Req() req) {
     const { data: environment } =
-      await this.environmentService.getBySecretKeyFromRequest(req);
+      await this.environmentService.getByPublicKeyFromRequest(req);
 
     if (!environment) {
       throw new UnauthorizedException(ErrorMessages.Unauthorized);
@@ -108,17 +110,17 @@ export class AuthController {
     return user;
   }
 
-  @PublicRoute()
   @Post('/login')
+  @PublicRoute()
   @HttpCode(200)
-  @NeedsSecretKey()
+  @NeedsPublicKey()
   @SchemaValidator(loginValidator)
   async login(
     @Body() payload: { email: string; password?: string },
     @Req() req,
   ) {
     const { data: environment, ...envError } =
-      await this.environmentService.getBySecretKeyFromRequest(req);
+      await this.environmentService.getByPublicKeyFromRequest(req);
 
     if (envError.statusCode === StatusCodes.Unauthorized) {
       throw new UnauthorizedException(envError.error);

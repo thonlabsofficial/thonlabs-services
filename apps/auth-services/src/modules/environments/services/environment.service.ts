@@ -47,8 +47,65 @@ export class EnvironmentService {
     return { data: environment };
   }
 
-  async getBySecretKeyFromRequest(req) {
-    return this.getBySecretKey(req.headers['thon-labs-secret-key']);
+  async getByPublicKey(
+    environmentId: string,
+    publicKey: string,
+  ): Promise<DataReturn<Environment>> {
+    const encryptPublicKey = await Crypt.encrypt(
+      publicKey,
+      Crypt.generateIV(environmentId),
+      process.env.ENCODE_SECRET,
+    );
+    const environment = await this.databaseService.environment.findUnique({
+      where: { publicKey: encryptPublicKey },
+    });
+
+    if (!environment) {
+      this.logger.warn('Environment not found from public key');
+      return {
+        error: ErrorMessages.Unauthorized,
+        statusCode: StatusCodes.Unauthorized,
+      };
+    }
+
+    return { data: environment };
+  }
+
+  async getByPublicKeyFromRequest(req) {
+    return this.getByPublicKey(
+      req.headers['tl-env-id'],
+      req.headers['tl-public-key'],
+    );
+  }
+
+  async getPublicKey(environmentId: string) {
+    const environment = await this.databaseService.environment.findUnique({
+      where: { id: environmentId },
+    });
+
+    const iv = Crypt.generateIV(environmentId);
+    const publicKey = await Crypt.decrypt(
+      environment.publicKey,
+      iv,
+      process.env.ENCODE_SECRET,
+    );
+
+    return publicKey;
+  }
+
+  async getSecretKey(environmentId: string) {
+    const environment = await this.databaseService.environment.findUnique({
+      where: { id: environmentId },
+    });
+
+    const iv = Crypt.generateIV(environmentId);
+    const secretKey = await Crypt.decrypt(
+      environment.secretKey,
+      iv,
+      process.env.ENCODE_SECRET_KEYS_SECRET,
+    );
+
+    return secretKey;
   }
 
   async create(payload: {
@@ -82,6 +139,7 @@ export class EnvironmentService {
     let keys = await Promise.all([
       Crypt.encrypt(rand(3), iv, process.env.ENCODE_SECRET),
       Crypt.encrypt(`tl_${rand(5)}`, iv, process.env.ENCODE_SECRET_KEYS_SECRET),
+      Crypt.encrypt(`${rand(8)}`, iv, process.env.ENCODE_AUTH_KEYS_SECRET),
     ]);
 
     // Again, just to guarantee :)
@@ -98,11 +156,16 @@ export class EnvironmentService {
               equals: keys[1],
             },
           },
+          {
+            authKey: {
+              equals: keys[2],
+            },
+          },
         ],
       },
     });
     if (keysExists) {
-      this.logger.warn('Some key already exists, generating new for both...');
+      this.logger.warn('Some key already exists, generating new for all...');
       keys = await Promise.all([
         Crypt.encrypt(rand(3), iv, process.env.ENCODE_SECRET),
         Crypt.encrypt(
@@ -110,6 +173,7 @@ export class EnvironmentService {
           iv,
           process.env.ENCODE_SECRET_KEYS_SECRET,
         ),
+        Crypt.encrypt(`${rand(8)}`, iv, process.env.ENCODE_AUTH_KEYS_SECRET),
       ]);
     }
 
@@ -118,6 +182,7 @@ export class EnvironmentService {
         id,
         publicKey: keys[0],
         secretKey: keys[1],
+        authKey: keys[2],
         name: prepareString(payload.name),
         projectId: payload.projectId,
       },

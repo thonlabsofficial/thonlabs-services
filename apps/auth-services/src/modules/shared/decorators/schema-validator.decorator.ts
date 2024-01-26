@@ -40,8 +40,6 @@ export class SchemaValidatorGuard implements CanActivate {
     try {
       let payload = {};
 
-      console.log(req.body);
-
       validatorSources.forEach((validatorSource) => {
         payload = { ...payload, ...req[validatorSource] };
       });

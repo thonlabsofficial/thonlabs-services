@@ -3,7 +3,10 @@ import { promisify } from 'util';
 import * as bcrypt from 'bcrypt';
 
 function generateIV(key: string) {
-  return createHash('sha512').update(key).digest('hex').substring(0, 16);
+  return createHash('sha512')
+    .update(key.split('').reverse().join(''))
+    .digest('hex')
+    .substring(0, 16);
 }
 
 async function encrypt(textToEncrypt: string, iv: string, password: string) {

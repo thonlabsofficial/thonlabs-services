@@ -6,8 +6,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Request } from 'express';
 import { Reflector } from '@nestjs/core';
+import extractTokenFromHeader from '@/utils/services/extract-token-from-header';
+import Crypt from '@/utils/services/crypt';
 
 export const AUTH_VALIDATION_DISABLED = 'authValidationDisabled';
 
@@ -31,15 +32,26 @@ export class AuthValidationGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const token = this.extractTokenFromHeader(request);
+    const token = extractTokenFromHeader(request);
 
     if (!token) {
       throw new UnauthorizedException();
     }
 
     try {
+      const jwtData = this.jwtService.decode(token);
+
+      if (!jwtData?.environmentId || !jwtData?.environmentKey) {
+        throw new UnauthorizedException();
+      }
+
+      const authKey = await Crypt.decrypt(
+        jwtData.environmentKey,
+        Crypt.generateIV(jwtData.environmentId),
+        process.env.ENCODE_AUTH_KEYS_SECRET,
+      );
       const payload = await this.jwtService.verifyAsync(token, {
-        secret: process.env.AUTHENTICATION_SECRET,
+        secret: `${authKey}${process.env.AUTHENTICATION_SECRET}`,
       });
 
       request['authUser'] = {
@@ -49,10 +61,5 @@ export class AuthValidationGuard implements CanActivate {
       throw new UnauthorizedException();
     }
     return true;
-  }
-
-  private extractTokenFromHeader(request: Request): string | undefined {
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
-    return type === 'Bearer' ? token : undefined;
   }
 }

@@ -40,10 +40,7 @@ export class ProjectService {
     userId: string;
     isThonLabs?: boolean;
   }): Promise<DataReturn<{ project: Project; environment: Environment }>> {
-    const userExists = await this.userService.getById(
-      payload.userId,
-      payload.isThonLabs,
-    );
+    const userExists = await this.userService.getById(payload.userId);
 
     if (!userExists) {
       this.logger.warn(`User not found: ${payload.userId}`);
@@ -85,5 +82,35 @@ export class ProjectService {
     await this.emailTemplateService.createDefaultTemplates(project.id);
 
     return { data: { project, environment } };
+  }
+
+  async delete(id: string, userOwnerId: string): Promise<DataReturn> {
+    try {
+      const userIsOwner = await this.databaseService.project.findFirst({
+        where: {
+          id,
+          userOwnerId,
+        },
+      });
+
+      if (!userIsOwner) {
+        return {
+          statusCode: StatusCodes.Forbidden,
+          error: 'Only the owner user can delete this project',
+        };
+      }
+
+      await this.databaseService.project.delete({
+        where: { id, userOwnerId },
+      });
+
+      this.logger.log(`Project ${id} deleted with all relations`);
+    } catch (e) {
+      this.logger.error(`Error on delete Project ${id}`, e);
+      return {
+        statusCode: StatusCodes.Internal,
+        error: ErrorMessages.InternalError,
+      };
+    }
   }
 }

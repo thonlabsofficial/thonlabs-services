@@ -5,6 +5,7 @@ import { DataReturn } from '@/utils/interfaces/data-return';
 import { JwtService } from '@nestjs/jwt';
 import rand from '@/utils/services/rand';
 import ms from 'ms';
+import Crypt from '@/utils/services/crypt';
 
 @Injectable()
 export class TokenStorageService {
@@ -102,11 +103,20 @@ export class TokenStorageService {
       thonLabsUser: user.thonLabsUser,
       active: user.active,
       environmentId: environment.id,
+      environmentKey: environment.authKey,
       roleId: user.roleId,
     };
 
+    const iv = Crypt.generateIV(environment.id);
+    const authKey = await Crypt.decrypt(
+      environment.authKey,
+      iv,
+      process.env.ENCODE_AUTH_KEYS_SECRET,
+    );
+
     const token = await this.jwtService.signAsync(payload, {
       expiresIn: environment.tokenExpiration,
+      secret: `${authKey}${process.env.AUTHENTICATION_SECRET}`,
     });
 
     this.logger.log(`User ${user.id} JWT created`);
