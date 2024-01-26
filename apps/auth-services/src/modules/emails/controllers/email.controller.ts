@@ -3,11 +3,11 @@ import {
   Post,
   Headers,
   UnauthorizedException,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { EmailTemplateService } from '../services/email-template.service';
 import { PublicRoute } from '../../auth/decorators/auth-validation.decorator';
 import { DataReturn } from '@/utils/interfaces/data-return';
+import { exceptionsMapper } from '@/utils/enums/errors-metadata';
 
 @Controller('emails')
 export class EmailController {
@@ -23,7 +23,9 @@ export class EmailController {
     const result = await this.emailTemplateService.createDefaultTemplates('');
 
     if ((result as DataReturn).error) {
-      throw new InternalServerErrorException((result as DataReturn).error);
+      throw new exceptionsMapper[(result as DataReturn).statusCode](
+        (result as DataReturn).error,
+      );
     }
   }
 }

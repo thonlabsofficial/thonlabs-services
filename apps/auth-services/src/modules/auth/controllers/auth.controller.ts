@@ -14,7 +14,11 @@ import { signUpValidator } from '../validators/signup-validators';
 import { UserService } from '@/auth/modules/users/services/user.service';
 import { ProjectService } from '@/auth/modules/projects/services/project.service';
 import { EnvironmentService } from '../../environments/services/environment.service';
-import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
+import {
+  ErrorMessages,
+  StatusCodes,
+  exceptionsMapper,
+} from '@/utils/enums/errors-metadata';
 import {
   authenticateFromMagicLinkValidator,
   loginValidator,
@@ -151,8 +155,8 @@ export class AuthController {
       userError = result;
     }
 
-    if (userError.statusCode === StatusCodes.Unauthorized) {
-      throw new UnauthorizedException(userError.message);
+    if (userError.error) {
+      throw new exceptionsMapper[userError.statusCode](userError.error);
     }
 
     return {
@@ -168,7 +172,7 @@ export class AuthController {
     const data = await this.authService.authenticateFromMagicLink({ token });
 
     if (data.error) {
-      throw new UnauthorizedException(data.error);
+      throw new exceptionsMapper[data.statusCode](data.error);
     }
 
     return data;

@@ -1,3 +1,13 @@
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  InternalServerErrorException,
+  NotAcceptableException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+
 export enum StatusCodes {
   OK = 200,
   Created = 201,
@@ -32,3 +42,13 @@ export enum ErrorMessages {
   InternalError = 'An internal error ocurred, try again',
   MissingAuthSecret = 'Auth secret not found',
 }
+
+export const exceptionsMapper = {
+  [StatusCodes.Forbidden]: ForbiddenException,
+  [StatusCodes.BadRequest]: BadRequestException,
+  [StatusCodes.Conflict]: ConflictException,
+  [StatusCodes.Internal]: InternalServerErrorException,
+  [StatusCodes.NotAcceptable]: NotAcceptableException,
+  [StatusCodes.NotFound]: NotFoundException,
+  [StatusCodes.Unauthorized]: UnauthorizedException,
+};

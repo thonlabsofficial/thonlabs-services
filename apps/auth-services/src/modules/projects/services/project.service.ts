@@ -35,6 +35,25 @@ export class ProjectService {
     return { data: project };
   }
 
+  async getByIdAndOwnerId(
+    id: string,
+    userOwnerId: string,
+  ): Promise<DataReturn<Project>> {
+    const project = await this.databaseService.project.findFirst({
+      where: { id, userOwnerId },
+    });
+
+    return { data: project };
+  }
+
+  async fetchByOwnerId(userOwnerId: string): Promise<DataReturn<Project[]>> {
+    const projects = await this.databaseService.project.findMany({
+      where: { userOwnerId },
+    });
+
+    return { data: projects };
+  }
+
   async create(payload: {
     appName: string;
     userId: string;
@@ -86,12 +105,10 @@ export class ProjectService {
 
   async delete(id: string, userOwnerId: string): Promise<DataReturn> {
     try {
-      const userIsOwner = await this.databaseService.project.findFirst({
-        where: {
-          id,
-          userOwnerId,
-        },
-      });
+      const { data: userIsOwner } = await this.getByIdAndOwnerId(
+        id,
+        userOwnerId,
+      );
 
       if (!userIsOwner) {
         return {

@@ -8,3 +8,7 @@ export const createProjectValidator = z.object({
 export const deleteProjectValidator = z.object({
   id: z.string({ required_error: ErrorMessages.RequiredField }),
 });
+
+export const getByIdProjectValidator = z.object({
+  id: z.string({ required_error: ErrorMessages.RequiredField }),
+});
