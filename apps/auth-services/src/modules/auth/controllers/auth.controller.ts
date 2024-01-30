@@ -10,10 +10,10 @@ import {
 } from '@nestjs/common';
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
 import { PublicRoute } from '@/auth/modules/auth/decorators/auth-validation.decorator';
-import { signUpValidator } from '../validators/signup-validators';
+import { signUpValidator } from '@/auth/modules/auth/validators/signup-validators';
 import { UserService } from '@/auth/modules/users/services/user.service';
 import { ProjectService } from '@/auth/modules/projects/services/project.service';
-import { EnvironmentService } from '../../environments/services/environment.service';
+import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import {
   ErrorMessages,
   StatusCodes,
@@ -24,11 +24,11 @@ import {
   loginValidator,
   reauthenticateFromRefreshTokenValidator,
 } from '../validators/login-validators';
-import { AuthService } from '../services/auth.service';
-import { EmailService } from '../../emails/services/email.service';
-import { TokenStorageService } from '../../token-storage/services/token-storage.service';
+import { AuthService } from '@/auth/modules/auth/services/auth.service';
+import { EmailService } from '@/auth/modules/emails/services/email.service';
+import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
 import { EmailTemplates, TokenTypes } from '@prisma/client';
-import { NeedsPublicKey } from '../../shared/decorators/needs-public-key.decorator';
+import { NeedsPublicKey } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -60,7 +60,7 @@ export class AuthController {
     } = await this.projectService.create({
       appName: 'Thon Labs',
       userId: user.id,
-      isThonLabs: true,
+      appURL: 'https://thonlabs.io',
     });
 
     await this.userService.setEnvironment(user.id, environment.id);
@@ -80,18 +80,31 @@ export class AuthController {
       throw new UnauthorizedException(ErrorMessages.Unauthorized);
     }
 
-    const { data: user } = await this.userService.create({
+    const { data: user, ...userError } = await this.userService.create({
       ...payload,
       environmentId: environment.id,
     });
 
+    if (userError.error) {
+      throw new exceptionsMapper[userError.statusCode](userError.error);
+    }
+
     const {
       data: { token },
+      ...tokenError
     } = await this.tokenStorageService.create({
       relationId: user.id,
       type: payload.password ? TokenTypes.ConfirmEmail : TokenTypes.MagicLogin,
       expiresIn: payload.password ? '1d' : '30m',
     });
+
+    if (tokenError.error) {
+      throw new exceptionsMapper[tokenError.statusCode](tokenError.error);
+    }
+
+    const { data: project } = await this.projectService.getByEnvironmentId(
+      environment.id,
+    );
 
     if (payload.password) {
       // No need wait email send after signup
@@ -99,7 +112,7 @@ export class AuthController {
         to: user.email,
         emailTemplateType: EmailTemplates.ConfirmEmail,
         environmentId: environment.id,
-        data: { token },
+        data: { token, appName: project.appName },
       });
     } else {
       // Wait the email sending
@@ -107,7 +120,7 @@ export class AuthController {
         to: user.email,
         emailTemplateType: EmailTemplates.MagicLink,
         environmentId: environment.id,
-        data: { token },
+        data: { token, appName: project.appName, appURL: environment.appURL },
       });
     }
 
@@ -166,7 +179,8 @@ export class AuthController {
   }
 
   @PublicRoute()
-  @Post('/magic/authenticate/:token')
+  @NeedsPublicKey()
+  @Post('/magic/:token')
   @SchemaValidator(authenticateFromMagicLinkValidator)
   public async authenticateFromMagicLink(@Param('token') token: string) {
     const data = await this.authService.authenticateFromMagicLink({ token });
@@ -179,6 +193,7 @@ export class AuthController {
   }
 
   @PublicRoute()
+  @NeedsPublicKey()
   @Post('/refresh')
   @SchemaValidator(reauthenticateFromRefreshTokenValidator)
   public async reAuthenticateFromRefreshToken(@Body('token') token: string) {

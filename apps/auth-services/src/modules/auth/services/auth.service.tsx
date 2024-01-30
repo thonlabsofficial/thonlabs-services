@@ -80,7 +80,7 @@ export class AuthService {
   }: {
     email: string;
     fullName?: string;
-    environment: Environment;
+    environment: Partial<Environment>;
   }): Promise<DataReturn<AuthenticateMethodsReturn>> {
     let user: Omit<User, 'environment'> = await this.userService.getByEmail(
       email,

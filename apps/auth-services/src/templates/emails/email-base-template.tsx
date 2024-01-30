@@ -23,7 +23,7 @@ export function EmailBaseTemplate({ title, children }: Props) {
     <Tailwind>
       <Html>
         <Head />
-        {'<% if (preview) %>'}
+        {'<% if (preview) { %>'}
         <div
           style={{
             display: 'none',
@@ -36,7 +36,7 @@ export function EmailBaseTemplate({ title, children }: Props) {
         >
           {'<%= preview %>'}
         </div>
-        {'<% endif %>'}
+        {'<% } %>'}
         <Body
           style={{
             backgroundColor: '#fff',

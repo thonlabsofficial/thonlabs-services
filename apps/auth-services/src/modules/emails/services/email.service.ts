@@ -12,6 +12,8 @@ interface SendEmailParams {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data?: {
     token?: string;
+    appName?: string;
+    appURL?: string;
   };
 }
 
@@ -39,7 +41,7 @@ export class EmailService {
       await this.resend.emails.send({
         from: `${emailTemplate.fromName} <${emailTemplate.fromEmail}>`,
         to,
-        subject: emailTemplate.subject,
+        subject: ejs.render(emailTemplate.subject, data),
         html: ejs.render(emailTemplate.content, {
           ...data,
           preview: emailTemplate.preview,
@@ -50,8 +52,7 @@ export class EmailService {
       this.logger.log(`Email ${emailTemplateType} sent`);
     } catch (e) {
       this.logger.error(
-        `Error on sending email ${emailTemplateType}`,
-        { environmentId },
+        `Error on sending email ${emailTemplateType} - Env: ${environmentId}`,
         e,
       );
     }

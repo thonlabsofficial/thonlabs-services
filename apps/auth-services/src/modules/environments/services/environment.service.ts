@@ -50,7 +50,7 @@ export class EnvironmentService {
   async getByPublicKey(
     environmentId: string,
     publicKey: string,
-  ): Promise<DataReturn<Environment>> {
+  ): Promise<DataReturn<Partial<Environment>>> {
     const encryptPublicKey = await Crypt.encrypt(
       publicKey,
       Crypt.generateIV(environmentId),
@@ -58,6 +58,17 @@ export class EnvironmentService {
     );
     const environment = await this.databaseService.environment.findUnique({
       where: { publicKey: encryptPublicKey },
+      select: {
+        id: true,
+        name: true,
+        active: true,
+        tokenExpiration: true,
+        refreshTokenExpiration: true,
+        appURL: true,
+        createdAt: true,
+        updatedAt: true,
+        projectId: true,
+      },
     });
 
     if (!environment) {
@@ -111,6 +122,7 @@ export class EnvironmentService {
   async create(payload: {
     name: string;
     projectId: string;
+    appURL: string;
   }): Promise<DataReturn<Environment>> {
     const projectExists = await this.projectService.getById(payload.projectId);
 
@@ -185,6 +197,7 @@ export class EnvironmentService {
         authKey: keys[2],
         name: prepareString(payload.name),
         projectId: payload.projectId,
+        appURL: payload.appURL,
       },
     });
 

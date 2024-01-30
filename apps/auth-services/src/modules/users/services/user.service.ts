@@ -82,7 +82,7 @@ export class UserService {
 
     this.logger.warn('Thon Labs owner user created', user.id);
 
-    delete user.password;
+    this.deletePrivateData(user);
 
     return { data: user };
   }
@@ -98,6 +98,7 @@ export class UserService {
     );
 
     if (!environmentExists) {
+      this.logger.warn(`Environment not found: ${payload.environmentId}`);
       return {
         statusCode: StatusCodes.NotFound,
         error: ErrorMessages.EnvironmentNotFound,
@@ -131,12 +132,13 @@ export class UserService {
           fullName: payload.fullName,
           password,
           thonLabsUser: false,
+          environmentId: payload.environmentId,
         },
       });
 
       this.logger.warn('User created', user.id);
 
-      delete user.password;
+      this.deletePrivateData(user);
 
       return { data: user };
     } catch (e) {
@@ -156,5 +158,10 @@ export class UserService {
         environmentId,
       },
     });
+  }
+
+  deletePrivateData(user: User) {
+    delete user.password;
+    delete user.thonLabsUser;
   }
 }

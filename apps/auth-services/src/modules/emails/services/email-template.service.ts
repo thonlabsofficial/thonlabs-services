@@ -24,38 +24,36 @@ export class EmailTemplateService {
     return emailTemplate;
   }
 
-  async createDefaultTemplates(projectId: string): Promise<DataReturn | void> {
+  async createDefaultTemplates(
+    environmentId: string,
+  ): Promise<DataReturn | void> {
     try {
-      const { environments } = await this.databaseService.project.findUnique({
-        where: { id: projectId },
-        include: {
-          environments: true,
-        },
-      });
-
       const emailTemplates: Partial<EmailTemplate>[] = [];
 
+      await this.databaseService.emailTemplate.deleteMany({
+        where: { environmentId },
+      });
+      this.logger.log(`Deleted all templates for env: ${environmentId}`);
+
       for (const [type, data] of Object.entries(emailTemplatesMapper)) {
-        for (const environemnt of environments) {
-          emailTemplates.push({
-            type: type as EmailTemplates,
-            content: unescape(render(data.content, { pretty: true })),
-            name: data.name,
-            subject: data.subject,
-            fromEmail: data.fromEmail,
-            fromName: data.fromName,
-            preview: data.preview,
-            replyTo: data.replyTo,
-            environmentId: environemnt.id,
-          });
-        }
+        emailTemplates.push({
+          type: type as EmailTemplates,
+          content: unescape(render(data.content, { pretty: true })),
+          name: data.name,
+          subject: data.subject,
+          fromEmail: data.fromEmail,
+          fromName: data.fromName,
+          preview: data.preview,
+          replyTo: data.replyTo,
+          environmentId,
+        });
       }
 
       await this.databaseService.emailTemplate.createMany({
         data: emailTemplates as EmailTemplate[],
       });
 
-      this.logger.log('Email templates created for all environments');
+      this.logger.log(`Email templates created for env: ${environmentId}`);
     } catch (e) {
       this.logger.log('Error on creating email templates', e);
       return {

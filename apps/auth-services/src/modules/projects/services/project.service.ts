@@ -54,10 +54,26 @@ export class ProjectService {
     return { data: projects };
   }
 
+  async getByEnvironmentId(
+    environmentId: string,
+  ): Promise<DataReturn<Project>> {
+    const project = await this.databaseService.project.findFirst({
+      where: {
+        environments: {
+          some: {
+            id: environmentId,
+          },
+        },
+      },
+    });
+
+    return { data: project };
+  }
+
   async create(payload: {
     appName: string;
+    appURL: string;
     userId: string;
-    isThonLabs?: boolean;
   }): Promise<DataReturn<{ project: Project; environment: Environment }>> {
     const userExists = await this.userService.getById(payload.userId);
 
@@ -95,6 +111,7 @@ export class ProjectService {
     const { data: environment } = await this.environmentsService.create({
       name: 'Production',
       projectId: project.id,
+      appURL: payload.appURL,
     });
 
     // Create email templates for the environment above

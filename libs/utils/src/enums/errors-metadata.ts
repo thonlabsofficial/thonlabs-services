@@ -30,7 +30,7 @@ export enum ErrorCodes {
 }
 
 export enum ErrorMessages {
-  EmailInUse = 'This email is already stored',
+  EmailInUse = 'This email is already in use',
   EnvironmentNotFound = 'Environment not found',
   ProjectNotFound = 'Project not found',
   UserNotFound = 'User not found',

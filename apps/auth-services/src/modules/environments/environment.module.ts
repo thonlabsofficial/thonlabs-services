@@ -3,11 +3,12 @@ import { EnvironmentService } from '@/auth/modules/environments/services/environ
 import { SharedModule } from '@/auth/modules/shared/shared.module';
 import { ProjectModule } from '../projects/project.module';
 import { EnvironmentController } from './controllers/environment.controller';
+import { EmailModule } from '../emails/email.module';
 
 @Module({
   providers: [EnvironmentService],
   exports: [EnvironmentService],
-  imports: [SharedModule, forwardRef(() => ProjectModule)],
+  imports: [SharedModule, forwardRef(() => ProjectModule), EmailModule],
   controllers: [EnvironmentController],
 })
 export class EnvironmentModule {}
