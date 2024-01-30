@@ -143,10 +143,6 @@ export class AuthController {
       throw new UnauthorizedException(envError.error);
     }
 
-    let token;
-    let refreshToken;
-    let userError;
-
     if (payload.password) {
       const result = await this.authService.authenticateFromEmailAndPassword(
         payload.email,
@@ -154,38 +150,44 @@ export class AuthController {
         environment.id,
       );
 
-      token = result.data.token;
-      refreshToken = result.data.refreshToken;
-      userError = result;
+      if (result?.error) {
+        throw new exceptionsMapper[result.statusCode](result.error);
+      }
+
+      return result.data;
     } else {
       const result = await this.authService.loginOrCreateFromMagicLink({
         email: payload.email,
         environment,
       });
 
-      token = result.data.token;
-      refreshToken = result.data.refreshToken;
-      userError = result;
+      if (result?.error) {
+        throw new exceptionsMapper[result.statusCode](result.error);
+      }
     }
-
-    if (userError.error) {
-      throw new exceptionsMapper[userError.statusCode](userError.error);
-    }
-
-    return {
-      token,
-      refreshToken,
-    };
   }
 
   @PublicRoute()
   @NeedsPublicKey()
   @Post('/magic/:token')
-  @SchemaValidator(authenticateFromMagicLinkValidator)
-  public async authenticateFromMagicLink(@Param('token') token: string) {
-    const data = await this.authService.authenticateFromMagicLink({ token });
+  @SchemaValidator(authenticateFromMagicLinkValidator, ['params'])
+  public async authenticateFromMagicLink(
+    @Param('token') token: string,
+    @Req() req,
+  ) {
+    const { data: environment, ...envError } =
+      await this.environmentService.getByPublicKeyFromRequest(req);
 
-    if (data.error) {
+    if (envError?.error) {
+      throw new exceptionsMapper[envError.statusCode](envError.error);
+    }
+
+    const data = await this.authService.authenticateFromMagicLink({
+      token,
+      environmentId: environment.id,
+    });
+
+    if (data?.error) {
       throw new exceptionsMapper[data.statusCode](data.error);
     }
 
@@ -193,12 +195,26 @@ export class AuthController {
   }
 
   @PublicRoute()
-  @NeedsPublicKey()
   @Post('/refresh')
   @SchemaValidator(reauthenticateFromRefreshTokenValidator)
-  public async reAuthenticateFromRefreshToken(@Body('token') token: string) {
+  public async reAuthenticateFromRefreshToken(
+    @Body('token') token: string,
+    @Req() req,
+  ) {
+    if (!req.headers.authorization) {
+      throw new UnauthorizedException(ErrorMessages.Unauthorized);
+    }
+
+    const { data: environment, ...envError } =
+      await this.environmentService.getByIdFromToken(req);
+
+    if (envError?.error) {
+      throw new exceptionsMapper[envError.statusCode](envError.error);
+    }
+
     const data = await this.authService.reAuthenticateFromRefreshToken({
       token,
+      environmentId: environment.id,
     });
 
     return data;

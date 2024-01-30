@@ -5,12 +5,14 @@ import * as bcrypt from 'bcrypt';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { UserService } from '@/auth/modules/users/services/user.service';
-import { EmailService } from '../../emails/services/email.service';
-import { TokenStorageService } from '../../token-storage/services/token-storage.service';
+import { EmailService } from '@/auth/modules/emails/services/email.service';
+import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
+import { ProjectService } from '@/auth/modules/projects/services/project.service';
 
 interface AuthenticateMethodsReturn {
   token: string;
-  refreshToken: string;
+  refreshToken?: string;
+  refreshTokenExpiresIn?: number;
 }
 
 @Injectable()
@@ -21,6 +23,7 @@ export class AuthService {
     private userService: UserService,
     private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
+    private projectService: ProjectService,
   ) {}
 
   async authenticateFromEmailAndPassword(
@@ -30,13 +33,18 @@ export class AuthService {
   ): Promise<DataReturn<AuthenticateMethodsReturn>> {
     const error = {
       statusCode: StatusCodes.Unauthorized,
-      error: ErrorMessages.Unauthorized,
+      error: ErrorMessages.InvalidCredentials,
     };
 
     const user = await this.userService.getByEmail(email, environmentId);
 
     if (!user) {
-      this.logger.warn('Email not found');
+      this.logger.warn(`Email not found for user ${user.id}`);
+      return error;
+    }
+
+    if (!user.password) {
+      this.logger.warn(`Password not found for user ${user.id}`);
       return error;
     }
 
@@ -49,16 +57,14 @@ export class AuthService {
     }
 
     try {
-      const {
-        data: { token, refreshToken },
-      } = await this.tokenStorageService.createAuthTokens(
+      const { data } = await this.tokenStorageService.createAuthTokens(
         user,
         user.environment,
       );
 
       this.logger.log('Confirmation email sent');
 
-      return { data: { token, refreshToken } };
+      return { data };
     } catch (e) {
       this.logger.error(
         'Login/Pass - Error on creating tokens for user',
@@ -119,6 +125,10 @@ export class AuthService {
     }
 
     try {
+      const { data: project } = await this.projectService.getByEnvironmentId(
+        environment.id,
+      );
+
       const {
         data: { token },
       } = await this.tokenStorageService.create({
@@ -131,7 +141,7 @@ export class AuthService {
         to: email,
         emailTemplateType: EmailTemplates.MagicLink,
         environmentId: environment.id,
-        data: { token },
+        data: { token, appName: project.appName, appURL: environment.appURL },
       });
 
       this.logger.log('Magic login email sent');
@@ -147,17 +157,28 @@ export class AuthService {
 
   async authenticateFromMagicLink({
     token,
+    environmentId,
   }: {
     token: string;
+    environmentId: string;
   }): Promise<DataReturn<{ token: string; refreshToken?: string }>> {
     const data = await this.tokenStorageService.getByToken(
       token,
       TokenTypes.MagicLogin,
     );
+
+    if (!data) {
+      this.logger.warn('Magic Token not found');
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.Unauthorized,
+      };
+    }
+
     const isTokenValid = isBefore(new Date(), new Date(data?.expires));
 
     if (!isTokenValid) {
-      this.logger.error('Invalid magic login token', data.relationId);
+      this.logger.warn(`Invalid magic login token for ${data.relationId}`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
@@ -166,14 +187,49 @@ export class AuthService {
 
     const user = await this.userService.getDetailedById(data.relationId);
 
-    return this.tokenStorageService.createAuthTokens(user, user.environment);
+    if (user.environmentId !== environmentId) {
+      this.logger.error(
+        `Magic token not allowed for user ${data.relationId} on env ${environmentId}`,
+      );
+      return {
+        statusCode: StatusCodes.NotAcceptable,
+        error: 'Token not allowed for user',
+      };
+    }
+
+    const tokens = this.tokenStorageService.createAuthTokens(
+      user,
+      user.environment,
+    );
+
+    await this.tokenStorageService.deleteMany(
+      TokenTypes.MagicLogin,
+      data.relationId,
+    );
+
+    return tokens;
   }
 
-  async reAuthenticateFromRefreshToken({ token }: { token: string }) {
+  async reAuthenticateFromRefreshToken({
+    token,
+    environmentId,
+  }: {
+    token: string;
+    environmentId: string;
+  }) {
     const data = await this.tokenStorageService.getByToken(
       token,
       TokenTypes.Refresh,
     );
+
+    if (!data) {
+      this.logger.warn('Refresh Token not found');
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.Unauthorized,
+      };
+    }
+
     const isTokenValid = isBefore(new Date(), new Date(data?.expires));
 
     if (!isTokenValid) {
@@ -184,6 +240,16 @@ export class AuthService {
     }
 
     const user = await this.userService.getDetailedById(data.relationId);
+
+    if (user.environmentId !== environmentId) {
+      this.logger.error(
+        `Refresh token not allowed for user ${data.relationId} on env ${environmentId}`,
+      );
+      return {
+        statusCode: StatusCodes.NotAcceptable,
+        error: 'Token not allowed for user',
+      };
+    }
 
     return this.tokenStorageService.createAuthTokens(user, user.environment);
   }
