@@ -16,8 +16,10 @@
     "baseUrl": ".",
     "paths": {
       "@/auth/*": ["./apps/auth-services/src/*"],
+      "@/website/*": ["./apps/website/src/*"],
       "@/emails/*": ["./libs/react-email/emails/*"],
-      "@/utils/*": ["libs/utils/src/*"]
+      "@/utils/*": ["libs/utils/src/*"],
+      "@/ui/*": ["libs/ui/src/*"]
     }
   },
   "exclude": ["node_modules", "tmp"]
