@@ -1,77 +1,77 @@
+import * as React from 'react';
 import {
   Body,
   Container,
   Head,
   Heading,
   Html,
-  Preview,
   Section,
   Tailwind,
   Text,
+  Img,
+  Row,
+  Column,
+  Link,
 } from '@react-email/components';
-import * as React from 'react';
 
 interface Props {
   title: React.ReactNode;
   children?: React.ReactNode;
-  signature?: React.ReactNode;
-  preview?: string;
 }
 
-export function EmailBaseTemplate({
-  title,
-  children,
-  signature = 'thon-labs Team',
-  preview,
-}: Props) {
+export function EmailBaseTemplate({ title = 'Welcome', children }: Props) {
   return (
     <Tailwind>
       <Html>
-        <Head />
-        {preview && <Preview>{preview}</Preview>}
-        <Body
+        <div
           style={{
-            backgroundColor: '#fff',
-            fontFamily:
-              '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
+            display: 'none',
+            overflow: 'hidden',
+            lineHeight: '1px',
+            opacity: 0,
+            maxHeight: 0,
+            maxWidth: 0,
           }}
         >
-          <Container
-            style={{
-              margin: '0 auto 16px',
-            }}
-          >
-            <Section style={{ textAlign: 'center' }}>
-              <Heading
-                style={{
-                  marginBottom: '20px',
-                  fontSize: '24px',
-                  marginTop: '16px',
-                  color: '#18181B',
-                }}
-              >
-                thon-labs
+          {'<% if (preview) { %>'}
+          {'<%= preview %>'}
+          {'<% } %>'}
+        </div>
+        <Head />
+        <Body
+          className="bg-zinc-300 m-0 p-2.5"
+          style={{
+            fontFamily: 'sans-serif',
+          }}
+        >
+          <Container className="max-w-[600px] mx-auto bg-white rounded shadow-lg">
+            <Section>
+              <Row>
+                <Column className="text-center px-4 pt-6 pb-9">
+                  <Link href="https://thonlabs.io">
+                    <Img
+                      src={`${process.env.NODE_ENV === 'production' ? 'https://thonlabs.io' : 'http://localhost:3101'}/thon-labs-logo-light.svg`}
+                      alt="Thon Labs Logo"
+                      className="w-[147px] h-[22px] mx-auto"
+                    />
+                  </Link>
+                </Column>
+              </Row>
+            </Section>
+
+            <Section className="px-7">
+              <Heading as="h1" className="mt-0 mb-5 text-3xl text-zinc-800">
+                {title}
               </Heading>
             </Section>
 
-            <Heading
-              as="h2"
-              style={{ marginTop: 0, marginBottom: '20px', fontSize: '32px' }}
-            >
-              {title}
-            </Heading>
-            {children}
-            <Text
-              style={{
-                ...paragraphStyle,
-                fontWeight: 'bold',
-                marginBottom: 0,
-                marginTop: '20px',
-                color: '#18181B',
-              }}
-            >
-              {signature}
-            </Text>
+            <Section className="px-7">{children}</Section>
+
+            <Section className="px-7 mt-3 mb-6">
+              <Text className="font-bold text-zinc-800">
+                {'<%= appName %>'} Team
+              </Text>
+            </Section>
           </Container>
         </Body>
       </Html>
@@ -80,28 +80,3 @@ export function EmailBaseTemplate({
 }
 
 export default EmailBaseTemplate;
-
-export const paragraphStyle = {
-  marginTop: 0,
-  marginBottom: '8px',
-  color: '#3F3F46',
-  fontSize: '16px',
-  lineHeight: '24px',
-  textAlign: 'left' as const,
-};
-
-export const buttonStyle = {
-  backgroundColor: '#60A5FA',
-  borderRadius: '4px',
-  color: '#fff',
-  fontSize: '15px',
-  fontWeight: 'bold',
-  textDecoration: 'none',
-  textAlign: 'center' as const,
-  display: 'block',
-};
-
-export const anchorStyle = {
-  color: '#3B82F6',
-  textDecoration: 'underline',
-};
