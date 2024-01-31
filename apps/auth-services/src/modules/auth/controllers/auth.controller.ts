@@ -29,6 +29,7 @@ import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
 import { EmailTemplates, TokenTypes } from '@prisma/client';
 import { NeedsPublicKey } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
+import decodeSession from '@/utils/services/decode-session';
 
 @Controller('auth')
 export class AuthController {
@@ -129,7 +130,7 @@ export class AuthController {
 
   @Post('/login')
   @PublicRoute()
-  @HttpCode(200)
+  @HttpCode(StatusCodes.OK)
   @NeedsPublicKey()
   @SchemaValidator(loginValidator)
   async login(
@@ -205,8 +206,10 @@ export class AuthController {
       throw new UnauthorizedException(ErrorMessages.Unauthorized);
     }
 
+    const { environmentId } = decodeSession(req);
+
     const { data: environment, ...envError } =
-      await this.environmentService.getByIdFromToken(req);
+      await this.environmentService.getById(environmentId);
 
     if (envError?.error) {
       throw new exceptionsMapper[envError.statusCode](envError.error);
@@ -214,6 +217,26 @@ export class AuthController {
 
     const data = await this.authService.reAuthenticateFromRefreshToken({
       token,
+      environmentId: environment.id,
+    });
+
+    return data;
+  }
+
+  @Post('/logout')
+  @HttpCode(StatusCodes.OK)
+  public async logout(@Req() req) {
+    const { sub: userId, environmentId } = decodeSession(req);
+
+    const { data: environment, ...envError } =
+      await this.environmentService.getById(environmentId);
+
+    if (envError?.error) {
+      throw new exceptionsMapper[envError.statusCode](envError.error);
+    }
+
+    const data = await this.authService.logout({
+      userId,
       environmentId: environment.id,
     });
 

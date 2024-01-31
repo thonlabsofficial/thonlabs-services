@@ -34,14 +34,28 @@ export class TokenStorageService {
     });
   }
 
+  async delete(token: string) {
+    await this.databaseService.tokenStorage.delete({
+      where: { token },
+    });
+
+    this.logger.log(`Token deleted`);
+  }
+
   async deleteMany(type: TokenTypes, relationId: string) {
     await this.databaseService.tokenStorage.deleteMany({
       where: { relationId, type },
     });
 
-    this.logger.log(
-      `Relation ${type} ${relationId} deleted tokens that already exists`,
-    );
+    this.logger.log(`Deleted tokens for relation ${type} ${relationId}`);
+  }
+
+  async deleteAllByRelation(relationId: string) {
+    await this.databaseService.tokenStorage.deleteMany({
+      where: { relationId },
+    });
+
+    this.logger.log(`All tokens for relation id ${relationId} deleted`);
   }
 
   async create({

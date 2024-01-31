@@ -94,17 +94,10 @@ export class AuthService {
     );
 
     if (user) {
-      const userToken = await this.tokenStorageService.getByRelation(
-        TokenTypes.MagicLogin,
-        user.id,
-      );
-
-      if (userToken) {
-        await this.tokenStorageService.deleteMany(
-          TokenTypes.MagicLogin,
-          user.id,
-        );
-      }
+      await Promise.all([
+        this.tokenStorageService.deleteMany(TokenTypes.Refresh, user.id),
+        this.tokenStorageService.deleteMany(TokenTypes.MagicLogin, user.id),
+      ]);
     } else {
       const result = await this.userService.create({
         email,
@@ -124,35 +117,24 @@ export class AuthService {
       this.logger.log(`User ${user.id} created from magic link`);
     }
 
-    try {
-      const { data: project } = await this.projectService.getByEnvironmentId(
-        environment.id,
-      );
+    const { data: project } = await this.projectService.getByEnvironmentId(
+      environment.id,
+    );
 
-      const {
-        data: { token },
-      } = await this.tokenStorageService.create({
-        type: TokenTypes.MagicLogin,
-        relationId: user.id,
-        expiresIn: '30m',
-      });
+    const {
+      data: { token },
+    } = await this.tokenStorageService.create({
+      type: TokenTypes.MagicLogin,
+      relationId: user.id,
+      expiresIn: '30m',
+    });
 
-      await this.emailService.send({
-        to: email,
-        emailTemplateType: EmailTemplates.MagicLink,
-        environmentId: environment.id,
-        data: { token, appName: project.appName, appURL: environment.appURL },
-      });
-
-      this.logger.log('Magic login email sent');
-    } catch (e) {
-      this.logger.error('Error on send magic link token for user', user.id);
-
-      return {
-        error: ErrorMessages.InternalError,
-        statusCode: StatusCodes.Internal,
-      };
-    }
+    await this.emailService.send({
+      to: email,
+      emailTemplateType: EmailTemplates.MagicLink,
+      environmentId: environment.id,
+      data: { token, appName: project.appName, appURL: environment.appURL },
+    });
   }
 
   async authenticateFromMagicLink({
@@ -178,7 +160,8 @@ export class AuthService {
     const isTokenValid = isBefore(new Date(), new Date(data?.expires));
 
     if (!isTokenValid) {
-      this.logger.warn(`Invalid magic login token for ${data.relationId}`);
+      this.logger.warn(`Expired magic login token for ${data.relationId}`);
+      await this.tokenStorageService.delete(token);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
@@ -252,5 +235,31 @@ export class AuthService {
     }
 
     return this.tokenStorageService.createAuthTokens(user, user.environment);
+  }
+
+  async logout(payload: { userId: string; environmentId: string }) {
+    const user = await this.userService.getById(payload.userId);
+
+    if (!user) {
+      this.logger.error(
+        `User ${payload.userId} not found for Env ${payload.environmentId}`,
+      );
+      return {
+        statusCode: StatusCodes.NotFound,
+        error: ErrorMessages.UserNotFound,
+      };
+    }
+
+    if (user?.environmentId !== payload.environmentId) {
+      this.logger.error(
+        `Logout not allowed for user ${user.id} on env ${user.environmentId}`,
+      );
+      return {
+        statusCode: StatusCodes.NotAcceptable,
+        error: 'Logout not allowed for user',
+      };
+    }
+
+    await this.tokenStorageService.deleteAllByRelation(user.id);
   }
 }

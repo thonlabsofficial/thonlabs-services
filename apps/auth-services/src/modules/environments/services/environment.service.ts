@@ -12,8 +12,6 @@ import normalizeString from '@/utils/services/normalize-string';
 import rand from '@/utils/services/rand';
 import prepareString from '@/utils/services/prepare-string';
 import Crypt from '@/utils/services/crypt';
-import extractTokenFromHeader from '@/utils/services/extract-token-from-header';
-import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class EnvironmentService {
@@ -23,7 +21,6 @@ export class EnvironmentService {
     private databaseService: DatabaseService,
     @Inject(forwardRef(() => ProjectService))
     private projectService: ProjectService,
-    private jwtService: JwtService,
   ) {}
 
   async getById(id: string): Promise<DataReturn<Environment>> {
@@ -90,13 +87,6 @@ export class EnvironmentService {
       req.headers['tl-env-id'],
       req.headers['tl-public-key'],
     );
-  }
-
-  async getByIdFromToken(req) {
-    const token = extractTokenFromHeader(req);
-    const jwtData = this.jwtService.decode(token);
-
-    return this.getById(jwtData.environmentId);
   }
 
   async getPublicKey(environmentId: string) {
