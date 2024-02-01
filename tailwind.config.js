@@ -1,9 +1,13 @@
+const { join } = require('path');
 const { fontFamily } = require('tailwindcss/defaultTheme');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ['class'],
-  content: ['apps/**/*.{ts,tsx,scss,svg}', 'libs/ui/**/*.{ts,tsx,scss,svg}'],
+  content: [
+    join(__dirname, './libs/ui/**/*.{ts,tsx,scss,svg}'),
+    join(__dirname, './apps/**/*.{ts,tsx,scss,svg}'),
+  ],
   theme: {
     container: {
       center: true,

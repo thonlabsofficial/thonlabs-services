@@ -38,6 +38,13 @@ export class EmailService {
 
       this.logger.log(`Email ${emailTemplateType} found template`);
 
+      console.log(
+        ejs.render(emailTemplate.content, {
+          ...data,
+          preview: emailTemplate.preview,
+        }),
+      );
+
       await this.resend.emails.send({
         from: `${emailTemplate.fromName} <${emailTemplate.fromEmail}>`,
         to,

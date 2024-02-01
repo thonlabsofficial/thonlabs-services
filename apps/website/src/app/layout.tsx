@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import '@/ui/base.scss';
-import '@/website/globals.scss';
+import '@/website/app/globals.scss';
+import { Button } from '@/ui/components/button';
 
 export const metadata: Metadata = {
   title: 'Thon Labs',
@@ -16,7 +17,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Button>Test</Button>
+      </body>
     </html>
   );
 }

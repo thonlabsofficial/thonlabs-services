@@ -21,7 +21,20 @@ interface Props {
 
 export function EmailBaseTemplate({ title = 'Welcome', children }: Props) {
   return (
-    <Tailwind>
+    <Tailwind
+      config={{
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                DEFAULT: 'rgb(15, 23, 42)',
+                foreground: 'rgb(248, 250, 252)',
+              },
+            },
+          },
+        },
+      }}
+    >
       <Html>
         <div
           style={{

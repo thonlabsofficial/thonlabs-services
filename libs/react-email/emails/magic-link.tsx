@@ -1,6 +1,7 @@
-import { Button, Link, Text } from '@react-email/components';
+import { Link, Text } from '@react-email/components';
 import * as React from 'react';
 import EmailBaseTemplate from './email-base-template';
+import { buttonVariantsEmail } from '@/ui/components/button';
 
 export function MagicLink() {
   const href = `<%= appURL %>/auth/magic/<%= token %>`;
@@ -15,15 +16,20 @@ export function MagicLink() {
         You can safely complete your login by clicking on button below.
       </Text>
 
-      <Button className="px-6 py-3 mb-7" href={href}>
+      <Link
+        className={buttonVariantsEmail({
+          variant: 'default',
+        })}
+        href={href}
+      >
         Complete Login
-      </Button>
+      </Link>
 
-      <Text className="mt-0 mb-5 text-zinc-800 leading-relaxed">
+      <Text className="mb-1 text-zinc-800 leading-relaxed mt-4">
         In case of the button not works, you can login through the link:
       </Text>
 
-      <Link href={href} className="mt-0 mb-5 text-blue-500">
+      <Link href={href} className="mt-0 mb-5 text-blue-500 text-sm">
         {href}
       </Link>
     </EmailBaseTemplate>

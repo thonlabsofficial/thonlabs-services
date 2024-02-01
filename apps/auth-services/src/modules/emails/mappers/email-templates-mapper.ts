@@ -1,4 +1,4 @@
-import MagicLink from '@/auth/templates/emails/magic-link';
+import MagicLink from '@/emails/magic-link';
 import ConfirmEmail from '@/auth/templates/emails/confirm-email';
 import ForgotPassword from '@/auth/templates/emails/forgot-password';
 import Welcome from '@/auth/templates/emails/welcome';
