@@ -32,9 +32,20 @@ export function MagicLink() {
         In case of the button not works, you can login through the link:
       </Text>
 
-      <Link href={href} className="mt-0 mb-5 text-blue-500 text-sm">
+      <Link href={href} className="mt-0 mb-3 text-blue-500 text-sm">
         {href}
       </Link>
+
+      <Text
+        className={textVariants({ variant: 'paragraph', className: 'mb-5' })}
+      >
+        If you didn't initiate this login request, please disregard this message
+        or contact our support team on{' '}
+        <Link href={href} className="mt-0 mb-3 text-blue-500 text-sm">
+          support@thonlabs.io
+        </Link>
+        .
+      </Text>
     </EmailBaseTemplate>
   );
 }
