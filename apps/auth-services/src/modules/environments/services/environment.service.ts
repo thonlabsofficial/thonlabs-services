@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { DataReturn } from '@/utils/interfaces/data-return';
-import { Environment } from '@prisma/client';
+import { Environment, Project } from '@prisma/client';
 import { ProjectService } from '@/auth/modules/projects/services/project.service';
 import {
   StatusCodes,
@@ -50,7 +50,7 @@ export class EnvironmentService {
   async getByPublicKey(
     environmentId: string,
     publicKey: string,
-  ): Promise<DataReturn<Partial<Environment>>> {
+  ): Promise<DataReturn<Partial<Environment & { project: Partial<Project> }>>> {
     const encryptPublicKey = await Crypt.encrypt(
       publicKey,
       Crypt.generateIV(environmentId),
@@ -68,6 +68,12 @@ export class EnvironmentService {
         createdAt: true,
         updatedAt: true,
         projectId: true,
+        project: {
+          select: {
+            id: true,
+            appName: true,
+          },
+        },
       },
     });
 

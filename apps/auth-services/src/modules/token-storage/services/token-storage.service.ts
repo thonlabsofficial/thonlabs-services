@@ -43,11 +43,13 @@ export class TokenStorageService {
   }
 
   async deleteMany(type: TokenTypes, relationId: string) {
-    await this.databaseService.tokenStorage.deleteMany({
+    const { count } = await this.databaseService.tokenStorage.deleteMany({
       where: { relationId, type },
     });
 
-    this.logger.log(`Deleted tokens for relation ${type} ${relationId}`);
+    if (count > 0) {
+      this.logger.log(`Deleted tokens for relation ${type} ${relationId}`);
+    }
   }
 
   async deleteAllByRelation(relationId: string) {

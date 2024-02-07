@@ -30,6 +30,8 @@ import { TokenStorageService } from '@/auth/modules/token-storage/services/token
 import { EmailTemplates, TokenTypes } from '@prisma/client';
 import { NeedsPublicKey } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
 import decodeSession from '@/utils/services/decode-session';
+import { requestResetPasswordValidator } from '../validators/reset-password-validators';
+import { getFirstName } from '@/utils/services/names-helpers';
 
 @Controller('auth')
 export class AuthController {
@@ -111,7 +113,7 @@ export class AuthController {
       token,
       appName: project.appName,
       appURL: environment.appURL,
-      userFirstName: user?.fullName?.split(' ')?.[0],
+      userFirstName: getFirstName(user.fullName),
     };
 
     if (payload.password) {
@@ -248,5 +250,55 @@ export class AuthController {
     });
 
     return data;
+  }
+
+  @PublicRoute()
+  @Post('/reset-password')
+  @SchemaValidator(requestResetPasswordValidator)
+  public async requestResetPassword(@Req() req, @Body() payload) {
+    const { data: environment } =
+      await this.environmentService.getByPublicKeyFromRequest(req);
+
+    if (!environment) {
+      throw new UnauthorizedException(ErrorMessages.Unauthorized);
+    }
+
+    const user = await this.userService.getByEmail(
+      payload.email,
+      environment.id,
+    );
+
+    if (!user) {
+      throw new exceptionsMapper[StatusCodes.NotFound](
+        ErrorMessages.UserNotFound,
+      );
+    }
+
+    await this.tokenStorageService.deleteMany(
+      TokenTypes.ResetPassword,
+      user.id,
+    );
+
+    const token = await this.tokenStorageService.create({
+      expiresIn: '30m',
+      relationId: user.id,
+      type: TokenTypes.ResetPassword,
+    });
+
+    if (token.error) {
+      throw new exceptionsMapper[token.statusCode](token.error);
+    }
+
+    await this.emailService.send({
+      emailTemplateType: EmailTemplates.ForgotPassword,
+      environmentId: environment.id,
+      to: user.email,
+      data: {
+        userFirstName: getFirstName(user.fullName),
+        appURL: environment.appURL,
+        appName: environment.project.appName,
+        token: token.data.token,
+      },
+    });
   }
 }

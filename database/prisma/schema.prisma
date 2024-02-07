@@ -12,6 +12,7 @@ enum TokenTypes {
   MagicLogin
   Refresh
   ConfirmEmail
+  ResetPassword
 }
 
 enum CustomFieldTypes {

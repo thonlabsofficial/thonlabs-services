@@ -57,12 +57,17 @@ export class AuthService {
     }
 
     try {
+      await this.tokenStorageService.deleteMany(
+        TokenTypes.ResetPassword,
+        user.id,
+      );
+
       const { data } = await this.tokenStorageService.createAuthTokens(
         user,
         user.environment,
       );
 
-      this.logger.log('Confirmation email sent');
+      this.logger.log('Created auth tokens');
 
       return { data };
     } catch (e) {
