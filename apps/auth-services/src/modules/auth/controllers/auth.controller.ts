@@ -7,6 +7,8 @@ import {
   Req,
   Headers,
   UnauthorizedException,
+  Get,
+  Patch,
 } from '@nestjs/common';
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
 import { PublicRoute } from '@/auth/modules/auth/decorators/auth-validation.decorator';
@@ -30,7 +32,10 @@ import { TokenStorageService } from '@/auth/modules/token-storage/services/token
 import { EmailTemplates, TokenTypes } from '@prisma/client';
 import { NeedsPublicKey } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
 import decodeSession from '@/utils/services/decode-session';
-import { requestResetPasswordValidator } from '../validators/reset-password-validators';
+import {
+  newPasswordValidator,
+  requestResetPasswordValidator,
+} from '../validators/reset-password-validators';
 import { getFirstName } from '@/utils/services/names-helpers';
 
 @Controller('auth')
@@ -300,5 +305,66 @@ export class AuthController {
         token: token.data.token,
       },
     });
+  }
+
+  @PublicRoute()
+  @HttpCode(StatusCodes.OK)
+  @Get('/reset-password/:token')
+  public async validateTokenResetPassword(
+    @Req() req,
+    @Param('token') token: string,
+  ) {
+    const { data: environment } =
+      await this.environmentService.getByPublicKeyFromRequest(req);
+
+    if (!environment) {
+      throw new UnauthorizedException(ErrorMessages.Unauthorized);
+    }
+
+    const tokenValidation =
+      await this.authService.validateResetPasswordToken(token);
+
+    if (tokenValidation.error) {
+      throw new exceptionsMapper[tokenValidation.statusCode](
+        tokenValidation.error,
+      );
+    }
+  }
+
+  @PublicRoute()
+  @HttpCode(StatusCodes.OK)
+  @Patch('/update-password/:token')
+  @SchemaValidator(newPasswordValidator)
+  public async updateTokenResetPassword(
+    @Req() req,
+    @Param('token') token: string,
+    @Body() payload,
+  ) {
+    const { data: environment } =
+      await this.environmentService.getByPublicKeyFromRequest(req);
+
+    if (!environment) {
+      throw new UnauthorizedException(ErrorMessages.Unauthorized);
+    }
+
+    const tokenValidation =
+      await this.authService.validateResetPasswordToken(token);
+
+    if (tokenValidation.statusCode) {
+      throw new exceptionsMapper[tokenValidation.statusCode](
+        tokenValidation.error,
+      );
+    }
+
+    console.log(tokenValidation);
+
+    await Promise.all([
+      this.tokenStorageService.delete(token),
+      this.userService.updatePassword(
+        tokenValidation.data.relationId,
+        environment.id,
+        payload.password,
+      ),
+    ]);
   }
 }

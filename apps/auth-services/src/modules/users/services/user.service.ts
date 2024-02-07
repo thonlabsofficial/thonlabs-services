@@ -160,7 +160,27 @@ export class UserService {
     });
   }
 
-  deletePrivateData(user: User) {
+  async updatePassword(
+    userId: string,
+    environmentId: string,
+    password: string,
+  ) {
+    const hashPassword = await Crypt.hash(password);
+
+    await this.databaseService.user.update({
+      where: {
+        id: userId,
+        environmentId,
+      },
+      data: {
+        password: hashPassword,
+      },
+    });
+
+    this.logger.log(`Password updated for ${userId}`);
+  }
+
+  private deletePrivateData(user: User) {
     delete user.password;
     delete user.thonLabsUser;
   }

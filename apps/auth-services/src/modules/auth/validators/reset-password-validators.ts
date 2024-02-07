@@ -13,7 +13,7 @@ export const requestResetPasswordValidator = z.object({
     .nullable(),
 });
 
-export const resetPasswordValidator = z.object({
+export const newPasswordValidator = z.object({
   password: z
     .string()
     .regex(passwordPatterns.middleStrength)

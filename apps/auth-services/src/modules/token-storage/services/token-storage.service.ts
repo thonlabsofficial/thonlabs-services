@@ -6,6 +6,8 @@ import { JwtService } from '@nestjs/jwt';
 import rand from '@/utils/services/rand';
 import ms from 'ms';
 import Crypt from '@/utils/services/crypt';
+import { isBefore } from 'date-fns';
+import { StatusCodes } from '@/utils/enums/errors-metadata';
 
 @Injectable()
 export class TokenStorageService {
@@ -158,5 +160,18 @@ export class TokenStorageService {
         refreshTokenExpiresIn: refreshToken.expires.getTime(),
       },
     };
+  }
+
+  public isTokenExpirationValid(token: TokenStorage): DataReturn {
+    const isTokenValid = isBefore(new Date(), new Date(token.expires));
+
+    if (!isTokenValid) {
+      this.logger.log(`Token Expired for ${token.type} ${token.relationId}`);
+      return {
+        statusCode: StatusCodes.NotFound,
+      };
+    }
+
+    return {};
   }
 }

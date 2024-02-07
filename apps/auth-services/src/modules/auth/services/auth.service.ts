@@ -1,5 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EmailTemplates, Environment, TokenTypes, User } from '@prisma/client';
+import {
+  EmailTemplates,
+  Environment,
+  TokenStorage,
+  TokenTypes,
+  User,
+} from '@prisma/client';
 import { isBefore } from 'date-fns';
 import * as bcrypt from 'bcrypt';
 import { DataReturn } from '@/utils/interfaces/data-return';
@@ -266,5 +272,40 @@ export class AuthService {
     }
 
     await this.tokenStorageService.deleteAllByRelation(user.id);
+  }
+
+  async validateResetPasswordToken(
+    token: string,
+  ): Promise<DataReturn<TokenStorage>> {
+    const tokenData = await this.tokenStorageService.getByToken(
+      token,
+      TokenTypes.ResetPassword,
+    );
+
+    if (!tokenData) {
+      return {
+        statusCode: StatusCodes.NotFound,
+      };
+    }
+
+    const user = await this.userService.getById(tokenData.relationId);
+
+    if (!user) {
+      return {
+        statusCode: StatusCodes.NotFound,
+        error: ErrorMessages.UserNotFound,
+      };
+    }
+
+    const { statusCode } =
+      this.tokenStorageService.isTokenExpirationValid(tokenData);
+
+    if (statusCode) {
+      return {
+        statusCode: StatusCodes.NotFound,
+      };
+    }
+
+    return { data: tokenData };
   }
 }
