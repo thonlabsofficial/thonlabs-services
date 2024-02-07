@@ -19,7 +19,7 @@ interface Props {
   children?: React.ReactNode;
 }
 
-export function EmailBaseTemplate({ title = 'Welcome', children }: Props) {
+export function EmailBaseTemplate({ title = '', children }: Props) {
   return (
     <Tailwind
       config={{
@@ -52,35 +52,35 @@ export function EmailBaseTemplate({ title = 'Welcome', children }: Props) {
         </div>
         <Head />
         <Body
-          className="bg-zinc-300 m-0 p-2.5"
+          className="bg-zinc-100 m-0 p-2.5"
           style={{
             fontFamily: 'sans-serif',
           }}
         >
-          <Container className="max-w-[600px] mx-auto bg-white rounded shadow-lg">
-            <Section>
-              <Row>
-                <Column className="text-center px-4 pt-6 pb-9">
-                  <Link href="https://thonlabs.io">
-                    <Img
-                      src={`${process.env.NODE_ENV === 'production' ? 'https://thonlabs.io' : 'http://localhost:3101'}/thon-labs-logo-light.svg`}
-                      alt="Thon Labs Logo"
-                      className="w-[147px] h-[22px] mx-auto"
-                    />
-                  </Link>
-                </Column>
-              </Row>
-            </Section>
+          <Section>
+            <Row>
+              <Column className="text-center py-6">
+                <Link href="https://thonlabs.io">
+                  <Img
+                    src={`${process.env.NODE_ENV === 'production' ? 'https://thonlabs.io' : 'http://localhost:3101'}/thon-labs-logo-light.svg`}
+                    alt="Thon Labs Logo"
+                    className="w-[147px] h-[22px] mx-auto"
+                  />
+                </Link>
+              </Column>
+            </Row>
+          </Section>
 
+          <Container className="max-w-[600px] mx-auto bg-white rounded shadow-lg pt-6">
             <Section className="px-7">
-              <Heading as="h1" className="mt-0 mb-5 text-3xl text-zinc-800">
+              <Heading as="h1" className="mt-0 mb-2 text-2xl text-zinc-800">
                 {title}
               </Heading>
             </Section>
 
             <Section className="px-7">{children}</Section>
 
-            <Section className="px-7 mt-3 mb-6">
+            <Section className="px-7 mb-6">
               <Text className="font-bold text-zinc-800">
                 {'<%= appName %>'} Team
               </Text>
