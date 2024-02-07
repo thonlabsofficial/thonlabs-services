@@ -9,16 +9,19 @@ export function ForgotPassword() {
 
   return (
     <EmailBaseTemplate title="Reset Your Account Password">
-      <Text className={textVariants({ variant: 'paragraph' })}>
+      <Text className={textVariants({ variant: 'paragraphEmail' })}>
         Hey{' '}
         {
-          '<% if (userFullName) { %> <%= userFullName %><% } else { %>there<% } %>'
+          '<% if (userFirstName) { %> <%= userFirstName %><% } else { %>there<% } %>'
         }
         ! 👋
       </Text>
 
       <Text
-        className={textVariants({ variant: 'paragraph', className: 'mb-3' })}
+        className={textVariants({
+          variant: 'paragraphEmail',
+          className: 'mb-3',
+        })}
       >
         We received a recent request to reset the password for your account. To
         proceed with the password reset, kindly click on the button provided
@@ -35,22 +38,27 @@ export function ForgotPassword() {
       </Link>
 
       <Text
-        className={textVariants({ variant: 'paragraph', className: 'mt-4' })}
+        className={textVariants({
+          variant: 'paragraphEmail',
+          className: 'mt-4 mb-0',
+        })}
       >
         In case of the button not works, you can reset the password through the
         link:
       </Text>
-
-      <Link href={href} className="mt-0 mb-3 text-blue-500 text-sm">
+      <Link href={href} className="mt-0 text-blue-500 text-sm">
         {href}
       </Link>
 
       <Text
-        className={textVariants({ variant: 'paragraph', className: 'mb-5' })}
+        className={textVariants({
+          variant: 'paragraphEmail',
+          className: 'mt-6 mb-5',
+        })}
       >
         If you didn't initiate this reset password request, please disregard
         this message or contact our support team on{' '}
-        <Link href={href} className="mt-0 mb-3 text-blue-500 text-sm">
+        <Link href={href} className="mt-0 mb-3 text-blue-500">
           support@thonlabs.io
         </Link>
         .

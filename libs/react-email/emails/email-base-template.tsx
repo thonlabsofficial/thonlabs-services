@@ -25,6 +25,9 @@ export function EmailBaseTemplate({ title = '', children }: Props) {
       config={{
         theme: {
           extend: {
+            fontFamily: {
+              sans: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
+            },
             colors: {
               primary: {
                 DEFAULT: 'rgb(15, 23, 42)',

@@ -9,10 +9,19 @@ export function MagicLink() {
 
   return (
     <EmailBaseTemplate title="Your Login Link">
-      <Text className={textVariants({ variant: 'paragraph' })}>Hey there,</Text>
+      <Text className={textVariants({ variant: 'paragraphEmail' })}>
+        Hey{' '}
+        {
+          '<% if (userFirstName) { %> <%= userFirstName %><% } else { %>there<% } %>'
+        }
+        ! 👋
+      </Text>
 
       <Text
-        className={textVariants({ variant: 'paragraph', className: 'mb-3' })}
+        className={textVariants({
+          variant: 'paragraphEmail',
+          className: 'mb-3',
+        })}
       >
         You can safely complete your login by clicking on button below.
       </Text>
@@ -27,21 +36,26 @@ export function MagicLink() {
       </Link>
 
       <Text
-        className={textVariants({ variant: 'paragraph', className: 'mt-4' })}
+        className={textVariants({
+          variant: 'paragraphEmail',
+          className: 'mt-4 mb-0',
+        })}
       >
         In case of the button not works, you can login through the link:
       </Text>
-
-      <Link href={href} className="mt-0 mb-3 text-blue-500 text-sm">
+      <Link href={href} className="mt-0  text-blue-500 text-sm">
         {href}
       </Link>
 
       <Text
-        className={textVariants({ variant: 'paragraph', className: 'mb-5' })}
+        className={textVariants({
+          variant: 'paragraphEmail',
+          className: 'mt-6 mb-5',
+        })}
       >
         If you didn't initiate this login request, please disregard this message
         or contact our support team on{' '}
-        <Link href={href} className="mt-0 mb-3 text-blue-500 text-sm">
+        <Link href={href} className="mt-0 mb-3 text-blue-500">
           support@thonlabs.io
         </Link>
         .

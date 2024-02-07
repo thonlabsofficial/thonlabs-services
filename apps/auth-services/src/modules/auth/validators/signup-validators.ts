@@ -3,7 +3,7 @@ import { passwordPatterns } from '@/utils/validators/password-patterns';
 import { ErrorMessages } from '@/utils/enums/errors-metadata';
 
 export const signUpValidator = z.object({
-  fullName: z.string(),
+  fullName: z.string().optional(),
   email: z
     .string({ required_error: ErrorMessages.RequiredField })
     .email({ message: ErrorMessages.InvalidEmail }),

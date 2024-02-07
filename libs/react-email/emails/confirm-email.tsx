@@ -9,16 +9,24 @@ export function ConfirmEmail() {
 
   return (
     <EmailBaseTemplate title="Confirm Your Email">
-      <Text className={textVariants({ variant: 'paragraph' })}>
+      <Text
+        className={textVariants({
+          variant: 'paragraphEmail',
+          className: 'mb-4',
+        })}
+      >
         Hey{' '}
         {
-          '<% if (userFullName) { %> <%= userFullName %><% } else { %>there<% } %>'
+          '<% if (userFirstName) { %> <%= userFirstName %><% } else { %>there<% } %>'
         }
         ! 👋
       </Text>
 
       <Text
-        className={textVariants({ variant: 'paragraph', className: 'mb-3' })}
+        className={textVariants({
+          variant: 'paragraphEmail',
+          className: 'mb-3',
+        })}
       >
         We've received a request to sign up for {'<%= appName %>'} using this
         email address. To complete the registration process, kindly confirm your
@@ -35,21 +43,26 @@ export function ConfirmEmail() {
       </Link>
 
       <Text
-        className={textVariants({ variant: 'paragraph', className: 'mt-4' })}
+        className={textVariants({
+          variant: 'paragraphEmail',
+          className: 'mt-4 mb-0',
+        })}
       >
         In case of the button not works, you can confirm through the link:
       </Text>
-
-      <Link href={href} className="mt-0 mb-3 text-blue-500 text-sm">
+      <Link href={href} className="mt-0 text-blue-500 text-sm">
         {href}
       </Link>
 
       <Text
-        className={textVariants({ variant: 'paragraph', className: 'mb-5' })}
+        className={textVariants({
+          variant: 'paragraphEmail',
+          className: 'mt-6 mb-5',
+        })}
       >
         If you didn't initiate this sign-up request, please disregard this
         message or contact our support team{' '}
-        <Link href={href} className="mt-0 mb-3 text-blue-500 text-sm">
+        <Link href={href} className="mt-0 mb-3 text-blue-500">
           support@thonlabs.io
         </Link>
         .

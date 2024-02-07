@@ -20,6 +20,7 @@ const textVariants = cva('font-sans text-zinc-800', {
       small: 'text-sm font-medium leading-none',
       muted: 'text-sm text-muted-foreground',
       code: 'font-code text-emerald-200 text-sm',
+      paragraphEmail: 'leading-relaxed',
     },
   },
   defaultVariants: {

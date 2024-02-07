@@ -107,13 +107,20 @@ export class AuthController {
       environment.id,
     );
 
+    const emailData = {
+      token,
+      appName: project.appName,
+      appURL: environment.appURL,
+      userFirstName: user?.fullName?.split(' ')?.[0],
+    };
+
     if (payload.password) {
       // No need wait email send after signup
       this.emailService.send({
         to: user.email,
         emailTemplateType: EmailTemplates.ConfirmEmail,
         environmentId: environment.id,
-        data: { token, appName: project.appName },
+        data: emailData,
       });
     } else {
       // Wait the email sending
@@ -121,7 +128,7 @@ export class AuthController {
         to: user.email,
         emailTemplateType: EmailTemplates.MagicLink,
         environmentId: environment.id,
-        data: { token, appName: project.appName, appURL: environment.appURL },
+        data: emailData,
       });
     }
 
