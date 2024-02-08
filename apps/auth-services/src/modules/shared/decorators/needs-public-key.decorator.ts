@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { EnvironmentService } from '../../environments/services/environment.service';
+import decodeSession from '@/utils/services/decode-session';
 
 const NEEDS_PUBLIC_KEY_VALIDATOR_KEY = 'needsPublicKey';
 
@@ -46,9 +47,12 @@ export class NeedsPublicKeyGuard implements CanActivate {
       return false;
     }
 
+    const session = decodeSession(req);
+
     const { data: environment } = await this.environmentService.getByPublicKey(
       req.headers['tl-env-id'],
       req.headers['tl-public-key'],
+      session?.sub,
     );
 
     if (!environment) {

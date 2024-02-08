@@ -2,6 +2,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   SetMetadata,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -16,6 +17,8 @@ export const PublicRoute = () => SetMetadata(AUTH_VALIDATION_DISABLED, true);
 
 @Injectable()
 export class AuthValidationGuard implements CanActivate {
+  private readonly logger = new Logger(AuthValidationGuard.name);
+
   constructor(
     private jwtService: JwtService,
     private reflector: Reflector,
@@ -35,6 +38,7 @@ export class AuthValidationGuard implements CanActivate {
     const token = extractTokenFromHeader(request);
 
     if (!token) {
+      this.logger.log('Token not exists');
       throw new UnauthorizedException();
     }
 
@@ -42,6 +46,7 @@ export class AuthValidationGuard implements CanActivate {
       const jwtData = this.jwtService.decode(token);
 
       if (!jwtData?.environmentId || !jwtData?.environmentKey) {
+        this.logger.log('Invalid JWT Data');
         throw new UnauthorizedException();
       }
 
@@ -58,6 +63,7 @@ export class AuthValidationGuard implements CanActivate {
         userId: payload.sub,
       };
     } catch {
+      this.logger.log('Invalid Token');
       throw new UnauthorizedException();
     }
     return true;

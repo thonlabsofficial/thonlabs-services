@@ -4,13 +4,16 @@ import {
   Headers,
   Param,
   Post,
+  Req,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PublicRoute } from '../../auth/decorators/auth-validation.decorator';
 import { EnvironmentService } from '../services/environment.service';
 import { EmailTemplateService } from '../../emails/services/email-template.service';
 import { DataReturn } from '@/utils/interfaces/data-return';
-import { exceptionsMapper } from '@/utils/enums/errors-metadata';
+import { StatusCodes, exceptionsMapper } from '@/utils/enums/errors-metadata';
+import { NeedsPublicKey } from '../../shared/decorators/needs-public-key.decorator';
+import decodeSession from '@/utils/services/decode-session';
 
 @Controller('environments')
 export class EnvironmentController {
@@ -53,5 +56,30 @@ export class EnvironmentController {
         (result as DataReturn).error,
       );
     }
+  }
+
+  @Get('/')
+  @NeedsPublicKey()
+  async fetch(@Req() req) {
+    const { sub } = decodeSession(req);
+
+    const { data: environments } =
+      await this.environmentService.fetchByUserId(sub);
+
+    return {
+      items: environments,
+    };
+  }
+
+  @Get('/:id')
+  @NeedsPublicKey()
+  async getById(@Param('id') id: string) {
+    const { data: environment } = await this.environmentService.getById(id);
+
+    if (!environment) {
+      throw new exceptionsMapper[StatusCodes.NotFound]();
+    }
+
+    return environment;
   }
 }

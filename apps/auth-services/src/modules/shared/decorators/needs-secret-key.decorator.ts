@@ -38,9 +38,8 @@ export class NeedsSecretKeyGuard implements CanActivate {
     const http = context.switchToHttp();
     const req = http.getRequest();
     const res = http.getResponse();
-    const secretKey = extractTokenFromHeader(req);
 
-    if (!secretKey) {
+    if (!req.headers['tl-secret-key'] || !req.headers['tl-env-id']) {
       res.status(StatusCodes.Unauthorized).json({
         code: ErrorCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
@@ -48,8 +47,10 @@ export class NeedsSecretKeyGuard implements CanActivate {
       return false;
     }
 
-    const { data: environment } =
-      await this.environmentService.getBySecretKey(secretKey);
+    const { data: environment } = await this.environmentService.getBySecretKey(
+      req.headers['tl-env-id'],
+      req.headers['tl-secret-key'],
+    );
 
     if (!environment) {
       res.status(StatusCodes.Unauthorized).json({

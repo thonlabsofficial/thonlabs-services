@@ -26,14 +26,33 @@ export class EnvironmentService {
   async getById(id: string): Promise<DataReturn<Environment>> {
     const environment = await this.databaseService.environment.findUnique({
       where: { id },
+      select: {
+        id: true,
+        name: true,
+        active: true,
+        tokenExpiration: true,
+        refreshTokenExpiration: true,
+        appURL: true,
+        createdAt: true,
+        updatedAt: true,
+        projectId: true,
+      },
     });
 
-    return { data: environment };
+    return { data: environment as Environment };
   }
 
-  async getBySecretKey(secretKey: string): Promise<DataReturn<Environment>> {
+  async getBySecretKey(
+    environmentId: string,
+    secretKey: string,
+  ): Promise<DataReturn<Environment>> {
+    const encryptSecretKey = await Crypt.encrypt(
+      secretKey,
+      Crypt.generateIV(environmentId),
+      process.env.ENCODE_SECRET,
+    );
     const environment = await this.databaseService.environment.findUnique({
-      where: { secretKey },
+      where: { secretKey: encryptSecretKey },
     });
 
     if (!environment) {
@@ -50,14 +69,28 @@ export class EnvironmentService {
   async getByPublicKey(
     environmentId: string,
     publicKey: string,
+    userId: string = null,
   ): Promise<DataReturn<Partial<Environment & { project: Partial<Project> }>>> {
     const encryptPublicKey = await Crypt.encrypt(
       publicKey,
       Crypt.generateIV(environmentId),
       process.env.ENCODE_SECRET,
     );
+
     const environment = await this.databaseService.environment.findUnique({
-      where: { publicKey: encryptPublicKey },
+      where: {
+        publicKey: encryptPublicKey,
+        // If exists user id, then validates also by it
+        ...(userId
+          ? {
+              users: {
+                some: {
+                  id: userId,
+                },
+              },
+            }
+          : {}),
+      },
       select: {
         id: true,
         name: true,
@@ -213,5 +246,31 @@ export class EnvironmentService {
     );
 
     return { data: environment };
+  }
+
+  async fetchByUserId(
+    userId: string,
+  ): Promise<
+    DataReturn<{ id: string; name: string; active: boolean; appURL: string }[]>
+  > {
+    const environments = await this.databaseService.environment.findMany({
+      select: {
+        id: true,
+        name: true,
+        active: true,
+        appURL: true,
+      },
+      where: {
+        users: {
+          some: {
+            id: userId,
+          },
+        },
+      },
+    });
+
+    return {
+      data: environments,
+    };
   }
 }
