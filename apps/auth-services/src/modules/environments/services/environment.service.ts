@@ -49,7 +49,7 @@ export class EnvironmentService {
     const encryptSecretKey = await Crypt.encrypt(
       secretKey,
       Crypt.generateIV(environmentId),
-      process.env.ENCODE_SECRET,
+      process.env.ENCODE_SECRET_KEYS_SECRET,
     );
     const environment = await this.databaseService.environment.findUnique({
       where: { secretKey: encryptSecretKey },
