@@ -1,19 +1,21 @@
 import {
+  Body,
   Controller,
   Get,
   Headers,
   Param,
   Patch,
   Post,
-  Req,
   UnauthorizedException,
 } from '@nestjs/common';
 import { EnvironmentService } from '../services/environment.service';
 import { EmailTemplateService } from '../../emails/services/email-template.service';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { StatusCodes, exceptionsMapper } from '@/utils/enums/errors-metadata';
-import decodeSession from '@/utils/services/decode-session';
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
+import { UserBelongsTo } from '../../shared/decorators/user-belongs-to.decorator';
+import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
+import { createEnvironmentValidator } from '../validators/environment-validators';
 
 @Controller('environments')
 export class EnvironmentController {
@@ -58,21 +60,9 @@ export class EnvironmentController {
     }
   }
 
-  @Get('/')
-  @ThonLabsOnly()
-  async fetch(@Req() req) {
-    const { sub } = decodeSession(req);
-
-    const { data: environments } =
-      await this.environmentService.fetchByUserId(sub);
-
-    return {
-      items: environments,
-    };
-  }
-
   @Get('/:id')
   @ThonLabsOnly()
+  @UserBelongsTo('environment')
   async getById(@Param('id') id: string) {
     const [{ data: environment }, publicKey] = await Promise.all([
       this.environmentService.getById(id),
@@ -88,7 +78,8 @@ export class EnvironmentController {
 
   @Get('/:id/secret')
   @ThonLabsOnly()
-  async getSecretKey(@Req() req, @Param('id') id: string) {
+  @UserBelongsTo('environment')
+  async getSecretKey(@Param('id') id: string) {
     const secretKey = await this.environmentService.getSecretKey(id);
 
     return { secretKey };
@@ -96,7 +87,8 @@ export class EnvironmentController {
 
   @Patch('/:id/secret')
   @ThonLabsOnly()
-  async updateSecretKey(@Req() req, @Param('id') id: string) {
+  @UserBelongsTo('environment')
+  async updateSecretKey(@Param('id') id: string) {
     const key = await this.environmentService.updateSecretKey(id);
 
     return { key };
@@ -104,9 +96,23 @@ export class EnvironmentController {
 
   @Patch('/:id/public')
   @ThonLabsOnly()
-  async updatePublicKey(@Req() req, @Param('id') id: string) {
+  @UserBelongsTo('environment')
+  async updatePublicKey(@Param('id') id: string) {
     const key = await this.environmentService.updatePublicKey(id);
 
     return { key };
+  }
+
+  @Post('/')
+  @ThonLabsOnly()
+  @SchemaValidator(createEnvironmentValidator)
+  async create(@Body() payload) {
+    const environment = await this.environmentService.create(payload);
+
+    return {
+      id: environment.data.id,
+      name: environment.data.name,
+      appURL: environment.data.appURL,
+    };
   }
 }

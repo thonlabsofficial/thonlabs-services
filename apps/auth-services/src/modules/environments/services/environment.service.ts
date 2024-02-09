@@ -333,8 +333,25 @@ export class EnvironmentService {
     return { data: environment };
   }
 
-  async fetchByUserId(
-    userId: string,
+  async fetch(): Promise<
+    DataReturn<{ id: string; name: string; active: boolean; appURL: string }[]>
+  > {
+    const environments = await this.databaseService.environment.findMany({
+      select: {
+        id: true,
+        name: true,
+        active: true,
+        appURL: true,
+      },
+    });
+
+    return {
+      data: environments,
+    };
+  }
+
+  async fetchByProjectId(
+    projectId: string,
   ): Promise<
     DataReturn<{ id: string; name: string; active: boolean; appURL: string }[]>
   > {
@@ -346,6 +363,22 @@ export class EnvironmentService {
         appURL: true,
       },
       where: {
+        projectId,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    return {
+      data: environments,
+    };
+  }
+
+  async userBelongsTo(userId: string, environmentId: string) {
+    const count = await this.databaseService.environment.count({
+      where: {
+        id: environmentId,
         users: {
           some: {
             id: userId,
@@ -354,8 +387,6 @@ export class EnvironmentService {
       },
     });
 
-    return {
-      data: environments,
-    };
+    return count > 0;
   }
 }

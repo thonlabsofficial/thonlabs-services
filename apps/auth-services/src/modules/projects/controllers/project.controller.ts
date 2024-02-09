@@ -14,12 +14,18 @@ import {
 } from '@/auth/modules/projects/validators/project-validators';
 import { ProjectService } from '../services/project.service';
 import { exceptionsMapper } from '@/utils/enums/errors-metadata';
+import { EnvironmentService } from '../../environments/services/environment.service';
+import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 
 @Controller('projects')
 export class ProjectController {
-  constructor(private projectService: ProjectService) {}
+  constructor(
+    private projectService: ProjectService,
+    private environmentService: EnvironmentService,
+  ) {}
 
   @Post('/')
+  @ThonLabsOnly()
   @SchemaValidator(createProjectValidator)
   async create(@Body() payload, @Request() req) {
     const userId = req.authUser.userId;
@@ -37,6 +43,7 @@ export class ProjectController {
   }
 
   @Get('/')
+  @ThonLabsOnly()
   async fetch(@Request() req) {
     const userId = req.authUser.userId;
 
@@ -46,6 +53,7 @@ export class ProjectController {
   }
 
   @Get('/:id')
+  @ThonLabsOnly()
   async get(@Param('id') id: string, @Request() req) {
     const userId = req.authUser.userId;
 
@@ -55,6 +63,7 @@ export class ProjectController {
   }
 
   @Delete('/:id')
+  @ThonLabsOnly()
   @SchemaValidator(deleteProjectValidator, ['params'])
   async delete(@Param('id') id: string, @Request() req) {
     const userId = req.authUser.userId;
@@ -64,5 +73,13 @@ export class ProjectController {
     if (result?.error) {
       throw new exceptionsMapper[result.statusCode](result.error);
     }
+  }
+
+  @Get('/:id/environments')
+  @ThonLabsOnly()
+  async fetchEnvironments(@Param('id') id: string) {
+    const { data: items } = await this.environmentService.fetchByProjectId(id);
+
+    return { items };
   }
 }
