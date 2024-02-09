@@ -29,7 +29,7 @@ import {
 import { AuthService } from '@/auth/modules/auth/services/auth.service';
 import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
-import { EmailTemplates, TokenTypes } from '@prisma/client';
+import { EmailTemplates, Environment, TokenTypes } from '@prisma/client';
 import { NeedsPublicKey } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
 import decodeSession from '@/utils/services/decode-session';
 import {
@@ -129,6 +129,13 @@ export class AuthController {
         environmentId: environment.id,
         data: emailData,
       });
+
+      const { data: tokens } = await this.tokenStorageService.createAuthTokens(
+        user,
+        environment as Environment,
+      );
+
+      return tokens;
     } else {
       // Wait the email sending
       await this.emailService.send({
@@ -138,8 +145,6 @@ export class AuthController {
         data: emailData,
       });
     }
-
-    return user;
   }
 
   @Post('/login')
@@ -258,6 +263,7 @@ export class AuthController {
   }
 
   @PublicRoute()
+  @NeedsPublicKey()
   @Post('/reset-password')
   @SchemaValidator(requestResetPasswordValidator)
   public async requestResetPassword(@Req() req, @Body() payload) {
@@ -308,6 +314,7 @@ export class AuthController {
   }
 
   @PublicRoute()
+  @NeedsPublicKey()
   @HttpCode(StatusCodes.OK)
   @Get('/reset-password/:token')
   public async validateTokenResetPassword(
@@ -321,8 +328,10 @@ export class AuthController {
       throw new UnauthorizedException(ErrorMessages.Unauthorized);
     }
 
-    const tokenValidation =
-      await this.authService.validateResetPasswordToken(token);
+    const tokenValidation = await this.authService.validateUserTokenExpiration(
+      token,
+      TokenTypes.ResetPassword,
+    );
 
     if (tokenValidation.error) {
       throw new exceptionsMapper[tokenValidation.statusCode](
@@ -333,6 +342,7 @@ export class AuthController {
 
   @PublicRoute()
   @HttpCode(StatusCodes.OK)
+  @NeedsPublicKey()
   @Patch('/update-password/:token')
   @SchemaValidator(newPasswordValidator)
   public async updateTokenResetPassword(
@@ -347,16 +357,16 @@ export class AuthController {
       throw new UnauthorizedException(ErrorMessages.Unauthorized);
     }
 
-    const tokenValidation =
-      await this.authService.validateResetPasswordToken(token);
+    const tokenValidation = await this.authService.validateUserTokenExpiration(
+      token,
+      TokenTypes.ResetPassword,
+    );
 
     if (tokenValidation.statusCode) {
       throw new exceptionsMapper[tokenValidation.statusCode](
         tokenValidation.error,
       );
     }
-
-    console.log(tokenValidation);
 
     await Promise.all([
       this.tokenStorageService.delete(token),
@@ -366,5 +376,34 @@ export class AuthController {
         payload.password,
       ),
     ]);
+  }
+
+  @PublicRoute()
+  @HttpCode(StatusCodes.OK)
+  @NeedsPublicKey()
+  @Get('/confirm-email/:token')
+  public async confirmEmail(@Req() req, @Param('token') token: string) {
+    const { data: environment } =
+      await this.environmentService.getByPublicKeyFromRequest(req);
+
+    if (!environment) {
+      throw new UnauthorizedException(ErrorMessages.Unauthorized);
+    }
+
+    const tokenValidation = await this.authService.validateUserTokenExpiration(
+      token,
+      TokenTypes.ConfirmEmail,
+    );
+
+    if (tokenValidation.statusCode) {
+      throw new exceptionsMapper[tokenValidation.statusCode](
+        tokenValidation.error,
+      );
+    }
+
+    await this.userService.updateEmailConfirmation(
+      tokenValidation.data.relationId,
+      environment.id,
+    );
   }
 }

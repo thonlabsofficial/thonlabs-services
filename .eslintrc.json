@@ -9,7 +9,9 @@
     {
       "files": ["*.ts", "*.tsx"],
       "extends": ["plugin:@nx/typescript"],
-      "rules": {}
+      "rules": {
+        "no-console": "warn"
+      }
     },
     {
       "files": ["*.js", "*.jsx"],

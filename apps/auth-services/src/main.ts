@@ -20,7 +20,7 @@ async function bootstrap() {
     origin:
       process.env.NODE_ENV === 'development'
         ? ['*']
-        : ['https://portal.thonlabs.io'],
+        : ['https://app.thonlabs.io'],
   });
 
   await app.listen(port);

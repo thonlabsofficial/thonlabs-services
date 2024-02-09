@@ -98,6 +98,7 @@ export class EnvironmentService {
         tokenExpiration: true,
         refreshTokenExpiration: true,
         appURL: true,
+        authKey: true,
         createdAt: true,
         updatedAt: true,
         projectId: true,
@@ -156,6 +157,90 @@ export class EnvironmentService {
     );
 
     return secretKey;
+  }
+
+  async updatePublicKey(environmentId: string) {
+    const iv = Crypt.generateIV(environmentId);
+    let plainPublicKey = rand(3);
+    let publicKey = await Crypt.encrypt(
+      plainPublicKey,
+      iv,
+      process.env.ENCODE_SECRET,
+    );
+
+    const keysExists = await this.databaseService.environment.findFirst({
+      where: {
+        OR: [
+          {
+            publicKey: {
+              equals: publicKey,
+            },
+          },
+        ],
+      },
+    });
+    if (keysExists) {
+      this.logger.warn('Public key already exists, generating new...');
+      plainPublicKey = rand(3);
+      publicKey = await Crypt.encrypt(
+        plainPublicKey,
+        iv,
+        process.env.ENCODE_SECRET,
+      );
+    }
+
+    await this.databaseService.environment.update({
+      where: {
+        id: environmentId,
+      },
+      data: {
+        publicKey,
+      },
+    });
+
+    return { publicKey: plainPublicKey };
+  }
+
+  async updateSecretKey(environmentId: string) {
+    const iv = Crypt.generateIV(environmentId);
+    let plainSecretKey = `tl_${rand(5)}`;
+    let secretKey = await Crypt.encrypt(
+      plainSecretKey,
+      iv,
+      process.env.ENCODE_SECRET_KEYS_SECRET,
+    );
+
+    const keysExists = await this.databaseService.environment.findFirst({
+      where: {
+        OR: [
+          {
+            secretKey: {
+              equals: secretKey,
+            },
+          },
+        ],
+      },
+    });
+    if (keysExists) {
+      this.logger.warn('Secret key already exists, generating new...');
+      plainSecretKey = `tl_${rand(5)}`;
+      secretKey = await Crypt.encrypt(
+        plainSecretKey,
+        iv,
+        process.env.ENCODE_SECRET_KEYS_SECRET,
+      );
+    }
+
+    await this.databaseService.environment.update({
+      where: {
+        id: environmentId,
+      },
+      data: {
+        secretKey,
+      },
+    });
+
+    return { secretKey: plainSecretKey };
   }
 
   async create(payload: {

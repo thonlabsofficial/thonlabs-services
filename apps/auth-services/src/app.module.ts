@@ -13,6 +13,7 @@ import { EnvironmentModule } from '@/auth/modules/environments/environment.modul
 import { EmailModule } from '@/auth/modules/emails/email.module';
 import { TokenStorageModule } from '@/auth/modules/token-storage/token-storage.module';
 import { NeedsPublicKeyGuard } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
+import { ThonLabsOnlyGuard } from './modules/shared/decorators/thon-labs-only.decorator';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { NeedsPublicKeyGuard } from '@/auth/modules/shared/decorators/needs-publ
       provide: APP_GUARD,
       useClass: SchemaValidatorGuard,
     },
+    { provide: APP_GUARD, useClass: ThonLabsOnlyGuard },
   ],
 })
 export class AppModule {}

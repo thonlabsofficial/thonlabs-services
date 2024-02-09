@@ -3,17 +3,17 @@ import {
   Get,
   Headers,
   Param,
+  Patch,
   Post,
   Req,
   UnauthorizedException,
 } from '@nestjs/common';
-import { PublicRoute } from '../../auth/decorators/auth-validation.decorator';
 import { EnvironmentService } from '../services/environment.service';
 import { EmailTemplateService } from '../../emails/services/email-template.service';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { StatusCodes, exceptionsMapper } from '@/utils/enums/errors-metadata';
-import { NeedsPublicKey } from '../../shared/decorators/needs-public-key.decorator';
 import decodeSession from '@/utils/services/decode-session';
+import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 
 @Controller('environments')
 export class EnvironmentController {
@@ -23,7 +23,7 @@ export class EnvironmentController {
   ) {}
 
   @Get('/owner/my-keys')
-  @PublicRoute()
+  @ThonLabsOnly()
   public async signUpOwner(@Headers() headers) {
     if (headers['thon-labs-staff-api-key'] !== process.env.API_KEY) {
       throw new UnauthorizedException();
@@ -39,7 +39,7 @@ export class EnvironmentController {
   }
 
   @Post('/:id/create-templates')
-  @PublicRoute()
+  @ThonLabsOnly()
   async createDefaultTemplates(
     @Param('id') environmentId: string,
     @Headers() headers,
@@ -59,7 +59,7 @@ export class EnvironmentController {
   }
 
   @Get('/')
-  @NeedsPublicKey()
+  @ThonLabsOnly()
   async fetch(@Req() req) {
     const { sub } = decodeSession(req);
 
@@ -72,14 +72,41 @@ export class EnvironmentController {
   }
 
   @Get('/:id')
-  @NeedsPublicKey()
+  @ThonLabsOnly()
   async getById(@Param('id') id: string) {
-    const { data: environment } = await this.environmentService.getById(id);
+    const [{ data: environment }, publicKey] = await Promise.all([
+      this.environmentService.getById(id),
+      this.environmentService.getPublicKey(id),
+    ]);
 
     if (!environment) {
       throw new exceptionsMapper[StatusCodes.NotFound]();
     }
 
-    return environment;
+    return { ...environment, publicKey };
+  }
+
+  @Get('/:id/secret')
+  @ThonLabsOnly()
+  async getSecretKey(@Req() req, @Param('id') id: string) {
+    const secretKey = await this.environmentService.getSecretKey(id);
+
+    return { secretKey };
+  }
+
+  @Patch('/:id/secret')
+  @ThonLabsOnly()
+  async updateSecretKey(@Req() req, @Param('id') id: string) {
+    const key = await this.environmentService.updateSecretKey(id);
+
+    return { key };
+  }
+
+  @Patch('/:id/public')
+  @ThonLabsOnly()
+  async updatePublicKey(@Req() req, @Param('id') id: string) {
+    const key = await this.environmentService.updatePublicKey(id);
+
+    return { key };
   }
 }

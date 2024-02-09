@@ -45,12 +45,10 @@ export class AuthService {
     const user = await this.userService.getByEmail(email, environmentId);
 
     if (!user) {
-      this.logger.warn(`Email not found for user ${user.id}`);
       return error;
     }
 
     if (!user.password) {
-      this.logger.warn(`Password not found for user ${user.id}`);
       return error;
     }
 
@@ -74,6 +72,8 @@ export class AuthService {
       );
 
       this.logger.log('Created auth tokens');
+
+      this.userService.updateLastLogin(user.id, user.environment.id);
 
       return { data };
     } catch (e) {
@@ -201,6 +201,8 @@ export class AuthService {
       data.relationId,
     );
 
+    this.userService.updateLastLogin(user.id, user.environment.id);
+
     return tokens;
   }
 
@@ -274,13 +276,11 @@ export class AuthService {
     await this.tokenStorageService.deleteAllByRelation(user.id);
   }
 
-  async validateResetPasswordToken(
+  async validateUserTokenExpiration(
     token: string,
+    type: TokenTypes,
   ): Promise<DataReturn<TokenStorage>> {
-    const tokenData = await this.tokenStorageService.getByToken(
-      token,
-      TokenTypes.ResetPassword,
-    );
+    const tokenData = await this.tokenStorageService.getByToken(token, type);
 
     if (!tokenData) {
       return {

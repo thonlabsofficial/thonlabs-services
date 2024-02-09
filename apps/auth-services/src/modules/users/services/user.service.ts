@@ -9,6 +9,7 @@ import {
 } from '@/utils/enums/errors-metadata';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import Crypt from '@/utils/services/crypt';
+import { tlEnvironmentIds } from '@/utils/metadata/thon-labs-metadata';
 
 @Injectable()
 export class UserService {
@@ -131,7 +132,7 @@ export class UserService {
           email: payload.email,
           fullName: payload.fullName,
           password,
-          thonLabsUser: false,
+          thonLabsUser: tlEnvironmentIds.includes(payload.environmentId),
           environmentId: payload.environmentId,
         },
       });
@@ -178,6 +179,34 @@ export class UserService {
     });
 
     this.logger.log(`Password updated for ${userId}`);
+  }
+
+  async updateEmailConfirmation(userId: string, environmentId: string) {
+    await this.databaseService.user.update({
+      where: {
+        id: userId,
+        environmentId,
+      },
+      data: {
+        emailConfirmed: true,
+      },
+    });
+
+    this.logger.log(`Email confirmed for ${userId}`);
+  }
+
+  async updateLastLogin(userId: string, environmentId: string) {
+    await this.databaseService.user.update({
+      where: {
+        id: userId,
+        environmentId,
+      },
+      data: {
+        lastSignIn: new Date(),
+      },
+    });
+
+    this.logger.log(`Last Login updated for ${userId}`);
   }
 
   private deletePrivateData(user: User) {
