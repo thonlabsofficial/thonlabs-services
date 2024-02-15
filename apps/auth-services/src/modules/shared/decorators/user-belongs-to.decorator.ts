@@ -52,6 +52,11 @@ export class UserBelongsToGuard implements CanActivate {
     }
 
     if (decoratorProps.type === 'environment') {
+      if (req.params.id !== session.environmentId) {
+        res.status(StatusCodes.Unauthorized).send('');
+        return false;
+      }
+
       const userBelongsTo = await this.environmentService.userBelongsTo(
         session.sub,
         session.environmentId,
@@ -60,10 +65,7 @@ export class UserBelongsToGuard implements CanActivate {
       return userBelongsTo;
     }
 
-    res.status(StatusCodes.Unauthorized).json({
-      code: ErrorCodes.Unauthorized,
-      error: ErrorMessages.Unauthorized,
-    });
+    res.status(StatusCodes.Unauthorized).send('');
     return false;
   }
 }

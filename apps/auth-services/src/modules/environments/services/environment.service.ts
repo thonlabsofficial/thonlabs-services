@@ -12,6 +12,7 @@ import normalizeString from '@/utils/services/normalize-string';
 import rand from '@/utils/services/rand';
 import prepareString from '@/utils/services/prepare-string';
 import Crypt from '@/utils/services/crypt';
+import ms from 'ms';
 
 @Injectable()
 export class EnvironmentService {
@@ -388,5 +389,39 @@ export class EnvironmentService {
     });
 
     return count > 0;
+  }
+
+  async updateTokenSettings(
+    environmentId: string,
+    payload: { tokenExpiration: string; refreshTokenExpiration?: string },
+  ): Promise<DataReturn> {
+    if (ms(payload.tokenExpiration) < 300000) {
+      return {
+        statusCode: StatusCodes.BadRequest,
+        error: 'Token expiration should have at least 5 minutes',
+      };
+    }
+
+    if (
+      payload.refreshTokenExpiration &&
+      ms(payload.refreshTokenExpiration) < 1800000
+    ) {
+      return {
+        statusCode: StatusCodes.BadRequest,
+        error: 'Refresh token expiration should have at least 30 minutes',
+      };
+    }
+
+    await this.databaseService.environment.update({
+      where: {
+        id: environmentId,
+      },
+      data: {
+        tokenExpiration: payload.tokenExpiration,
+        refreshTokenExpiration: payload.refreshTokenExpiration,
+      },
+    });
+
+    this.logger.log(`Updated token settings for ${environmentId}`);
   }
 }

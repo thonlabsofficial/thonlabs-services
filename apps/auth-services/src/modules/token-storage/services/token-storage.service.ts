@@ -92,7 +92,8 @@ export class TokenStorageService {
         relationId,
         type,
         token,
-        expires: new Date(new Date().getTime() + ms(expiresIn)),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expires: new Date(new Date().getTime() + ms(expiresIn as any)),
       },
     });
 

@@ -15,7 +15,10 @@ import { StatusCodes, exceptionsMapper } from '@/utils/enums/errors-metadata';
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 import { UserBelongsTo } from '../../shared/decorators/user-belongs-to.decorator';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
-import { createEnvironmentValidator } from '../validators/environment-validators';
+import {
+  createEnvironmentValidator,
+  updateTokenSettingsValidator,
+} from '../validators/environment-validators';
 
 @Controller('environments')
 export class EnvironmentController {
@@ -114,5 +117,20 @@ export class EnvironmentController {
       name: environment.data.name,
       appURL: environment.data.appURL,
     };
+  }
+
+  @Patch('/:id/token-settings')
+  @ThonLabsOnly()
+  @UserBelongsTo('environment')
+  @SchemaValidator(updateTokenSettingsValidator)
+  async updateTokenSettings(@Param('id') id: string, @Body() payload) {
+    const result = await this.environmentService.updateTokenSettings(
+      id,
+      payload,
+    );
+
+    if (result?.error) {
+      throw new exceptionsMapper[result.statusCode](result.error);
+    }
   }
 }

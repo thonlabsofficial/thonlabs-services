@@ -5,3 +5,8 @@ export const createEnvironmentValidator = z.object({
   appURL: z.string().url(),
   projectId: z.string(),
 });
+
+export const updateTokenSettingsValidator = z.object({
+  tokenExpiration: z.string(),
+  refreshTokenExpiration: z.string().optional().nullable(),
+});
