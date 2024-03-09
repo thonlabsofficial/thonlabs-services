@@ -414,5 +414,7 @@ export class AuthController {
       tokenValidation.data.relationId,
       environment.id,
     );
+
+    await this.tokenStorageService.delete(token);
   }
 }
