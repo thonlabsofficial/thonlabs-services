@@ -13,6 +13,7 @@ import rand from '@/utils/services/rand';
 import prepareString from '@/utils/services/prepare-string';
 import Crypt from '@/utils/services/crypt';
 import ms from 'ms';
+import { EmailTemplateService } from '../../emails/services/email-template.service';
 
 @Injectable()
 export class EnvironmentService {
@@ -22,6 +23,7 @@ export class EnvironmentService {
     private databaseService: DatabaseService,
     @Inject(forwardRef(() => ProjectService))
     private projectService: ProjectService,
+    private emailTemplateService: EmailTemplateService,
   ) {}
 
   async getById(id: string): Promise<DataReturn<Environment>> {
@@ -41,6 +43,25 @@ export class EnvironmentService {
     });
 
     return { data: environment as Environment };
+  }
+
+  async belongsToUser(
+    id: string,
+    userId: string,
+  ): Promise<DataReturn<boolean>> {
+    const environment = await this.databaseService.environment.count({
+      where: { id, project: { userOwnerId: userId } },
+    });
+
+    const belongsToUser = environment > 0;
+
+    if (!belongsToUser) {
+      return {
+        statusCode: StatusCodes.NotFound,
+      };
+    }
+
+    return { data: belongsToUser };
   }
 
   async getBySecretKey(
@@ -249,10 +270,12 @@ export class EnvironmentService {
     projectId: string;
     appURL: string;
   }): Promise<DataReturn<Environment>> {
-    const projectExists = await this.projectService.getById(payload.projectId);
+    const { data: projectExists } = await this.projectService.getById(
+      payload.projectId,
+    );
 
     if (!projectExists) {
-      this.logger.warn('Project not found', payload.projectId);
+      this.logger.error(`Project ${payload.projectId} not found`);
 
       return {
         statusCode: StatusCodes.NotFound,
@@ -331,6 +354,9 @@ export class EnvironmentService {
       environment.id,
     );
 
+    // Create email templates for the environment above
+    await this.emailTemplateService.createDefaultTemplates(environment.id);
+
     return { data: environment };
   }
 
@@ -353,6 +379,7 @@ export class EnvironmentService {
 
   async fetchByProjectId(
     projectId: string,
+    userOwnerId: string,
   ): Promise<
     DataReturn<{ id: string; name: string; active: boolean; appURL: string }[]>
   > {
@@ -365,6 +392,9 @@ export class EnvironmentService {
       },
       where: {
         projectId,
+        project: {
+          userOwnerId,
+        },
       },
       orderBy: {
         createdAt: 'asc',
@@ -383,6 +413,7 @@ export class EnvironmentService {
         users: {
           some: {
             id: userId,
+            environmentId,
           },
         },
       },
@@ -423,5 +454,21 @@ export class EnvironmentService {
     });
 
     this.logger.log(`Updated token settings for ${environmentId}`);
+  }
+
+  async updateGeneralSettings(
+    environmentId: string,
+    payload: { name: string },
+  ) {
+    await this.databaseService.environment.update({
+      where: {
+        id: environmentId,
+      },
+      data: {
+        name: payload.name,
+      },
+    });
+
+    this.logger.log(`Updated general settings for ${environmentId}`);
   }
 }

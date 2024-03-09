@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Req,
   Request,
 } from '@nestjs/common';
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
@@ -16,6 +17,8 @@ import { ProjectService } from '../services/project.service';
 import { exceptionsMapper } from '@/utils/enums/errors-metadata';
 import { EnvironmentService } from '../../environments/services/environment.service';
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
+import decodeSession from '@/utils/services/decode-session';
+import { UserOwnsProject } from '../../shared/decorators/user-owns-project.decorator';
 
 @Controller('projects')
 export class ProjectController {
@@ -54,6 +57,7 @@ export class ProjectController {
 
   @Get('/:id')
   @ThonLabsOnly()
+  @UserOwnsProject()
   async get(@Param('id') id: string, @Request() req) {
     const userId = req.authUser.userId;
 
@@ -64,6 +68,7 @@ export class ProjectController {
 
   @Delete('/:id')
   @ThonLabsOnly()
+  @UserOwnsProject()
   @SchemaValidator(deleteProjectValidator, ['params'])
   async delete(@Param('id') id: string, @Request() req) {
     const userId = req.authUser.userId;
@@ -77,8 +82,14 @@ export class ProjectController {
 
   @Get('/:id/environments')
   @ThonLabsOnly()
-  async fetchEnvironments(@Param('id') id: string) {
-    const { data: items } = await this.environmentService.fetchByProjectId(id);
+  @UserOwnsProject()
+  async fetchEnvironments(@Param('id') id: string, @Req() req) {
+    const { sub } = decodeSession(req);
+
+    const { data: items } = await this.environmentService.fetchByProjectId(
+      id,
+      sub,
+    );
 
     return { items };
   }

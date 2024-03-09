@@ -9,7 +9,6 @@ import {
 } from '@/utils/enums/errors-metadata';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import Crypt from '@/utils/services/crypt';
-import { tlEnvironmentIds } from '@/utils/metadata/thon-labs-metadata';
 
 @Injectable()
 export class UserService {
@@ -62,7 +61,7 @@ export class UserService {
   }
 
   async createOwner(payload: { password: string }): Promise<DataReturn<User>> {
-    const owner = await this.getOurByEmail('gustavo@gsales.io');
+    const owner = await this.getOurByEmail('guscsales@gmail.com');
 
     if (owner) {
       this.logger.warn('Owner already exists');
@@ -73,7 +72,7 @@ export class UserService {
 
     const user = await this.databaseService.user.create({
       data: {
-        email: 'gustavo@gsales.io',
+        email: 'guscsales@gmail.com',
         fullName: 'Gustavo Owner',
         password,
         thonLabsUser: true,
@@ -132,7 +131,7 @@ export class UserService {
           email: payload.email,
           fullName: payload.fullName,
           password,
-          thonLabsUser: tlEnvironmentIds.includes(payload.environmentId),
+          thonLabsUser: false,
           environmentId: payload.environmentId,
         },
       });
@@ -207,6 +206,51 @@ export class UserService {
     });
 
     this.logger.log(`Last Login updated for ${userId}`);
+  }
+
+  async setAsThonLabsUser(userId: string) {
+    await this.databaseService.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        thonLabsUser: true,
+      },
+    });
+  }
+
+  async ownsEnvironment(userId: string, environmentId: string) {
+    const count = await this.databaseService.user.count({
+      where: {
+        id: userId,
+        projects: {
+          some: {
+            environments: {
+              some: {
+                id: environmentId,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return count > 0;
+  }
+
+  async ownsProject(userId: string, projectId: string) {
+    const count = await this.databaseService.user.count({
+      where: {
+        id: userId,
+        projects: {
+          some: {
+            id: projectId,
+          },
+        },
+      },
+    });
+
+    return count > 0;
   }
 
   private deletePrivateData(user: User) {

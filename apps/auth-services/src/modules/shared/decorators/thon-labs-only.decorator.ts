@@ -7,6 +7,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -20,6 +21,8 @@ export const ThonLabsOnly = () =>
 
 @Injectable()
 export class ThonLabsOnlyGuard implements CanActivate {
+  private readonly logger = new Logger(ThonLabsOnlyGuard.name);
+
   constructor(
     private reflector: Reflector,
     private environmentService: EnvironmentService,
@@ -42,6 +45,7 @@ export class ThonLabsOnlyGuard implements CanActivate {
     const session = decodeSession(req);
 
     if (!session.thonLabsUser) {
+      this.logger.log(`User ${session.sub} is not a Thon Labs user`);
       res.status(StatusCodes.Unauthorized).json({
         code: ErrorCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,

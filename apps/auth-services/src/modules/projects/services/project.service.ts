@@ -12,7 +12,6 @@ import {
   StatusCodes,
 } from '@/utils/enums/errors-metadata';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
-import { EmailTemplateService } from '../../emails/services/email-template.service';
 
 @Injectable()
 export class ProjectService {
@@ -24,7 +23,6 @@ export class ProjectService {
     private userService: UserService,
     @Inject(forwardRef(() => EnvironmentService))
     private environmentsService: EnvironmentService,
-    private emailTemplateService: EmailTemplateService,
   ) {}
 
   async getById(id: string): Promise<DataReturn<Project>> {
@@ -113,9 +111,6 @@ export class ProjectService {
       projectId: project.id,
       appURL: payload.appURL,
     });
-
-    // Create email templates for the environment above
-    await this.emailTemplateService.createDefaultTemplates(project.id);
 
     return { data: { project, environment } };
   }

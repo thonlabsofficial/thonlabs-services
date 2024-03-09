@@ -14,7 +14,8 @@ import { EmailModule } from '@/auth/modules/emails/email.module';
 import { TokenStorageModule } from '@/auth/modules/token-storage/token-storage.module';
 import { NeedsPublicKeyGuard } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
 import { ThonLabsOnlyGuard } from './modules/shared/decorators/thon-labs-only.decorator';
-import { UserBelongsToGuard } from './modules/shared/decorators/user-belongs-to.decorator';
+import { UserOwnsEnvGuard } from './modules/shared/decorators/user-owns-env.decorator';
+import { UserOwnsProjectGuard } from './modules/shared/decorators/user-owns-project.decorator';
 
 @Module({
   imports: [
@@ -53,7 +54,8 @@ import { UserBelongsToGuard } from './modules/shared/decorators/user-belongs-to.
       useClass: SchemaValidatorGuard,
     },
     { provide: APP_GUARD, useClass: ThonLabsOnlyGuard },
-    { provide: APP_GUARD, useClass: UserBelongsToGuard },
+    { provide: APP_GUARD, useClass: UserOwnsEnvGuard },
+    { provide: APP_GUARD, useClass: UserOwnsProjectGuard },
   ],
 })
 export class AppModule {}

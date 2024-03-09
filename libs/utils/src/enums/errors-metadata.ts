@@ -37,6 +37,7 @@ export enum ErrorMessages {
   InvalidEmail = 'Invalid Email',
   RequiredField = 'This field is required',
   Unauthorized = 'Unauthorized access',
+  Forbidden = 'Forbidden access',
   InvalidCredentials = 'Invalid credentials',
   InvalidToken = 'Invalid Token',
   InternalError = 'An internal error ocurred, try again',

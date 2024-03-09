@@ -10,3 +10,7 @@ export const updateTokenSettingsValidator = z.object({
   tokenExpiration: z.string(),
   refreshTokenExpiration: z.string().optional().nullable(),
 });
+
+export const updateGeneralSettingsValidator = z.object({
+  name: z.string(),
+});

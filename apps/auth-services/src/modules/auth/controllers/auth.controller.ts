@@ -73,7 +73,11 @@ export class AuthController {
 
     await this.userService.setEnvironment(user.id, environment.id);
 
-    return { user, project, environment };
+    const publicKey = await this.environmentService.getPublicKey(
+      environment.id,
+    );
+
+    return { user, project, ...{ ...environment, publicKey } };
   }
 
   @PublicRoute()
@@ -92,6 +96,11 @@ export class AuthController {
       ...payload,
       environmentId: environment.id,
     });
+
+    if (environment.projectId.startsWith('prj-thon-labs-')) {
+      await this.userService.setAsThonLabsUser(user.id);
+      user.thonLabsUser = true;
+    }
 
     if (userError.error) {
       throw new exceptionsMapper[userError.statusCode](userError.error);

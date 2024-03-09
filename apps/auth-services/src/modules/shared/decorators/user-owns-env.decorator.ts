@@ -7,24 +7,25 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { EnvironmentService } from '../../environments/services/environment.service';
 import decodeSession from '@/utils/services/decode-session';
+import { UserService } from '../../users/services/user.service';
 
-type ValidatorTypes = 'environment';
+const DECORATOR_KEY = 'UserOwnsEnv';
 
-const DECORATOR_KEY = 'userBelongsTo';
-
-export const UserBelongsTo = (type: ValidatorTypes) =>
-  SetMetadata(DECORATOR_KEY, { type });
+export const UserOwnsEnv = (param: string = 'id') =>
+  SetMetadata(DECORATOR_KEY, { param });
 
 @Injectable()
-export class UserBelongsToGuard implements CanActivate {
+export class UserOwnsEnvGuard implements CanActivate {
+  private readonly logger = new Logger(UserOwnsEnvGuard.name);
+
   constructor(
     private reflector: Reflector,
-    private environmentService: EnvironmentService,
+    private userService: UserService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -43,7 +44,10 @@ export class UserBelongsToGuard implements CanActivate {
 
     const session = decodeSession(req);
 
-    if (!session.environmentId) {
+    const envFromParam = req?.params?.[decoratorProps?.param];
+
+    if (!envFromParam) {
+      this.logger.error(`Environment parameter is missing`);
       res.status(StatusCodes.Unauthorized).json({
         code: ErrorCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
@@ -51,21 +55,17 @@ export class UserBelongsToGuard implements CanActivate {
       return false;
     }
 
-    if (decoratorProps.type === 'environment') {
-      if (req.params.id !== session.environmentId) {
-        res.status(StatusCodes.Unauthorized).send('');
-        return false;
-      }
+    const userOwnsEnvironment = await this.userService.ownsEnvironment(
+      session.sub,
+      envFromParam,
+    );
 
-      const userBelongsTo = await this.environmentService.userBelongsTo(
-        session.sub,
-        session.environmentId,
+    if (!userOwnsEnvironment) {
+      this.logger.error(
+        `User ${session.sub} not allowed for Environment ${envFromParam}`,
       );
-
-      return userBelongsTo;
     }
 
-    res.status(StatusCodes.Unauthorized).send('');
-    return false;
+    return userOwnsEnvironment;
   }
 }
