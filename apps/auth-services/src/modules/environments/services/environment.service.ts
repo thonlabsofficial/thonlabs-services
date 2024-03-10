@@ -297,9 +297,9 @@ export class EnvironmentService {
     const iv = Crypt.generateIV(id);
 
     let keys = await Promise.all([
-      Crypt.encrypt(rand(3), iv, process.env.ENCODE_SECRET),
-      Crypt.encrypt(`tl_${rand(5)}`, iv, process.env.ENCODE_SECRET_KEYS_SECRET),
-      Crypt.encrypt(`${rand(8)}`, iv, process.env.ENCODE_AUTH_KEYS_SECRET),
+      Crypt.encrypt(rand(3), iv, process.env.ENCODE_SECRET), // Public key
+      Crypt.encrypt(`tl_${rand(5)}`, iv, process.env.ENCODE_SECRET_KEYS_SECRET), // Secret key
+      Crypt.encrypt(`${rand(8)}`, iv, process.env.ENCODE_AUTH_KEYS_SECRET), // Auth key
     ]);
 
     // Again, just to guarantee :)
@@ -472,30 +472,7 @@ export class EnvironmentService {
     this.logger.log(`Updated general settings for ${environmentId}`);
   }
 
-  async delete(environmentId: string): Promise<DataReturn> {
-    const project = await this.databaseService.project.findFirst({
-      where: {
-        environments: {
-          some: {
-            id: environmentId,
-          },
-        },
-      },
-      select: {
-        environments: true,
-      },
-    });
-
-    if (project.environments.length === 1) {
-      const error = 'You need to have at least one environment';
-      this.logger.error(error);
-
-      return {
-        statusCode: StatusCodes.Internal,
-        error,
-      };
-    }
-
+  async delete(environmentId: string) {
     await this.databaseService.environment.delete({
       where: {
         id: environmentId,

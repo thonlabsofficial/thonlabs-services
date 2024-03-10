@@ -162,10 +162,6 @@ export class EnvironmentController {
   @ThonLabsOnly()
   @UserOwnsEnv()
   async delete(@Param('id') id: string) {
-    const result = await this.environmentService.delete(id);
-
-    if (result?.error) {
-      throw new exceptionsMapper[result.statusCode](result.error);
-    }
+    await this.environmentService.delete(id);
   }
 }
