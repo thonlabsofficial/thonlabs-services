@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   Param,
@@ -155,5 +156,16 @@ export class EnvironmentController {
   @SchemaValidator(updateGeneralSettingsValidator)
   async updateGeneralSettings(@Param('id') id: string, @Body() payload) {
     await this.environmentService.updateGeneralSettings(id, payload);
+  }
+
+  @Delete('/:id')
+  @ThonLabsOnly()
+  @UserOwnsEnv()
+  async delete(@Param('id') id: string) {
+    const result = await this.environmentService.delete(id);
+
+    if (result?.error) {
+      throw new exceptionsMapper[result.statusCode](result.error);
+    }
   }
 }

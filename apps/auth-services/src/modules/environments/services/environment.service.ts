@@ -471,4 +471,37 @@ export class EnvironmentService {
 
     this.logger.log(`Updated general settings for ${environmentId}`);
   }
+
+  async delete(environmentId: string): Promise<DataReturn> {
+    const project = await this.databaseService.project.findFirst({
+      where: {
+        environments: {
+          some: {
+            id: environmentId,
+          },
+        },
+      },
+      select: {
+        environments: true,
+      },
+    });
+
+    if (project.environments.length === 1) {
+      const error = 'You need to have at least one environment';
+      this.logger.error(error);
+
+      return {
+        statusCode: StatusCodes.Internal,
+        error,
+      };
+    }
+
+    await this.databaseService.environment.delete({
+      where: {
+        id: environmentId,
+      },
+    });
+
+    this.logger.log(`Environment ${environmentId} deleted`);
+  }
 }
