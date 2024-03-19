@@ -14,6 +14,7 @@ import { UserService } from '@/auth/modules/users/services/user.service';
 import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
 import { ProjectService } from '@/auth/modules/projects/services/project.service';
+import { getFirstName } from '@/utils/services/names-helpers';
 
 interface AuthenticateMethodsReturn {
   token: string;
@@ -144,7 +145,12 @@ export class AuthService {
       to: email,
       emailTemplateType: EmailTemplates.MagicLink,
       environmentId: environment.id,
-      data: { token, appName: project.appName, appURL: environment.appURL },
+      data: {
+        token,
+        appName: project.appName,
+        appURL: environment.appURL,
+        userFirstName: getFirstName(user.fullName),
+      },
     });
   }
 

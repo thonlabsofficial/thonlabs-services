@@ -9,6 +9,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import decodeSession from '@/utils/services/decode-session';
 import { UserService } from '../../users/services/user.service';
+import { ProjectService } from '../../projects/services/project.service';
 
 const DECORATOR_KEY = 'UserOwnsProject';
 
@@ -22,15 +23,13 @@ export class UserOwnsProjectGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private userService: UserService,
+    private projectService: ProjectService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const decoratorProps = this.reflector.get(
-      DECORATOR_KEY,
-      context.getHandler(),
-    );
+    const metadata = this.reflector.get(DECORATOR_KEY, context.getHandler());
 
-    if (!decoratorProps) {
+    if (!metadata) {
       return true;
     }
 
@@ -40,9 +39,9 @@ export class UserOwnsProjectGuard implements CanActivate {
 
     const session = decodeSession(req);
 
-    const projectFromParam = req?.params?.[decoratorProps?.param];
+    const projectId = req?.params?.[metadata?.param];
 
-    if (!projectFromParam) {
+    if (!projectId) {
       this.logger.error(`Project parameter is missing`);
       res.status(StatusCodes.Forbidden).json({
         error: ErrorMessages.Forbidden,
@@ -50,14 +49,24 @@ export class UserOwnsProjectGuard implements CanActivate {
       return false;
     }
 
+    const result = await this.projectService.getById(projectId);
+
+    if (!result?.data) {
+      this.logger.error(`Project not found`);
+      res.status(StatusCodes.NotFound).json({
+        error: ErrorMessages.ProjectNotFound,
+      });
+      return false;
+    }
+
     const userOwnsProject = await this.userService.ownsProject(
       session.sub,
-      projectFromParam,
+      projectId,
     );
 
     if (!userOwnsProject) {
       this.logger.error(
-        `User ${session.sub} not allowed for Project ${projectFromParam}`,
+        `User ${session.sub} not allowed for Project ${projectId}`,
       );
     }
 

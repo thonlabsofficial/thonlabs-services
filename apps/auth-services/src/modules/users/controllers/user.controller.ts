@@ -7,6 +7,7 @@ import {
   Patch,
   Param,
   HttpCode,
+  Get,
 } from '@nestjs/common';
 import { UserService } from '@/auth/modules/users/services/user.service';
 import { SecretKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/secret-key-or-thon-labs-user.decorator';
@@ -19,7 +20,8 @@ import { getFirstName } from '@/utils/services/names-helpers';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
 import { createUserValidator } from '../validators/user-validators';
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
-import { UserOwnsEnv } from '../../shared/decorators/user-owns-env.decorator';
+import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
+import { PublicKeyOrThonLabsOnly } from '../../shared/decorators/public-key-or-thon-labs-user.decorator';
 
 @Controller('users')
 export class UserController {
@@ -33,9 +35,9 @@ export class UserController {
   @Post('/')
   @HttpCode(StatusCodes.Created)
   @SecretKeyOrThonLabsOnly()
-  @UserOwnsEnv({ param: 'tl-env-id', source: 'headers' })
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   @SchemaValidator(createUserValidator)
-  async inviteUser(
+  async create(
     @Req() req,
     @Body() payload,
     @Query('sendInvite') sendInvite: string,
@@ -81,6 +83,21 @@ export class UserController {
     }
 
     return newUser;
+  }
+
+  @Get('/')
+  @PublicKeyOrThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  async fetch(@Req() req) {
+    const environmentId = req.headers['tl-env-id'];
+
+    const items = await this.userService.fetch({
+      environmentId,
+    });
+
+    return {
+      items,
+    };
   }
 
   @Patch(':userId/set-as-thon-labs-user')

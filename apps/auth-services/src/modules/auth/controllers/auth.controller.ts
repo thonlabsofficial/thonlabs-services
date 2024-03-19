@@ -29,7 +29,12 @@ import {
 import { AuthService } from '@/auth/modules/auth/services/auth.service';
 import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
-import { EmailTemplates, Environment, TokenTypes } from '@prisma/client';
+import {
+  AuthProviders,
+  EmailTemplates,
+  Environment,
+  TokenTypes,
+} from '@prisma/client';
 import { NeedsPublicKey } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
 import decodeSession from '@/utils/services/decode-session';
 import {
@@ -169,7 +174,10 @@ export class AuthController {
       throw new UnauthorizedException(envError.error);
     }
 
-    if (payload.password) {
+    if (
+      environment.authProvider === AuthProviders.EmailAndPassword &&
+      payload.password
+    ) {
       const result = await this.authService.authenticateFromEmailAndPassword(
         payload.email,
         payload.password,
@@ -181,7 +189,7 @@ export class AuthController {
       }
 
       return result.data;
-    } else {
+    } else if (environment.authProvider === AuthProviders.MagicLogin) {
       const result = await this.authService.loginOrCreateFromMagicLink({
         email: payload.email,
         environment,
@@ -190,6 +198,10 @@ export class AuthController {
       if (result?.error) {
         throw new exceptionsMapper[result.statusCode](result.error);
       }
+    } else {
+      throw new exceptionsMapper[StatusCodes.Unauthorized](
+        ErrorMessages.InvalidCredentials,
+      );
     }
   }
 

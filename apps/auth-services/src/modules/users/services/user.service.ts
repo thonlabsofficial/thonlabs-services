@@ -292,6 +292,26 @@ export class UserService {
     return count > 0;
   }
 
+  async fetch(params: { environmentId: string }) {
+    const users = await this.databaseService.user.findMany({
+      select: {
+        active: true,
+        createdAt: true,
+        email: true,
+        fullName: true,
+        id: true,
+        lastSignIn: true,
+        profilePicture: true,
+        updatedAt: true,
+      },
+      where: {
+        environmentId: params.environmentId,
+      },
+    });
+
+    return users;
+  }
+
   private deletePrivateData(user: User) {
     delete user.password;
     delete user.thonLabsUser;

@@ -7,7 +7,6 @@ import {
   Param,
   Patch,
   Post,
-  Req,
   UnauthorizedException,
 } from '@nestjs/common';
 import { EnvironmentService } from '../services/environment.service';
@@ -21,8 +20,7 @@ import {
   updateGeneralSettingsValidator,
   updateTokenSettingsValidator,
 } from '../validators/environment-validators';
-import decodeSession from '@/utils/services/decode-session';
-import { UserOwnsEnv } from '../../shared/decorators/user-owns-env.decorator';
+import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 
 @Controller('environments')
 export class EnvironmentController {
@@ -73,16 +71,8 @@ export class EnvironmentController {
 
   @Get('/:id')
   @ThonLabsOnly()
-  async getById(@Param('id') id: string, @Req() req) {
-    // esse projeto pertence ao usuário do token?
-    const { sub } = decodeSession(req);
-
-    const result = await this.environmentService.belongsToUser(id, sub);
-
-    if (result?.statusCode) {
-      throw new exceptionsMapper[result.statusCode]();
-    }
-
+  @HasEnvAccess()
+  async getById(@Param('id') id: string) {
     const [{ data: environment }, publicKey] = await Promise.all([
       this.environmentService.getById(id),
       this.environmentService.getPublicKey(id),
@@ -97,7 +87,7 @@ export class EnvironmentController {
 
   @Get('/:id/secret')
   @ThonLabsOnly()
-  @UserOwnsEnv()
+  @HasEnvAccess()
   async getSecretKey(@Param('id') id: string) {
     const secretKey = await this.environmentService.getSecretKey(id);
 
@@ -106,7 +96,7 @@ export class EnvironmentController {
 
   @Patch('/:id/secret')
   @ThonLabsOnly()
-  @UserOwnsEnv()
+  @HasEnvAccess()
   async updateSecretKey(@Param('id') id: string) {
     const key = await this.environmentService.updateSecretKey(id);
 
@@ -115,7 +105,7 @@ export class EnvironmentController {
 
   @Patch('/:id/public')
   @ThonLabsOnly()
-  @UserOwnsEnv()
+  @HasEnvAccess()
   async updatePublicKey(@Param('id') id: string) {
     const key = await this.environmentService.updatePublicKey(id);
 
@@ -141,7 +131,7 @@ export class EnvironmentController {
 
   @Patch('/:id/token-settings')
   @ThonLabsOnly()
-  @UserOwnsEnv()
+  @HasEnvAccess()
   @SchemaValidator(updateTokenSettingsValidator)
   async updateTokenSettings(@Param('id') id: string, @Body() payload) {
     const result = await this.environmentService.updateTokenSettings(
@@ -156,7 +146,7 @@ export class EnvironmentController {
 
   @Patch('/:id/general-settings')
   @ThonLabsOnly()
-  @UserOwnsEnv()
+  @HasEnvAccess()
   @SchemaValidator(updateGeneralSettingsValidator)
   async updateGeneralSettings(@Param('id') id: string, @Body() payload) {
     await this.environmentService.updateGeneralSettings(id, payload);
@@ -164,7 +154,7 @@ export class EnvironmentController {
 
   @Delete('/:id')
   @ThonLabsOnly()
-  @UserOwnsEnv()
+  @HasEnvAccess()
   async delete(@Param('id') id: string) {
     await this.environmentService.delete(id);
   }

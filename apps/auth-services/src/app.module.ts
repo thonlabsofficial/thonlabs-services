@@ -13,9 +13,10 @@ import { EnvironmentModule } from '@/auth/modules/environments/environment.modul
 import { EmailModule } from '@/auth/modules/emails/email.module';
 import { TokenStorageModule } from '@/auth/modules/token-storage/token-storage.module';
 import { NeedsPublicKeyGuard } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
-import { ThonLabsOnlyGuard } from './modules/shared/decorators/thon-labs-only.decorator';
-import { UserOwnsEnvGuard } from './modules/shared/decorators/user-owns-env.decorator';
-import { UserOwnsProjectGuard } from './modules/shared/decorators/user-owns-project.decorator';
+import { ThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/thon-labs-only.decorator';
+import { HasEnvAccessGuard } from '@/auth/modules/shared/decorators/has-env-access.decorator';
+import { UserOwnsProjectGuard } from '@/auth/modules/shared/decorators/user-owns-project.decorator';
+import { PublicKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
 
 @Module({
   imports: [
@@ -47,10 +48,14 @@ import { UserOwnsProjectGuard } from './modules/shared/decorators/user-owns-proj
     },
     {
       provide: APP_GUARD,
+      useClass: PublicKeyOrThonLabsOnlyGuard,
+    },
+    {
+      provide: APP_GUARD,
       useClass: NeedsPublicKeyGuard,
     },
     { provide: APP_GUARD, useClass: ThonLabsOnlyGuard },
-    { provide: APP_GUARD, useClass: UserOwnsEnvGuard },
+    { provide: APP_GUARD, useClass: HasEnvAccessGuard },
     { provide: APP_GUARD, useClass: UserOwnsProjectGuard },
     {
       provide: APP_GUARD,
