@@ -38,7 +38,7 @@ export class UserController {
   async inviteUser(
     @Req() req,
     @Body() payload,
-    @Query('sendInvite') sendInvite: boolean,
+    @Query('sendInvite') sendInvite: string,
   ) {
     const session = req.session;
     const environmentId = req.headers['tl-env-id'];
@@ -55,7 +55,7 @@ export class UserController {
 
     const newUser = data.data;
 
-    if (sendInvite) {
+    if (sendInvite === 'true') {
       const [environment, inviter, { data: tokenData }] = await Promise.all([
         this.environmentService.getDetailedById(environmentId),
         this.userService.getById(session.id),
