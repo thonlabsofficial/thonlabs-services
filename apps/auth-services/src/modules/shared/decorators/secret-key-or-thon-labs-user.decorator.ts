@@ -1,8 +1,4 @@
-import {
-  ErrorCodes,
-  ErrorMessages,
-  StatusCodes,
-} from '@/utils/enums/errors-metadata';
+import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import {
   CanActivate,
   ExecutionContext,
@@ -58,7 +54,6 @@ export class SecretKeyOrThonLabsOnlyGuard implements CanActivate {
             `Environment ${req.headers['tl-env-id']} not found for secret key`,
           );
           res.status(StatusCodes.Unauthorized).json({
-            code: ErrorCodes.Unauthorized,
             error: ErrorMessages.Unauthorized,
           });
           return false;
@@ -75,7 +70,6 @@ export class SecretKeyOrThonLabsOnlyGuard implements CanActivate {
               `User ${session.sub} is not a Thon Labs user (session)`,
             );
             res.status(StatusCodes.Unauthorized).json({
-              code: ErrorCodes.Unauthorized,
               error: ErrorMessages.Unauthorized,
             });
             return false;
@@ -83,12 +77,19 @@ export class SecretKeyOrThonLabsOnlyGuard implements CanActivate {
 
           const user = await this.userService.getById(session.sub);
 
+          if (!user) {
+            this.logger.error(`User ${session.sub} not found`);
+            res.status(StatusCodes.NotFound).json({
+              error: ErrorMessages.UserNotFound,
+            });
+            return false;
+          }
+
           if (!user.thonLabsUser) {
             this.logger.error(
               `User ${session.sub} is not a Thon Labs user (db)`,
             );
             res.status(StatusCodes.Unauthorized).json({
-              code: ErrorCodes.Unauthorized,
               error: ErrorMessages.Unauthorized,
             });
             return false;
@@ -103,7 +104,6 @@ export class SecretKeyOrThonLabsOnlyGuard implements CanActivate {
       );
 
       res.status(StatusCodes.Unauthorized).json({
-        code: ErrorCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
       });
 
@@ -112,7 +112,6 @@ export class SecretKeyOrThonLabsOnlyGuard implements CanActivate {
       this.logger.log('Invalid Token');
 
       res.status(StatusCodes.Unauthorized).json({
-        code: ErrorCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
       });
 

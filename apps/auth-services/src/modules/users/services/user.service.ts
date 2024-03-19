@@ -61,6 +61,14 @@ export class UserService {
     return data;
   }
 
+  async getByIdAndEnv(id: string, environmentId: string) {
+    const data = await this.databaseService.user.findFirst({
+      where: { id, environmentId },
+    });
+
+    return data;
+  }
+
   async createOwner(payload: { password: string }): Promise<DataReturn<User>> {
     const owner = await this.getOurByEmail('guscsales@gmail.com');
 
@@ -245,6 +253,26 @@ export class UserService {
     this.logger.log(`Last Login updated for ${userId}`);
   }
 
+  async updateGeneralData(
+    userId: string,
+    environmentId: string,
+    payload: { fullName: string },
+  ) {
+    const user = await this.databaseService.user.update({
+      where: {
+        id: userId,
+        environmentId,
+      },
+      data: {
+        fullName: payload.fullName,
+      },
+    });
+
+    this.logger.log(`General data updated for ${userId}`);
+
+    return user;
+  }
+
   async setAsThonLabsUser(userId: string) {
     await this.databaseService.user.update({
       where: {
@@ -310,6 +338,17 @@ export class UserService {
     });
 
     return users;
+  }
+
+  async deleteUser(userId: string, environmentId: string) {
+    await this.databaseService.user.delete({
+      where: {
+        id: userId,
+        environmentId,
+      },
+    });
+
+    this.logger.log(`User ${userId} has been deleted with all relations`);
   }
 
   private deletePrivateData(user: User) {

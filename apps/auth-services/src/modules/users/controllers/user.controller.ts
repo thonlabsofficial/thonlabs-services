@@ -8,10 +8,15 @@ import {
   Param,
   HttpCode,
   Get,
+  Delete,
 } from '@nestjs/common';
 import { UserService } from '@/auth/modules/users/services/user.service';
 import { SecretKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/secret-key-or-thon-labs-user.decorator';
-import { StatusCodes, exceptionsMapper } from '@/utils/enums/errors-metadata';
+import {
+  ErrorMessages,
+  StatusCodes,
+  exceptionsMapper,
+} from '@/utils/enums/errors-metadata';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { EmailTemplates, TokenTypes } from '@prisma/client';
@@ -98,6 +103,32 @@ export class UserController {
     return {
       items,
     };
+  }
+
+  @Get('/:id')
+  @PublicKeyOrThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  async getById(@Req() req, @Param('id') id: string) {
+    const environmentId = req.headers['tl-env-id'];
+
+    const user = await this.userService.getDetailedById(id);
+
+    if (user.environmentId !== environmentId) {
+      throw new exceptionsMapper[StatusCodes.NotFound](
+        ErrorMessages.UserNotFound,
+      );
+    }
+
+    return user;
+  }
+
+  @Delete('/:id')
+  @SecretKeyOrThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  async delete(@Req() req, @Param('id') id: string) {
+    const environmentId = req.headers['tl-env-id'];
+
+    await this.userService.deleteUser(id, environmentId);
   }
 
   @Patch(':userId/set-as-thon-labs-user')
