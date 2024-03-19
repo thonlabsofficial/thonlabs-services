@@ -14,10 +14,20 @@ import { Reflector } from '@nestjs/core';
 import decodeSession from '@/utils/services/decode-session';
 import { UserService } from '../../users/services/user.service';
 
-const DECORATOR_KEY = 'UserOwnsEnv';
+type UserOwnsEnvParams = {
+  param?: string;
+  source?: 'params' | 'headers';
+};
 
-export const UserOwnsEnv = (param: string = 'id') =>
-  SetMetadata(DECORATOR_KEY, { param });
+const METADATA_KEY = 'UserOwnsEnv';
+
+const defaultParams: UserOwnsEnvParams = {
+  param: 'id',
+  source: 'params',
+};
+
+export const UserOwnsEnv = (params: UserOwnsEnvParams = {}) =>
+  SetMetadata(METADATA_KEY, { ...defaultParams, ...params });
 
 @Injectable()
 export class UserOwnsEnvGuard implements CanActivate {
@@ -29,12 +39,9 @@ export class UserOwnsEnvGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const decoratorProps = this.reflector.get(
-      DECORATOR_KEY,
-      context.getHandler(),
-    );
+    const metadata = this.reflector.get(METADATA_KEY, context.getHandler());
 
-    if (!decoratorProps) {
+    if (!metadata) {
       return true;
     }
 
@@ -44,10 +51,13 @@ export class UserOwnsEnvGuard implements CanActivate {
 
     const session = decodeSession(req);
 
-    const envFromParam = req?.params?.[decoratorProps?.param];
+    const { param, source } = metadata;
+    const environmentId = req?.[source]?.[param];
 
-    if (!envFromParam) {
-      this.logger.error(`Environment parameter is missing`);
+    if (!environmentId) {
+      this.logger.error(
+        `Environment ID is missing, Param: ${param}, Source: ${source}`,
+      );
       res.status(StatusCodes.Unauthorized).json({
         code: ErrorCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
@@ -57,12 +67,12 @@ export class UserOwnsEnvGuard implements CanActivate {
 
     const userOwnsEnvironment = await this.userService.ownsEnvironment(
       session.sub,
-      envFromParam,
+      environmentId,
     );
 
     if (!userOwnsEnvironment) {
       this.logger.error(
-        `User ${session.sub} not allowed for Environment ${envFromParam}`,
+        `User ${session.sub} not allowed for Environment ${environmentId}`,
       );
     }
 

@@ -31,7 +31,7 @@ export class ProjectController {
   @ThonLabsOnly()
   @SchemaValidator(createProjectValidator)
   async create(@Body() payload, @Request() req) {
-    const userId = req.authUser.userId;
+    const userId = req.session.id;
 
     const result = await this.projectService.create({
       ...payload,
@@ -48,7 +48,7 @@ export class ProjectController {
   @Get('/')
   @ThonLabsOnly()
   async fetch(@Request() req) {
-    const userId = req.authUser.userId;
+    const userId = req.session.id;
 
     const result = await this.projectService.fetchByOwnerId(userId);
 
@@ -59,7 +59,7 @@ export class ProjectController {
   @ThonLabsOnly()
   @UserOwnsProject()
   async get(@Param('id') id: string, @Request() req) {
-    const userId = req.authUser.userId;
+    const userId = req.session.id;
 
     const result = await this.projectService.getByIdAndOwnerId(id, userId);
 
@@ -71,7 +71,7 @@ export class ProjectController {
   @UserOwnsProject()
   @SchemaValidator(deleteProjectValidator, ['params'])
   async delete(@Param('id') id: string, @Request() req) {
-    const userId = req.authUser.userId;
+    const userId = req.session.id;
 
     const result = await this.projectService.delete(id, userId);
 

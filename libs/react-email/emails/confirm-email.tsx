@@ -61,9 +61,9 @@ export function ConfirmEmail() {
         })}
       >
         If you didn't initiate this sign-up request, please disregard this
-        message or contact our support team{' '}
+        message or contact our security team{' '}
         <Link href={href} className="mt-0 mb-3 text-blue-500">
-          support@thonlabs.io
+          security@thonlabs.io
         </Link>
         .
       </Text>

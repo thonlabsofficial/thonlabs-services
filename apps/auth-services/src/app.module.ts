@@ -5,8 +5,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { SchemaValidatorGuard } from '@/auth/modules/shared/decorators/schema-validator.decorator';
 import { AuthModule } from '@/auth/modules/auth/auth.module';
-import { AuthValidationGuard } from '@/auth/modules/auth/decorators/auth-validation.decorator';
-import { NeedsSecretKeyGuard } from '@/auth/modules/shared/decorators/needs-secret-key.decorator';
+import { AuthGuard } from '@/auth/modules/auth/decorators/auth.decorator';
+import { SecretKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/secret-key-or-thon-labs-user.decorator';
 import { UserModule } from '@/auth/modules/users/user.module';
 import { ProjectModule } from '@/auth/modules/projects/project.module';
 import { EnvironmentModule } from '@/auth/modules/environments/environment.module';
@@ -39,23 +39,23 @@ import { UserOwnsProjectGuard } from './modules/shared/decorators/user-owns-proj
   providers: [
     {
       provide: APP_GUARD,
-      useClass: AuthValidationGuard,
+      useClass: AuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: SecretKeyOrThonLabsOnlyGuard,
     },
     {
       provide: APP_GUARD,
       useClass: NeedsPublicKeyGuard,
     },
-    {
-      provide: APP_GUARD,
-      useClass: NeedsSecretKeyGuard,
-    },
+    { provide: APP_GUARD, useClass: ThonLabsOnlyGuard },
+    { provide: APP_GUARD, useClass: UserOwnsEnvGuard },
+    { provide: APP_GUARD, useClass: UserOwnsProjectGuard },
     {
       provide: APP_GUARD,
       useClass: SchemaValidatorGuard,
     },
-    { provide: APP_GUARD, useClass: ThonLabsOnlyGuard },
-    { provide: APP_GUARD, useClass: UserOwnsEnvGuard },
-    { provide: APP_GUARD, useClass: UserOwnsProjectGuard },
   ],
 })
 export class AppModule {}

@@ -3,35 +3,37 @@ import {
   ErrorMessages,
   StatusCodes,
 } from '@/utils/enums/errors-metadata';
-import extractTokenFromHeader from '@/utils/services/extract-token-from-header';
 import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { EnvironmentService } from '../../environments/services/environment.service';
+import decodeSession from '@/utils/services/decode-session';
 
-const NEEDS_SECRET_KEY_VALIDATOR_KEY = 'needsSecretKey';
+const DECORATOR_KEY = 'roles';
 
-export const NeedsSecretKey = () =>
-  SetMetadata(NEEDS_SECRET_KEY_VALIDATOR_KEY, true);
+export const Roles = (...roles) => SetMetadata(DECORATOR_KEY, roles);
 
 @Injectable()
-export class NeedsSecretKeyGuard implements CanActivate {
+export class RolesGuard implements CanActivate {
+  private readonly logger = new Logger(RolesGuard.name);
+
   constructor(
     private reflector: Reflector,
     private environmentService: EnvironmentService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const needsSecretKey = this.reflector.get(
-      NEEDS_SECRET_KEY_VALIDATOR_KEY,
+    const decoratorValue = this.reflector.get(
+      DECORATOR_KEY,
       context.getHandler(),
     );
 
-    if (!needsSecretKey) {
+    if (!decoratorValue) {
       return true;
     }
 
@@ -39,20 +41,10 @@ export class NeedsSecretKeyGuard implements CanActivate {
     const req = http.getRequest();
     const res = http.getResponse();
 
-    if (!req.headers['tl-secret-key'] || !req.headers['tl-env-id']) {
-      res.status(StatusCodes.Unauthorized).json({
-        code: ErrorCodes.Unauthorized,
-        error: ErrorMessages.Unauthorized,
-      });
-      return false;
-    }
+    const session = decodeSession(req);
 
-    const { data: environment } = await this.environmentService.getBySecretKey(
-      req.headers['tl-env-id'],
-      req.headers['tl-secret-key'],
-    );
-
-    if (!environment) {
+    if (!session.thonLabsUser) {
+      this.logger.log(`User ${session.sub} is not a Thon Labs user`);
       res.status(StatusCodes.Unauthorized).json({
         code: ErrorCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,

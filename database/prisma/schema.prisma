@@ -13,16 +13,19 @@ enum TokenTypes {
   Refresh
   ConfirmEmail
   ResetPassword
+  InviteUser
 }
 
 enum CustomFieldTypes {
   String
   Int
   Boolean
+  JSON
 }
 
 enum CustomFieldRelationsTypes {
   User
+  CMS
 }
 
 enum ProjectConfigRelationTypes {
@@ -35,6 +38,12 @@ enum EmailTemplates {
   MagicLink
   ConfirmEmail
   ForgotPassword
+  Invite
+}
+
+enum AuthProviders {
+  MagicLogin
+  EmailAndPassword
 }
 
 model User {
@@ -44,6 +53,8 @@ model User {
   profilePicture    String?
   password          String?
   lastSignIn        DateTime?
+  // This key is used to compose the JWT token
+  authKey           String?
   thonLabsUser      Boolean            @default(false)
   active            Boolean            @default(true)
   emailConfirmed    Boolean            @default(false)
@@ -59,6 +70,17 @@ model User {
   @@map("users")
 }
 
+model UserSubscription {
+  id                            String   @id @default(uuid())
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+  paymentProviderSubscriptionId String?
+  user                          User?    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId                        String?
+
+  @@map("users_subscriptions")
+}
+
 model Project {
   id                  String                       @id
   appName             String
@@ -69,12 +91,12 @@ model Project {
   userOwnerId         String
   environments        Environment[]
   environmentsConfigs ProjectConfigOnEnvironment[]
-  subscriptions       Subscription[]
 
   @@map("projects")
 }
 
 model CustomField {
+  // This ID is connected to ProjectConfigOnEnvironment
   id           String                    @id @default(uuid())
   name         String
   type         CustomFieldTypes
@@ -84,6 +106,7 @@ model CustomField {
 }
 
 model Role {
+  // This ID is connected to ProjectConfigOnEnvironment
   id    String @id
   name  String
   users User[]
@@ -91,42 +114,18 @@ model Role {
   @@map("roles")
 }
 
-model Subscription {
-  id                            String             @id
-  name                          String
-  price                         Float
-  paymentProviderSubscriptionId String?
-  project                       Project            @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  projectId                     String
-  userSubscriptions             UserSubscription[]
-
-  @@map("subscriptions")
-}
-
-model UserSubscription {
-  id             String        @id @default(uuid())
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  subscriptionId String
-  user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId         String?
-
-  @@map("users_subscriptions")
-}
-
 model Environment {
-  id                     String   @id
+  id                     String        @id
   name                   String
-  active                 Boolean  @default(true)
-  publicKey              String   @unique
-  secretKey              String   @unique
-  authKey                String
-  tokenExpiration        String   @default("1d")
-  refreshTokenExpiration String?  @default("10d")
+  active                 Boolean       @default(true)
+  publicKey              String        @unique
+  secretKey              String        @unique
+  tokenExpiration        String        @default("1d")
+  refreshTokenExpiration String?       @default("10d")
   appURL                 String?
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  authProvider           AuthProviders @default(EmailAndPassword)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 
   project         Project                      @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   projectId       String
@@ -139,12 +138,14 @@ model Environment {
 }
 
 model ProjectConfigOnEnvironment {
-  id            String                     @default(uuid())
+  id            String  @default(uuid())
   environmentId String
-  active        Boolean                    @default(true)
+  active        Boolean @default(true)
   projectId     String
-  relationId    String
-  relationType  ProjectConfigRelationTypes
+
+  // Relation connected to Roles and Custom Fields
+  relationId   String
+  relationType ProjectConfigRelationTypes
 
   environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -189,6 +190,8 @@ model TokenStorage {
   expires    DateTime
   createdAt  DateTime   @default(now())
   type       TokenTypes
+  // Relation ID can be user ID or any other ID that's related to the token
+  // and it's necesasry to complete some action.
   relationId String
 
   @@map("tokens_storage")

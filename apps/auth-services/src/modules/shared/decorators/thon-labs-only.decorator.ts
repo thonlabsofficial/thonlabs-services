@@ -11,7 +11,6 @@ import {
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { EnvironmentService } from '../../environments/services/environment.service';
 import decodeSession from '@/utils/services/decode-session';
 
 const THON_LABS_ONLY_VALIDATOR_KEY = 'thonLabsOnly';
@@ -23,10 +22,7 @@ export const ThonLabsOnly = () =>
 export class ThonLabsOnlyGuard implements CanActivate {
   private readonly logger = new Logger(ThonLabsOnlyGuard.name);
 
-  constructor(
-    private reflector: Reflector,
-    private environmentService: EnvironmentService,
-  ) {}
+  constructor(private reflector: Reflector) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const thonLabsOnly = this.reflector.get(

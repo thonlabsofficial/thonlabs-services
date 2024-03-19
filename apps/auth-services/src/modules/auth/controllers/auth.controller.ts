@@ -11,7 +11,7 @@ import {
   Patch,
 } from '@nestjs/common';
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
-import { PublicRoute } from '@/auth/modules/auth/decorators/auth-validation.decorator';
+import { PublicRoute } from '@/auth/modules/auth/decorators/auth.decorator';
 import { signUpValidator } from '@/auth/modules/auth/validators/signup-validators';
 import { UserService } from '@/auth/modules/users/services/user.service';
 import { ProjectService } from '@/auth/modules/projects/services/project.service';
@@ -55,7 +55,9 @@ export class AuthController {
     @Body() payload: { password: string; environmentId: string },
     @Headers() headers,
   ) {
-    if (headers['thon-labs-staff-api-key'] !== process.env.API_KEY) {
+    if (
+      headers['thon-labs-staff-api-key'] !== process.env.TL_INTERNAL_API_KEY
+    ) {
       throw new UnauthorizedException();
     }
 
@@ -96,11 +98,6 @@ export class AuthController {
       ...payload,
       environmentId: environment.id,
     });
-
-    if (environment.projectId.startsWith('prj-thon-labs-')) {
-      await this.userService.setAsThonLabsUser(user.id);
-      user.thonLabsUser = true;
-    }
 
     if (userError.error) {
       throw new exceptionsMapper[userError.statusCode](userError.error);

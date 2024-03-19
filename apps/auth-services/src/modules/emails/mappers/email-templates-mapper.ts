@@ -2,6 +2,7 @@ import MagicLink from '@/emails/magic-link';
 import ConfirmEmail from '@/emails/confirm-email';
 import ForgotPassword from '@/emails/forgot-password';
 import Welcome from '@/emails/welcome';
+import Invite from '@/emails/invite';
 import { EmailTemplate, EmailTemplates } from '@prisma/client';
 import { JSX } from 'react';
 
@@ -14,29 +15,36 @@ const emailTemplatesMapper: {
     name: 'Magic Login',
     subject: 'Your Login Access Link For <%= appName %>',
     fromName: 'Thon Labs',
-    fromEmail: 'no-reply@thonlabs.io',
+    fromEmail: 'security@thonlabs.io',
     content: MagicLink(),
   },
   [EmailTemplates.ConfirmEmail]: {
     name: 'Confirm Email',
     subject: 'Confirm Your Email For <%= appName %>',
     fromName: 'Thon Labs',
-    fromEmail: 'no-reply@thonlabs.io',
+    fromEmail: 'security@thonlabs.io',
     content: ConfirmEmail(),
   },
   [EmailTemplates.ForgotPassword]: {
     name: 'Forgot Password',
     subject: 'Reset Your Account Password For <%= appName %>',
     fromName: 'Thon Labs',
-    fromEmail: 'no-reply@thonlabs.io',
+    fromEmail: 'security@thonlabs.io',
     content: ForgotPassword(),
   },
   [EmailTemplates.Welcome]: {
     name: 'Welcome',
     subject: 'Welcome to <%= appName %>!',
     fromName: 'Thon Labs',
-    fromEmail: 'no-reply@thonlabs.io',
+    fromEmail: 'hello@thonlabs.io',
     content: Welcome(),
+  },
+  [EmailTemplates.Invite]: {
+    name: 'Invite User',
+    subject: "You're invited to join <%= appName %>!",
+    fromName: 'Thon Labs',
+    fromEmail: 'hello@thonlabs.io',
+    content: Invite(),
   },
 };
 

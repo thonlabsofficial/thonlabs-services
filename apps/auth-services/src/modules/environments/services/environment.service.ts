@@ -45,6 +45,26 @@ export class EnvironmentService {
     return { data: environment as Environment };
   }
 
+  async getDetailedById(id: string) {
+    const environment = await this.databaseService.environment.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        active: true,
+        tokenExpiration: true,
+        refreshTokenExpiration: true,
+        appURL: true,
+        createdAt: true,
+        updatedAt: true,
+        projectId: true,
+        project: true,
+      },
+    });
+
+    return environment;
+  }
+
   async belongsToUser(
     id: string,
     userId: string,
@@ -73,8 +93,9 @@ export class EnvironmentService {
       Crypt.generateIV(environmentId),
       process.env.ENCODE_SECRET_KEYS_SECRET,
     );
+
     const environment = await this.databaseService.environment.findUnique({
-      where: { secretKey: encryptSecretKey },
+      where: { id: environmentId, secretKey: encryptSecretKey },
     });
 
     if (!environment) {
@@ -120,7 +141,6 @@ export class EnvironmentService {
         tokenExpiration: true,
         refreshTokenExpiration: true,
         appURL: true,
-        authKey: true,
         createdAt: true,
         updatedAt: true,
         projectId: true,
@@ -299,7 +319,6 @@ export class EnvironmentService {
     let keys = await Promise.all([
       Crypt.encrypt(rand(3), iv, process.env.ENCODE_SECRET), // Public key
       Crypt.encrypt(`tl_${rand(5)}`, iv, process.env.ENCODE_SECRET_KEYS_SECRET), // Secret key
-      Crypt.encrypt(`${rand(8)}`, iv, process.env.ENCODE_AUTH_KEYS_SECRET), // Auth key
     ]);
 
     // Again, just to guarantee :)
@@ -316,11 +335,6 @@ export class EnvironmentService {
               equals: keys[1],
             },
           },
-          {
-            authKey: {
-              equals: keys[2],
-            },
-          },
         ],
       },
     });
@@ -333,7 +347,6 @@ export class EnvironmentService {
           iv,
           process.env.ENCODE_SECRET_KEYS_SECRET,
         ),
-        Crypt.encrypt(`${rand(8)}`, iv, process.env.ENCODE_AUTH_KEYS_SECRET),
       ]);
     }
 
@@ -342,7 +355,6 @@ export class EnvironmentService {
         id,
         publicKey: keys[0],
         secretKey: keys[1],
-        authKey: keys[2],
         name: prepareString(payload.name),
         projectId: payload.projectId,
         appURL: payload.appURL,

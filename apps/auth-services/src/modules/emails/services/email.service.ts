@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EmailTemplates } from '@prisma/client';
+import { EmailTemplates, User } from '@prisma/client';
 import { Resend } from 'resend';
 import * as ejs from 'ejs';
 import { EmailTemplateService } from './email-template.service';
@@ -8,13 +8,12 @@ interface SendEmailParams {
   to: string;
   emailTemplateType: EmailTemplates;
   environmentId: string;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data?: {
     token?: string;
     appName?: string;
     appURL?: string;
     userFirstName?: string;
+    inviter?: User;
   };
 }
 

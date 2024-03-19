@@ -34,7 +34,9 @@ export class EnvironmentController {
   @Get('/owner/my-keys')
   @ThonLabsOnly()
   public async signUpOwner(@Headers() headers) {
-    if (headers['thon-labs-staff-api-key'] !== process.env.API_KEY) {
+    if (
+      headers['thon-labs-staff-api-key'] !== process.env.TL_INTERNAL_API_KEY
+    ) {
       throw new UnauthorizedException();
     }
 
@@ -53,7 +55,9 @@ export class EnvironmentController {
     @Param('id') environmentId: string,
     @Headers() headers,
   ) {
-    if (headers['thon-labs-staff-api-key'] !== process.env.API_KEY) {
+    if (
+      headers['thon-labs-staff-api-key'] !== process.env.TL_INTERNAL_API_KEY
+    ) {
       throw new UnauthorizedException();
     }
 
@@ -106,7 +110,7 @@ export class EnvironmentController {
   async updateSecretKey(@Param('id') id: string) {
     const key = await this.environmentService.updateSecretKey(id);
 
-    return { key };
+    return key;
   }
 
   @Patch('/:id/public')
@@ -115,7 +119,7 @@ export class EnvironmentController {
   async updatePublicKey(@Param('id') id: string) {
     const key = await this.environmentService.updatePublicKey(id);
 
-    return { key };
+    return key;
   }
 
   @Post('/')

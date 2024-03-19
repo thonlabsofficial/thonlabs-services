@@ -9,6 +9,7 @@ import {
 } from '@/utils/enums/errors-metadata';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import Crypt from '@/utils/services/crypt';
+import rand from '@/utils/services/rand';
 
 @Injectable()
 export class UserService {
@@ -80,7 +81,20 @@ export class UserService {
       },
     });
 
-    this.logger.warn('Thon Labs owner user created', user.id);
+    this.logger.warn(`ADMIN Thon Labs owner user created ${user.id}`);
+
+    const iv = Crypt.generateIV(user.id);
+    const authKey = await Crypt.encrypt(
+      `${rand(8)}`,
+      iv,
+      process.env.ENCODE_AUTH_KEYS_SECRET,
+    );
+    await this.databaseService.user.update({
+      where: { id: user.id },
+      data: { authKey },
+    });
+
+    this.logger.log(`User ${user.id} auth key created`);
 
     this.deletePrivateData(user);
 
@@ -122,7 +136,7 @@ export class UserService {
     let password = null;
     if (payload.password) {
       password = await Crypt.hash(payload.password);
-      this.logger.warn('Password has been hashed');
+      this.logger.log('Password has been hashed');
     }
 
     try {
@@ -136,7 +150,30 @@ export class UserService {
         },
       });
 
-      this.logger.warn('User created', user.id);
+      this.logger.log(`User ${user.id} created`);
+
+      const iv = Crypt.generateIV(user.id);
+      const authKey = await Crypt.encrypt(
+        `${rand(8)}`,
+        iv,
+        process.env.ENCODE_AUTH_KEYS_SECRET,
+      );
+      await this.databaseService.user.update({
+        where: { id: user.id },
+        data: { authKey },
+      });
+      user.authKey = authKey;
+
+      this.logger.log(`User ${user.id} auth key created`);
+
+      const { data: environment } = await this.environmentsService.getById(
+        payload.environmentId,
+      );
+
+      if (environment.projectId.startsWith('prj-thon-labs-')) {
+        await this.setAsThonLabsUser(user.id);
+        user.thonLabsUser = true;
+      }
 
       this.deletePrivateData(user);
 
@@ -217,6 +254,8 @@ export class UserService {
         thonLabsUser: true,
       },
     });
+
+    this.logger.log(`User ${userId} updated as Thon Labs User`);
   }
 
   async ownsEnvironment(userId: string, environmentId: string) {

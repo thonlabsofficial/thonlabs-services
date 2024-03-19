@@ -120,15 +120,11 @@ export class TokenStorageService {
     const payload = {
       sub: user.id,
       thonLabsUser: user.thonLabsUser,
-      active: user.active,
-      environmentId: environment.id,
-      environmentKey: environment.authKey,
-      roleId: user.roleId,
     };
 
-    const iv = Crypt.generateIV(environment.id);
+    const iv = Crypt.generateIV(user.id);
     const authKey = await Crypt.decrypt(
-      environment.authKey,
+      user.authKey,
       iv,
       process.env.ENCODE_AUTH_KEYS_SECRET,
     );

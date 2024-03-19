@@ -57,9 +57,9 @@ export function ForgotPassword() {
         })}
       >
         If you didn't initiate this reset password request, please disregard
-        this message or contact our support team on{' '}
+        this message or contact our security team on{' '}
         <Link href={href} className="mt-0 mb-3 text-blue-500">
-          support@thonlabs.io
+          security@thonlabs.io
         </Link>
         .
       </Text>
