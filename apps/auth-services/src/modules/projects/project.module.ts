@@ -4,12 +4,10 @@ import { ProjectController } from './controllers/project.controller';
 import { SharedModule } from '../shared/shared.module';
 import { UserModule } from '../users/user.module';
 import { EnvironmentModule } from '../environments/environment.module';
-import { EmailModule } from '../emails/email.module';
 
 @Module({
   imports: [
     SharedModule,
-    EmailModule,
     forwardRef(() => UserModule),
     forwardRef(() => EnvironmentModule),
   ],

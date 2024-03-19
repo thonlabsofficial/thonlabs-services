@@ -6,3 +6,7 @@ export const createUserValidator = z.object({
     .string({ required_error: 'User email is required' })
     .email({ message: 'Email is invalid' }),
 });
+
+export const updateUserGeneralDataValidator = z.object({
+  fullName: z.string({ required_error: 'User full name is required' }),
+});

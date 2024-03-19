@@ -23,7 +23,10 @@ import { EmailTemplates, TokenTypes } from '@prisma/client';
 import { TokenStorageService } from '../../token-storage/services/token-storage.service';
 import { getFirstName } from '@/utils/services/names-helpers';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
-import { createUserValidator } from '../validators/user-validators';
+import {
+  createUserValidator,
+  updateUserGeneralDataValidator,
+} from '../validators/user-validators';
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 import { PublicKeyOrThonLabsOnly } from '../../shared/decorators/public-key-or-thon-labs-user.decorator';
@@ -118,6 +121,26 @@ export class UserController {
         ErrorMessages.UserNotFound,
       );
     }
+
+    return user;
+  }
+
+  @Patch('/:id/general-data')
+  @SecretKeyOrThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  @SchemaValidator(updateUserGeneralDataValidator)
+  async updateGeneralData(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() payload,
+  ) {
+    const environmentId = req.headers['tl-env-id'];
+
+    const user = await this.userService.updateGeneralData(
+      id,
+      environmentId,
+      payload,
+    );
 
     return user;
   }
