@@ -123,7 +123,7 @@ model Environment {
   tokenExpiration        String        @default("1d")
   refreshTokenExpiration String?       @default("10d")
   appURL                 String?
-  authProvider           AuthProviders @default(EmailAndPassword)
+  authProvider           AuthProviders @default(MagicLogin)
   createdAt              DateTime      @default(now())
   updatedAt              DateTime      @updatedAt
 
