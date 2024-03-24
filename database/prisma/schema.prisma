@@ -4,8 +4,9 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider  = "postgres"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum TokenTypes {
@@ -161,7 +162,7 @@ model EmailTemplate {
   subject       String
   fromName      String
   fromEmail     String
-  content       String         @db.LongText
+  content       String         @db.Text
   preview       String?
   replyTo       String?
   createdAt     DateTime       @default(now())

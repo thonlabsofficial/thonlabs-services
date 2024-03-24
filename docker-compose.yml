@@ -2,15 +2,16 @@ version: '3.8'
 
 services:
   main-db:
-    image: mysql
+    image: postgres
     restart: always
     container_name: thon-labs-main-db
     environment:
-      MYSQL_DATABASE: 'thon-labs'
-      MYSQL_ROOT_PASSWORD: '12345678'
+      POSTGRES_DB: 'thonlabs'
+      POSTGRES_USER: 'thonlabs'
+      POSTGRES_PASSWORD: '12345678'
     ports:
-      - '3306:3306'
+      - '5432:5432'
     expose:
-      - '3306'
+      - '5432'
     volumes:
-      - ./data/db:/var/lib/mysql
+      - ./data/db:/var/lib/postgresql/data
