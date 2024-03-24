@@ -6,7 +6,7 @@ import emailTemplatesMapper from '../mappers/email-templates-mapper';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { unescape } from 'lodash';
-import { EnvironmentService } from '../../environments/services/environment.service';
+import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 
 @Injectable()
 export class EmailTemplateService {
@@ -51,7 +51,7 @@ export class EmailTemplateService {
           content: unescape(render(data.content, { pretty: true })),
           name: data.name,
           subject: data.subject,
-          fromEmail: `no-reply@${environmentDomain}`,
+          fromEmail: `${data.fromEmail}@${environmentDomain}`,
           fromName: `${environment.project.appName} Team`,
           preview: data.preview,
           replyTo: data.replyTo,
