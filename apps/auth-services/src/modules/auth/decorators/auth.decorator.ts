@@ -70,6 +70,14 @@ export class AuthGuard implements CanActivate {
         return false;
       }
 
+      if (!user.active) {
+        this.logger.error(`User ${user.id} is not active`);
+        res.status(StatusCodes.Unauthorized).json({
+          error: ErrorMessages.Unauthorized,
+        });
+        return false;
+      }
+
       const authKey = await Crypt.decrypt(
         user.authKey,
         Crypt.generateIV(user.id),
