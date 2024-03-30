@@ -42,6 +42,7 @@ import {
   requestResetPasswordValidator,
 } from '../validators/reset-password-validators';
 import { getFirstName } from '@/utils/services/names-helpers';
+import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -237,16 +238,13 @@ export class AuthController {
 
   @PublicRoute()
   @Post('/refresh')
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   @SchemaValidator(reauthenticateFromRefreshTokenValidator)
   public async reAuthenticateFromRefreshToken(
     @Body('token') token: string,
     @Req() req,
   ) {
-    if (!req.headers.authorization) {
-      throw new UnauthorizedException(ErrorMessages.Unauthorized);
-    }
-
-    const { environmentId } = decodeSession(req);
+    const environmentId = req.headers['tl-env-id'];
 
     const { data: environment, ...envError } =
       await this.environmentService.getById(environmentId);
@@ -259,6 +257,10 @@ export class AuthController {
       token,
       environmentId: environment.id,
     });
+
+    if (data?.error) {
+      throw new exceptionsMapper[data.statusCode](data.error);
+    }
 
     return data;
   }

@@ -443,12 +443,12 @@ export class EnvironmentService {
       refreshTokenExpiration?: string;
     },
   ): Promise<DataReturn> {
-    if (ms(payload.tokenExpiration) < 300000) {
-      return {
-        statusCode: StatusCodes.BadRequest,
-        error: 'Token expiration should have at least 5 minutes',
-      };
-    }
+    // if (ms(payload.tokenExpiration) < 300000) {
+    //   return {
+    //     statusCode: StatusCodes.BadRequest,
+    //     error: 'Token expiration should have at least 5 minutes',
+    //   };
+    // }
 
     if (
       payload.refreshTokenExpiration &&

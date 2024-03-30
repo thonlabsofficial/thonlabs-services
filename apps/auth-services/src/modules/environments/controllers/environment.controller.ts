@@ -21,10 +21,7 @@ import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 
 @Controller('environments')
 export class EnvironmentController {
-  constructor(
-    private environmentService: EnvironmentService,
-    private emailTemplateService: EmailTemplateService,
-  ) {}
+  constructor(private environmentService: EnvironmentService) {}
 
   @Get('/:id')
   @ThonLabsOnly()

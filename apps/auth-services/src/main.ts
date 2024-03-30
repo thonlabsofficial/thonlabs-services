@@ -11,20 +11,24 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true,
+    cors: {
+      origin:
+        process.env.NODE_ENV === 'development'
+          ? ['http://localhost:3000']
+          : ['https://app.thonlabs.co', 'https://app-dev.thonlabs.co'],
+    },
+  });
   const port = process.env.PORT || 3000;
 
   app.use(helmet());
   app.use(cookieParser());
-  app.enableCors({
-    origin:
-      process.env.NODE_ENV === 'development'
-        ? ['*']
-        : ['https://app.thonlabs.io'],
-  });
 
   await app.listen(port);
-  Logger.log(`🚀 Application is running on: http://localhost:${port}`);
+  Logger.log(
+    `🚀 Application is running on: http://localhost:${port} (ENV: ${process.env.NODE_ENV})`,
+  );
 }
 
 bootstrap();
