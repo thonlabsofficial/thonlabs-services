@@ -1,7 +1,7 @@
 import { Link, Text } from '@react-email/components';
 import * as React from 'react';
 import EmailBaseTemplate from './email-base-template';
-import { buttonVariantsEmail } from '@/ui/components/button';
+import { buttonVariants } from '@/ui/components/button';
 import { textVariants } from '@/ui/components/text';
 
 export function MagicLink() {
@@ -27,7 +27,7 @@ export function MagicLink() {
       </Text>
 
       <Link
-        className={buttonVariantsEmail({
+        className={buttonVariants({
           variant: 'default',
         })}
         href={href}

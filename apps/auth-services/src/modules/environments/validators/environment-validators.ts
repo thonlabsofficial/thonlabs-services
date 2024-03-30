@@ -1,3 +1,4 @@
+import { AuthProviders } from '@prisma/client';
 import z from 'zod';
 
 export const createEnvironmentValidator = z.object({
@@ -6,9 +7,10 @@ export const createEnvironmentValidator = z.object({
   projectId: z.string(),
 });
 
-export const updateTokenSettingsValidator = z.object({
+export const updateAuthSettingsValidator = z.object({
   tokenExpiration: z.string(),
   refreshTokenExpiration: z.string().optional().nullable(),
+  authProvider: z.nativeEnum(AuthProviders),
 });
 
 export const updateGeneralSettingsValidator = z.object({

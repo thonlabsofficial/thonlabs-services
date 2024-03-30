@@ -78,11 +78,14 @@ export class AuthController {
       appURL: 'https://thonlabs.io',
     });
 
-    await this.userService.setEnvironment(user.id, environment.id);
-
-    const publicKey = await this.environmentService.getPublicKey(
-      environment.id,
-    );
+    const [, , publicKey] = await Promise.all([
+      this.userService.setEnvironment(user.id, environment.id),
+      this.environmentService.updateAuthSettings(environment.id, {
+        ...environment,
+        authProvider: AuthProviders.EmailAndPassword,
+      }),
+      await this.environmentService.getPublicKey(environment.id),
+    ]);
 
     return { user, project, ...{ ...environment, publicKey } };
   }

@@ -8,6 +8,8 @@ import ms from 'ms';
 import Crypt from '@/utils/services/crypt';
 import { isBefore } from 'date-fns';
 import { StatusCodes } from '@/utils/enums/errors-metadata';
+import { decode as jwtDecode } from 'jsonwebtoken';
+import { SessionData } from '@/utils/interfaces/session-data';
 
 @Injectable()
 export class TokenStorageService {
@@ -108,6 +110,7 @@ export class TokenStorageService {
   ): Promise<
     DataReturn<{
       token: string;
+      tokenExpiresIn: number;
       refreshToken?: string;
       refreshTokenExpiresIn?: number;
     }>
@@ -133,6 +136,7 @@ export class TokenStorageService {
       expiresIn: environment.tokenExpiration,
       secret: `${authKey}${process.env.AUTHENTICATION_SECRET}`,
     });
+    const tokenExpiresIn = (jwtDecode(token) as SessionData).exp * 1000;
 
     this.logger.log(`User ${user.id} JWT created`);
 
@@ -153,6 +157,7 @@ export class TokenStorageService {
     return {
       data: {
         token,
+        tokenExpiresIn,
         refreshToken: refreshToken.token,
         refreshTokenExpiresIn: refreshToken.expires.getTime(),
       },

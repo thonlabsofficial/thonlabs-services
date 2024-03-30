@@ -1,7 +1,4 @@
-import * as React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
-
-import { cn } from '@/ui/utils';
+import { cva } from 'class-variance-authority';
 
 const textVariants = cva('font-sans text-zinc-800', {
   variants: {
@@ -28,17 +25,4 @@ const textVariants = cva('font-sans text-zinc-800', {
   },
 });
 
-export interface TextProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof textVariants> {
-  as?: keyof JSX.IntrinsicElements;
-}
-
-function Text({ className, variant, as = 'span', ...props }: TextProps) {
-  return React.createElement(as, {
-    ...props,
-    className: cn(textVariants({ variant }), className),
-  });
-}
-
-export { Text, textVariants };
+export { textVariants };

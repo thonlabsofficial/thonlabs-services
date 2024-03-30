@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { DataReturn } from '@/utils/interfaces/data-return';
-import { Environment, Project } from '@prisma/client';
+import { AuthProviders, Environment, Project } from '@prisma/client';
 import { ProjectService } from '@/auth/modules/projects/services/project.service';
 import {
   StatusCodes,
@@ -144,6 +144,7 @@ export class EnvironmentService {
         createdAt: true,
         updatedAt: true,
         projectId: true,
+        authProvider: true,
         project: {
           select: {
             id: true,
@@ -434,9 +435,13 @@ export class EnvironmentService {
     return count > 0;
   }
 
-  async updateTokenSettings(
+  async updateAuthSettings(
     environmentId: string,
-    payload: { tokenExpiration: string; refreshTokenExpiration?: string },
+    payload: {
+      authProvider: AuthProviders;
+      tokenExpiration: string;
+      refreshTokenExpiration?: string;
+    },
   ): Promise<DataReturn> {
     if (ms(payload.tokenExpiration) < 300000) {
       return {
@@ -460,12 +465,13 @@ export class EnvironmentService {
         id: environmentId,
       },
       data: {
+        authProvider: payload.authProvider,
         tokenExpiration: payload.tokenExpiration,
         refreshTokenExpiration: payload.refreshTokenExpiration,
       },
     });
 
-    this.logger.log(`Updated token settings for ${environmentId}`);
+    this.logger.log(`Updated auth settings for ${environmentId}`);
   }
 
   async updateGeneralSettings(

@@ -15,7 +15,7 @@ import { SchemaValidator } from '../../shared/decorators/schema-validator.decora
 import {
   createEnvironmentValidator,
   updateGeneralSettingsValidator,
-  updateTokenSettingsValidator,
+  updateAuthSettingsValidator,
 } from '../validators/environment-validators';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 
@@ -86,12 +86,12 @@ export class EnvironmentController {
     };
   }
 
-  @Patch('/:id/token-settings')
+  @Patch('/:id/auth-settings')
   @ThonLabsOnly()
   @HasEnvAccess()
-  @SchemaValidator(updateTokenSettingsValidator)
-  async updateTokenSettings(@Param('id') id: string, @Body() payload) {
-    const result = await this.environmentService.updateTokenSettings(
+  @SchemaValidator(updateAuthSettingsValidator)
+  async updateAuthSettings(@Param('id') id: string, @Body() payload) {
+    const result = await this.environmentService.updateAuthSettings(
       id,
       payload,
     );
