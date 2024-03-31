@@ -267,8 +267,10 @@ export class AuthController {
 
   @Post('/logout')
   @HttpCode(StatusCodes.OK)
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   public async logout(@Req() req) {
-    const { sub: userId, environmentId } = decodeSession(req);
+    const { sub: userId } = decodeSession(req);
+    const environmentId = req.headers['tl-env-id'];
 
     const { data: environment, ...envError } =
       await this.environmentService.getById(environmentId);

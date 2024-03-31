@@ -16,8 +16,9 @@ import { TokenStorageService } from '@/auth/modules/token-storage/services/token
 import { ProjectService } from '@/auth/modules/projects/services/project.service';
 import { getFirstName } from '@/utils/services/names-helpers';
 
-interface AuthenticateMethodsReturn {
+export interface AuthenticateMethodsReturn {
   token: string;
+  tokenExpiresIn: number;
   refreshToken?: string;
   refreshTokenExpiresIn?: number;
 }
@@ -79,10 +80,9 @@ export class AuthService {
       return { data };
     } catch (e) {
       this.logger.error(
-        'Login/Pass - Error on creating tokens for user',
-        user.id,
-        e,
+        `Login/Pass - Error on creating tokens for user ${user.id}`,
       );
+      console.error(e);
 
       return {
         error: ErrorMessages.InternalError,

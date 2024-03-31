@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule, seconds } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { SchemaValidatorGuard } from '@/auth/modules/shared/decorators/schema-validator.decorator';
@@ -21,12 +21,14 @@ import { PublicKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/p
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60,
-        limit: 10,
-      },
-    ]),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: seconds(120),
+          limit: 10,
+        },
+      ],
+    }),
     JwtModule.register({
       global: true,
     }),
@@ -38,6 +40,10 @@ import { PublicKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/p
     TokenStorageModule,
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: AuthGuard,

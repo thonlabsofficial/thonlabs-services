@@ -10,6 +10,7 @@ import { isBefore } from 'date-fns';
 import { StatusCodes } from '@/utils/enums/errors-metadata';
 import { decode as jwtDecode } from 'jsonwebtoken';
 import { SessionData } from '@/utils/interfaces/session-data';
+import { AuthenticateMethodsReturn } from '../../auth/services/auth.service';
 
 @Injectable()
 export class TokenStorageService {
@@ -107,14 +108,7 @@ export class TokenStorageService {
   async createAuthTokens(
     user: User,
     environment: Environment,
-  ): Promise<
-    DataReturn<{
-      token: string;
-      tokenExpiresIn: number;
-      refreshToken?: string;
-      refreshTokenExpiresIn?: number;
-    }>
-  > {
+  ): Promise<DataReturn<AuthenticateMethodsReturn>> {
     // Delete all refresh tokens
     await this.deleteMany(TokenTypes.Refresh, user.id);
 
@@ -132,15 +126,18 @@ export class TokenStorageService {
       process.env.ENCODE_AUTH_KEYS_SECRET,
     );
 
+    const result = {};
+
     const token = await this.jwtService.signAsync(payload, {
       expiresIn: environment.tokenExpiration,
       secret: `${authKey}${process.env.AUTHENTICATION_SECRET}`,
     });
     const tokenExpiresIn = (jwtDecode(token) as SessionData).exp * 1000;
 
-    this.logger.log(`User ${user.id} JWT created`);
+    result['token'] = token;
+    result['tokenExpiresIn'] = tokenExpiresIn;
 
-    let refreshToken: TokenStorage;
+    this.logger.log(`User ${user.id} JWT created`);
 
     if (environment.refreshTokenExpiration) {
       const { data } = await this.create({
@@ -149,18 +146,14 @@ export class TokenStorageService {
         expiresIn: environment.refreshTokenExpiration,
       });
 
-      refreshToken = data;
+      result['refreshToken'] = data.token;
+      result['refreshTokenExpiresIn'] = data.expires.getTime();
     }
 
     this.logger.log(`User ${user.id} refresh created`);
 
     return {
-      data: {
-        token,
-        tokenExpiresIn,
-        refreshToken: refreshToken.token,
-        refreshTokenExpiresIn: refreshToken.expires.getTime(),
-      },
+      data: result as AuthenticateMethodsReturn,
     };
   }
 

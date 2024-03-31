@@ -8,7 +8,6 @@ import {
   Post,
 } from '@nestjs/common';
 import { EnvironmentService } from '../services/environment.service';
-import { EmailTemplateService } from '../../emails/services/email-template.service';
 import { StatusCodes, exceptionsMapper } from '@/utils/enums/errors-metadata';
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';

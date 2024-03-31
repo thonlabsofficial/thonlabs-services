@@ -4,7 +4,7 @@ services:
   main-db:
     image: postgres
     restart: always
-    container_name: thon-labs-main-db
+    container_name: thonlabs-main-db
     environment:
       POSTGRES_DB: 'thonlabs'
       POSTGRES_USER: 'thonlabs'
