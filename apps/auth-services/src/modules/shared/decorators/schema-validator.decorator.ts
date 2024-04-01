@@ -47,7 +47,13 @@ export class SchemaValidatorGuard implements CanActivate {
       schemaToValidate.parse(payload);
       return true;
     } catch (e) {
-      res.status(StatusCodes.BadRequest).json({ errors: e?.issues || [] });
+      res
+        .status(StatusCodes.BadRequest)
+        .json({
+          statusCode: StatusCodes.BadRequest,
+          error: 'Invalid data request',
+          errors: e?.issues || [],
+        });
       return false;
     }
   }

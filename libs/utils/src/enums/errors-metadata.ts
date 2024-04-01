@@ -39,6 +39,7 @@ export enum ErrorMessages {
   Unauthorized = 'Unauthorized access',
   Forbidden = 'Forbidden access',
   InvalidCredentials = 'Invalid credentials',
+  InvalidEmailOrPass = 'Invalid email or password',
   InvalidToken = 'Invalid Token',
   InternalError = 'An internal error ocurred, try again',
   MissingAuthSecret = 'Auth secret not found',

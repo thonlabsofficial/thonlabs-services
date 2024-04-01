@@ -21,6 +21,7 @@ export interface AuthenticateMethodsReturn {
   tokenExpiresIn: number;
   refreshToken?: string;
   refreshTokenExpiresIn?: number;
+  user: Partial<User>;
 }
 
 @Injectable()
@@ -41,7 +42,7 @@ export class AuthService {
   ): Promise<DataReturn<AuthenticateMethodsReturn>> {
     const error = {
       statusCode: StatusCodes.Unauthorized,
-      error: ErrorMessages.InvalidCredentials,
+      error: ErrorMessages.InvalidEmailOrPass,
     };
 
     const user = await this.userService.getByEmail(email, environmentId);
@@ -77,7 +78,16 @@ export class AuthService {
 
       this.userService.updateLastLogin(user.id, user.environment.id);
 
-      return { data };
+      return {
+        data: {
+          ...data,
+          user: {
+            email: user.email,
+            profilePicture: user.profilePicture,
+            fullName: user.fullName,
+          },
+        },
+      };
     } catch (e) {
       this.logger.error(
         `Login/Pass - Error on creating tokens for user ${user.id}`,
@@ -170,7 +180,7 @@ export class AuthService {
       this.logger.warn('Magic Token not found');
       return {
         statusCode: StatusCodes.Unauthorized,
-        error: ErrorMessages.Unauthorized,
+        error: ErrorMessages.InvalidToken,
       };
     }
 
@@ -181,7 +191,7 @@ export class AuthService {
       await this.tokenStorageService.delete(token);
       return {
         statusCode: StatusCodes.Unauthorized,
-        error: ErrorMessages.Unauthorized,
+        error: ErrorMessages.InvalidToken,
       };
     }
 
@@ -192,8 +202,8 @@ export class AuthService {
         `Magic token not allowed for user ${data.relationId} on env ${environmentId}`,
       );
       return {
-        statusCode: StatusCodes.NotAcceptable,
-        error: 'Token not allowed for user',
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.InvalidToken,
       };
     }
 
@@ -209,7 +219,14 @@ export class AuthService {
 
     this.userService.updateLastLogin(user.id, user.environment.id);
 
-    return tokens;
+    return {
+      ...tokens,
+      user: {
+        email: user.email,
+        profilePicture: user.profilePicture,
+        fullName: user.fullName,
+      },
+    };
   }
 
   async reAuthenticateFromRefreshToken({

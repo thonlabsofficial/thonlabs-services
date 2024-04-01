@@ -304,38 +304,34 @@ export class AuthController {
       environment.id,
     );
 
-    if (!user) {
-      throw new exceptionsMapper[StatusCodes.NotFound](
-        ErrorMessages.UserNotFound,
+    if (user) {
+      await this.tokenStorageService.deleteMany(
+        TokenTypes.ResetPassword,
+        user.id,
       );
+
+      const token = await this.tokenStorageService.create({
+        expiresIn: '30m',
+        relationId: user.id,
+        type: TokenTypes.ResetPassword,
+      });
+
+      if (token.error) {
+        throw new exceptionsMapper[token.statusCode](token.error);
+      }
+
+      await this.emailService.send({
+        emailTemplateType: EmailTemplates.ForgotPassword,
+        environmentId: environment.id,
+        to: user.email,
+        data: {
+          userFirstName: getFirstName(user.fullName),
+          appURL: environment.appURL,
+          appName: environment.project.appName,
+          token: token.data.token,
+        },
+      });
     }
-
-    await this.tokenStorageService.deleteMany(
-      TokenTypes.ResetPassword,
-      user.id,
-    );
-
-    const token = await this.tokenStorageService.create({
-      expiresIn: '30m',
-      relationId: user.id,
-      type: TokenTypes.ResetPassword,
-    });
-
-    if (token.error) {
-      throw new exceptionsMapper[token.statusCode](token.error);
-    }
-
-    await this.emailService.send({
-      emailTemplateType: EmailTemplates.ForgotPassword,
-      environmentId: environment.id,
-      to: user.email,
-      data: {
-        userFirstName: getFirstName(user.fullName),
-        appURL: environment.appURL,
-        appName: environment.project.appName,
-        token: token.data.token,
-      },
-    });
   }
 
   @PublicRoute()
@@ -358,7 +354,7 @@ export class AuthController {
       TokenTypes.ResetPassword,
     );
 
-    if (tokenValidation.error) {
+    if (tokenValidation.statusCode) {
       throw new exceptionsMapper[tokenValidation.statusCode](
         tokenValidation.error,
       );
@@ -368,7 +364,7 @@ export class AuthController {
   @PublicRoute()
   @HttpCode(StatusCodes.OK)
   @NeedsPublicKey()
-  @Patch('/update-password/:token')
+  @Patch('/reset-password/:token')
   @SchemaValidator(newPasswordValidator)
   public async updateTokenResetPassword(
     @Req() req,
@@ -388,6 +384,7 @@ export class AuthController {
     );
 
     if (tokenValidation.statusCode) {
+      await this.tokenStorageService.delete(token);
       throw new exceptionsMapper[tokenValidation.statusCode](
         tokenValidation.error,
       );
