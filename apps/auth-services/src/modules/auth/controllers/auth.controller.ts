@@ -253,6 +253,10 @@ export class AuthController {
       throw new exceptionsMapper[envError.statusCode](envError.error);
     }
 
+    if (!environment.refreshTokenExpiration) {
+      throw new exceptionsMapper[StatusCodes.Unauthorized]();
+    }
+
     const data = await this.authService.reAuthenticateFromRefreshToken({
       token,
       environmentId: environment.id,

@@ -10,6 +10,9 @@ import { Reflector } from '@nestjs/core';
 import decodeSession from '@/utils/services/decode-session';
 import { UserService } from '../../users/services/user.service';
 import { EnvironmentService } from '../../environments/services/environment.service';
+import { TokenStorageService } from '../../token-storage/services/token-storage.service';
+import { TokenTypes } from '@prisma/client';
+import { SessionData } from '@/utils/interfaces/session-data';
 
 type HasEnvAccessParams = {
   param?: string;
@@ -34,6 +37,7 @@ export class HasEnvAccessGuard implements CanActivate {
     private reflector: Reflector,
     private userService: UserService,
     private environmentService: EnvironmentService,
+    private tokenStorageService: TokenStorageService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -49,8 +53,6 @@ export class HasEnvAccessGuard implements CanActivate {
     const http = context.switchToHttp();
     const req = http.getRequest();
     const res = http.getResponse();
-
-    const session = decodeSession(req);
 
     const { param, source } = metadata;
     const environmentId = req?.[source]?.[param];
@@ -72,6 +74,38 @@ export class HasEnvAccessGuard implements CanActivate {
         error: ErrorMessages.EnvironmentNotFound,
       });
       return false;
+    }
+
+    let session = decodeSession(req);
+
+    /* Special validation only for Refresh Token */
+    if (!session && req.url === '/auth/refresh' && req?.body?.token) {
+      const tokenData = await this.tokenStorageService.getByToken(
+        req.body.token,
+        TokenTypes.Refresh,
+      );
+
+      if (!tokenData?.relationId) {
+        this.logger.error('Relation ID does not exists');
+        return false;
+      }
+
+      const user = await this.userService.getByIdAndEnv(
+        tokenData.relationId,
+        environmentId,
+      );
+
+      if (!user) {
+        this.logger.error(
+          `User not found for Relation ID ${tokenData.relationId} (ENV: ${environmentId})`,
+        );
+        return false;
+      }
+
+      session = {
+        sub: user.id,
+        thonLabsUser: user.thonLabsUser,
+      } as SessionData;
     }
 
     /*

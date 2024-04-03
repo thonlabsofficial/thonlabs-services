@@ -22,6 +22,10 @@ export class TokenStorageService {
   ) {}
 
   async getByToken(token: string, type: TokenTypes) {
+    if (!token) {
+      return null;
+    }
+
     return this.databaseService.tokenStorage.findFirst({
       where: {
         token,
