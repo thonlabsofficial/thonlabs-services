@@ -25,7 +25,7 @@ import { PublicKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/p
       throttlers: [
         {
           ttl: seconds(120),
-          limit: 10,
+          limit: 30,
         },
       ],
     }),
