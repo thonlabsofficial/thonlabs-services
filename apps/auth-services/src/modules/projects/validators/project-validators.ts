@@ -2,7 +2,9 @@ import z from 'zod';
 import { ErrorMessages } from '@/utils/enums/errors-metadata';
 
 export const createProjectValidator = z.object({
-  appName: z.string({ required_error: ErrorMessages.RequiredField }),
+  appName: z
+    .string({ required_error: ErrorMessages.RequiredField })
+    .max(30, ErrorMessages.MaxLength),
   appURL: z.string({ required_error: ErrorMessages.RequiredField }).url(),
 });
 

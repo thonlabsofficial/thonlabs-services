@@ -44,9 +44,28 @@ export class ProjectService {
     return { data: project };
   }
 
-  async fetchByOwnerId(userOwnerId: string): Promise<DataReturn<Project[]>> {
+  async fetchByOwnerId(
+    userOwnerId: string,
+  ): Promise<DataReturn<Partial<Project>[]>> {
     const projects = await this.databaseService.project.findMany({
-      where: { userOwnerId },
+      where: { userOwnerId, active: true },
+      select: {
+        id: true,
+        appName: true,
+        environments: {
+          where: {
+            active: true,
+          },
+          select: {
+            id: true,
+            name: true,
+            appURL: true,
+          },
+          orderBy: {
+            updatedAt: 'desc',
+          },
+        },
+      },
     });
 
     return { data: projects };

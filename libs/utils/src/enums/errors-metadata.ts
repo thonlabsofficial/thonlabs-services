@@ -44,6 +44,7 @@ export enum ErrorMessages {
   InternalError = 'An internal error ocurred, try again',
   MissingAuthSecret = 'Auth secret not found',
   EmailTemplateNotFound = 'Email template not found',
+  MaxLength = 'Max length exceeded',
 }
 
 export const exceptionsMapper = {
