@@ -21,7 +21,6 @@ export interface AuthenticateMethodsReturn {
   tokenExpiresIn: number;
   refreshToken?: string;
   refreshTokenExpiresIn?: number;
-  user: Partial<User>;
 }
 
 @Injectable()
@@ -79,14 +78,7 @@ export class AuthService {
       this.userService.updateLastLogin(user.id, user.environment.id);
 
       return {
-        data: {
-          ...data,
-          user: {
-            email: user.email,
-            profilePicture: user.profilePicture,
-            fullName: user.fullName,
-          },
-        },
+        data,
       };
     } catch (e) {
       this.logger.error(

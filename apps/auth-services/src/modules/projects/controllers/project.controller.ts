@@ -42,7 +42,15 @@ export class ProjectController {
       throw new exceptionsMapper[result.statusCode](result.error);
     }
 
-    return result.data;
+    return {
+      id: result.data.project.id,
+      appName: result.data.project.appName,
+      environment: {
+        id: result.data.environment.id,
+        name: result.data.environment.name,
+        appURL: result.data.environment.appURL,
+      },
+    };
   }
 
   @Get('/')
