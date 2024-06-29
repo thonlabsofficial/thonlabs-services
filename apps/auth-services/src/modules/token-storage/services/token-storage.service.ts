@@ -23,6 +23,9 @@ export class TokenStorageService {
 
   async getByToken(token: string, type: TokenTypes) {
     if (!token) {
+      this.logger.error(
+        `Relation ID does not exists ${type}${token.substring(0, 7)}`,
+      );
       return null;
     }
 

@@ -5,7 +5,7 @@ import z from 'zod';
 export const createEnvironmentValidator = z.object({
   name: z
     .string({ required_error: ErrorMessages.RequiredField })
-    .max(30, ErrorMessages.MaxLength),
+    .max(25, ErrorMessages.MaxLength),
   appURL: z.string({ required_error: ErrorMessages.RequiredField }).url(),
   projectId: z.string({ required_error: ErrorMessages.RequiredField }),
 });
@@ -19,5 +19,5 @@ export const updateAuthSettingsValidator = z.object({
 export const updateGeneralSettingsValidator = z.object({
   name: z
     .string({ required_error: ErrorMessages.RequiredField })
-    .max(30, ErrorMessages.MaxLength),
+    .max(25, ErrorMessages.MaxLength),
 });

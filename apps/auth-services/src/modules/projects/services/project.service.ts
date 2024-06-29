@@ -104,20 +104,13 @@ export class ProjectService {
       };
     }
 
-    const urlExists = await this.databaseService.project.findFirst({
-      where: {
-        userOwnerId: payload.userId,
-        environments: { some: { appURL: payload.appURL } },
-      },
-    });
+    const urlExists = await this.environmentsService.validateURL(
+      payload.appURL,
+      payload.userId,
+    );
 
-    if (urlExists) {
-      this.logger.warn(`URL already exists: ${payload.appURL}`);
-
-      return {
-        statusCode: StatusCodes.Conflict,
-        error: `URL already exists in "${urlExists.appName}" project`,
-      };
+    if (urlExists?.error) {
+      return urlExists;
     }
 
     const normalizedName = normalizeString(payload.appName);

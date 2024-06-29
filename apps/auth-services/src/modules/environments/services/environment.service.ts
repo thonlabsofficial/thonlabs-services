@@ -305,6 +305,15 @@ export class EnvironmentService {
       };
     }
 
+    const urlExists = await this.validateURL(
+      payload.appURL,
+      projectExists.userOwnerId,
+    );
+
+    if (urlExists?.error) {
+      return urlExists;
+    }
+
     const normalizedName = normalizeString(payload.name);
     let id = normalizeString(`env-${normalizedName}-${rand(1)}`);
 
@@ -443,12 +452,12 @@ export class EnvironmentService {
       refreshTokenExpiration?: string;
     },
   ): Promise<DataReturn> {
-    // if (ms(payload.tokenExpiration) < 300000) {
-    //   return {
-    //     statusCode: StatusCodes.BadRequest,
-    //     error: 'Token expiration should have at least 5 minutes',
-    //   };
-    // }
+    if (ms(payload.tokenExpiration) < 300000) {
+      return {
+        statusCode: StatusCodes.BadRequest,
+        error: 'Token expiration should have at least 5 minutes',
+      };
+    }
 
     if (
       payload.refreshTokenExpiration &&
@@ -498,5 +507,29 @@ export class EnvironmentService {
     });
 
     this.logger.log(`Environment ${environmentId} deleted`);
+  }
+
+  async validateURL(appURL: string, userOwnerId: string) {
+    const urlExists = await this.databaseService.environment.findFirst({
+      where: {
+        appURL,
+        active: true,
+        project: { active: true, userOwnerId },
+      },
+      include: {
+        project: true,
+      },
+    });
+
+    if (urlExists) {
+      this.logger.warn(
+        `URL already exists: ${urlExists.appURL} (ENV: ${urlExists.name} ${urlExists.id})`,
+      );
+
+      return {
+        statusCode: StatusCodes.Conflict,
+        error: `URL already exists in "${urlExists.project.appName}" project for "${urlExists.name}" environment`,
+      };
+    }
   }
 }

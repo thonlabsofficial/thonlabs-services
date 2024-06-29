@@ -86,7 +86,6 @@ export class HasEnvAccessGuard implements CanActivate {
       );
 
       if (!tokenData?.relationId) {
-        this.logger.error('Relation ID does not exists');
         return false;
       }
 
