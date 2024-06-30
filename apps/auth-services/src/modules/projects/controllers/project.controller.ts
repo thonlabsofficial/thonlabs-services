@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   Request,
@@ -12,6 +13,7 @@ import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validat
 import {
   createProjectValidator,
   deleteProjectValidator,
+  updateGeneralInfoValidator,
 } from '@/auth/modules/projects/validators/project-validators';
 import { ProjectService } from '../services/project.service';
 import { exceptionsMapper } from '@/utils/enums/errors-metadata';
@@ -100,5 +102,28 @@ export class ProjectController {
     );
 
     return { items };
+  }
+
+  @Patch('/:id')
+  @ThonLabsOnly()
+  @UserOwnsProject()
+  @SchemaValidator(updateGeneralInfoValidator)
+  async updateGeneralInfo(
+    @Param('id') id: string,
+    @Body() payload,
+    @Req() req,
+  ) {
+    const { sub } = decodeSession(req);
+
+    const result = await this.projectService.updateGeneralInfo(id, {
+      ...payload,
+      userOwnerId: sub,
+    });
+
+    if (result.error) {
+      throw new exceptionsMapper[result.statusCode](result.error);
+    }
+
+    return result.data;
   }
 }

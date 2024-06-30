@@ -170,4 +170,46 @@ export class ProjectService {
       };
     }
   }
+
+  async updateGeneralInfo(
+    id: string,
+    payload: {
+      userOwnerId: string;
+      appName: string;
+    },
+  ) {
+    try {
+      const { data: userIsOwner } = await this.getByIdAndOwnerId(
+        id,
+        payload.userOwnerId,
+      );
+
+      if (!userIsOwner) {
+        return {
+          statusCode: StatusCodes.Forbidden,
+          error: 'Only the owner user can delete this project',
+        };
+      }
+
+      const project = await this.databaseService.project.update({
+        where: { id },
+        data: {
+          appName: prepareString(payload.appName),
+        },
+      });
+
+      return {
+        data: {
+          id: project.id,
+          appName: project.appName,
+        },
+      };
+    } catch (e) {
+      this.logger.error(`Error on update Project ${id}`, e);
+      return {
+        statusCode: StatusCodes.Internal,
+        error: ErrorMessages.InternalError,
+      };
+    }
+  }
 }
