@@ -62,7 +62,7 @@ export class ProjectService {
             appURL: true,
           },
           orderBy: {
-            updatedAt: 'desc',
+            createdAt: 'desc',
           },
         },
       },
@@ -91,6 +91,7 @@ export class ProjectService {
     appName: string;
     appURL: string;
     userId: string;
+    main?: boolean;
   }): Promise<DataReturn<{ project: Project; environment: Environment }>> {
     const userExists = await this.userService.getById(payload.userId);
 
@@ -128,6 +129,7 @@ export class ProjectService {
         id,
         appName: prepareString(payload.appName),
         userOwnerId: payload.userId,
+        main: payload.main, // Only ThonLabs is main, no other project
       },
     });
 
@@ -145,6 +147,22 @@ export class ProjectService {
 
   async delete(id: string, userOwnerId: string): Promise<DataReturn> {
     try {
+      const project = await this.getById(id);
+
+      if (!project?.data) {
+        return {
+          statusCode: StatusCodes.NotFound,
+          error: ErrorMessages.ProjectNotFound,
+        };
+      }
+
+      if (project.data.main) {
+        return {
+          statusCode: StatusCodes.Forbidden,
+          error: 'The ThonLabs is the main project and cannot be deleted',
+        };
+      }
+
       const { data: userIsOwner } = await this.getByIdAndOwnerId(
         id,
         userOwnerId,

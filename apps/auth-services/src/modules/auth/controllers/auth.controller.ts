@@ -74,9 +74,10 @@ export class AuthController {
     const {
       data: { project, environment },
     } = await this.projectService.create({
-      appName: 'Thon Labs',
+      appName: 'ThonLabs',
       userId: user.id,
       appURL: 'https://thonlabs.io',
+      main: true,
     });
 
     const [, , publicKey] = await Promise.all([

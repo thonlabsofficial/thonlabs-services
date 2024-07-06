@@ -90,6 +90,7 @@ model Project {
   updatedAt           DateTime                     @updatedAt
   userOwner           User                         @relation(fields: [userOwnerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userOwnerId         String
+  main                Boolean                      @default(false)
   environments        Environment[]
   environmentsConfigs ProjectConfigOnEnvironment[]
 
