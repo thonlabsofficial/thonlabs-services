@@ -20,4 +20,5 @@ export const updateGeneralSettingsValidator = z.object({
   name: z
     .string({ required_error: ErrorMessages.RequiredField })
     .max(25, ErrorMessages.MaxLength),
+  appURL: z.string({ required_error: ErrorMessages.RequiredField }).url(),
 });

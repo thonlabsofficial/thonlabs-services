@@ -32,9 +32,9 @@ export class EnvironmentService {
       select: {
         id: true,
         name: true,
-        active: true,
         tokenExpiration: true,
         refreshTokenExpiration: true,
+        authProvider: true,
         appURL: true,
         createdAt: true,
         updatedAt: true,
@@ -485,14 +485,28 @@ export class EnvironmentService {
 
   async updateGeneralSettings(
     environmentId: string,
-    payload: { name: string },
+    payload: { name: string; appURL: string },
   ) {
+    const environment = await this.getDetailedById(environmentId);
+
+    if (payload.appURL !== environment.appURL) {
+      const urlExists = await this.validateURL(
+        payload.appURL,
+        environment.project.userOwnerId,
+      );
+
+      if (urlExists?.error) {
+        return urlExists;
+      }
+    }
+
     await this.databaseService.environment.update({
       where: {
         id: environmentId,
       },
       data: {
         name: payload.name,
+        appURL: payload.appURL,
       },
     });
 
