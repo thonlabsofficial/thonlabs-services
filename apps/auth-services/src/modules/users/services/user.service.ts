@@ -210,6 +210,15 @@ export class UserService {
     environmentId: string,
     password: string,
   ) {
+    const isActiveUser = await this.isActiveUser(userId, environmentId);
+
+    if (!isActiveUser) {
+      return {
+        statusCode: StatusCodes.NotAcceptable,
+        error: ErrorMessages.InvalidUser,
+      };
+    }
+
     const hashPassword = await Crypt.hash(password);
 
     await this.databaseService.user.update({
@@ -226,6 +235,15 @@ export class UserService {
   }
 
   async updateEmailConfirmation(userId: string, environmentId: string) {
+    const isActiveUser = await this.isActiveUser(userId, environmentId);
+
+    if (!isActiveUser) {
+      return {
+        statusCode: StatusCodes.NotAcceptable,
+        error: ErrorMessages.InvalidUser,
+      };
+    }
+
     await this.databaseService.user.update({
       where: {
         id: userId,
@@ -331,6 +349,8 @@ export class UserService {
         lastSignIn: true,
         profilePicture: true,
         updatedAt: true,
+        environmentId: true,
+        emailConfirmed: true,
       },
       where: {
         environmentId: params.environmentId,
@@ -351,8 +371,21 @@ export class UserService {
     this.logger.log(`User ${userId} has been deleted with all relations`);
   }
 
+  async isActiveUser(userId: string, environmentId: string) {
+    const user = await this.databaseService.user.findFirst({
+      where: {
+        id: userId,
+        environmentId,
+      },
+    });
+
+    return user?.active || false;
+  }
+
   private deletePrivateData(user: User) {
     delete user.password;
     delete user.thonLabsUser;
+    delete user.authKey;
+    delete user.roleId;
   }
 }

@@ -50,6 +50,14 @@ export class AuthService {
       return error;
     }
 
+    if (!user.active) {
+      this.logger.error(`User ${user.id} is not active`);
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.InvalidCredentials,
+      };
+    }
+
     if (!user.password) {
       return error;
     }
@@ -188,6 +196,14 @@ export class AuthService {
     }
 
     const user = await this.userService.getDetailedById(data.relationId);
+
+    if (!user.active) {
+      this.logger.error(`User ${user.id} is not active`);
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.InvalidUser,
+      };
+    }
 
     if (user.environmentId !== environmentId) {
       this.logger.error(

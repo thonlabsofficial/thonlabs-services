@@ -309,7 +309,7 @@ export class AuthController {
       environment.id,
     );
 
-    if (user) {
+    if (user && user.active) {
       await this.tokenStorageService.deleteMany(
         TokenTypes.ResetPassword,
         user.id,
@@ -364,6 +364,17 @@ export class AuthController {
         tokenValidation.error,
       );
     }
+
+    const isActiveUser = await this.userService.isActiveUser(
+      tokenValidation.data.relationId,
+      environment.id,
+    );
+
+    if (!isActiveUser) {
+      throw new exceptionsMapper[StatusCodes.NotAcceptable](
+        ErrorMessages.InvalidUser,
+      );
+    }
   }
 
   @PublicRoute()
@@ -395,7 +406,7 @@ export class AuthController {
       );
     }
 
-    await Promise.all([
+    const [, updatePassword] = await Promise.all([
       this.tokenStorageService.delete(token),
       this.userService.updatePassword(
         tokenValidation.data.relationId,
@@ -403,6 +414,12 @@ export class AuthController {
         payload.password,
       ),
     ]);
+
+    if (updatePassword.statusCode) {
+      throw new exceptionsMapper[updatePassword.statusCode](
+        updatePassword.error,
+      );
+    }
   }
 
   @PublicRoute()
@@ -428,11 +445,18 @@ export class AuthController {
       );
     }
 
-    await this.userService.updateEmailConfirmation(
-      tokenValidation.data.relationId,
-      environment.id,
-    );
+    const updateEmailConfirmation =
+      await this.userService.updateEmailConfirmation(
+        tokenValidation.data.relationId,
+        environment.id,
+      );
 
     await this.tokenStorageService.delete(token);
+
+    if (updateEmailConfirmation.statusCode) {
+      throw new exceptionsMapper[updateEmailConfirmation.statusCode](
+        updateEmailConfirmation.error,
+      );
+    }
   }
 }
