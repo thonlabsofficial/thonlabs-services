@@ -90,6 +90,8 @@ export class UserController {
       });
     }
 
+    delete newUser.authKey;
+
     return newUser;
   }
 

@@ -43,6 +43,7 @@ import {
 } from '../validators/reset-password-validators';
 import { getFirstName } from '@/utils/services/names-helpers';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
+import { add } from 'date-fns';
 
 @Controller('auth')
 export class AuthController {
@@ -139,7 +140,7 @@ export class AuthController {
 
     if (payload.password) {
       // No need wait email send after signup
-      this.emailService.send({
+      await this.emailService.send({
         to: user.email,
         emailTemplateType: EmailTemplates.ConfirmEmail,
         environmentId: environment.id,
@@ -151,15 +152,38 @@ export class AuthController {
         environment as Environment,
       );
 
+      await this.emailService.send({
+        to: user.email,
+        emailTemplateType: EmailTemplates.Welcome,
+        environmentId: environment.id,
+        data: {
+          appName: emailData.appName,
+          userFirstName: emailData.userFirstName,
+        },
+        scheduledAt: add(new Date(), { minutes: 5 }),
+      });
+
       return tokens;
     } else {
       // Wait the email sending
-      await this.emailService.send({
-        to: user.email,
-        emailTemplateType: EmailTemplates.MagicLink,
-        environmentId: environment.id,
-        data: emailData,
-      });
+      await Promise.all([
+        this.emailService.send({
+          to: user.email,
+          emailTemplateType: EmailTemplates.MagicLink,
+          environmentId: environment.id,
+          data: emailData,
+        }),
+        this.emailService.send({
+          to: user.email,
+          emailTemplateType: EmailTemplates.Welcome,
+          environmentId: environment.id,
+          data: {
+            appName: emailData.appName,
+            userFirstName: emailData.userFirstName,
+          },
+          scheduledAt: add(new Date(), { minutes: 5 }),
+        }),
+      ]);
     }
   }
 

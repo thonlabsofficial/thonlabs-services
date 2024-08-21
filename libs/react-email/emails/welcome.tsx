@@ -9,7 +9,7 @@ export function Welcome() {
       <Text className={textVariants({ variant: 'paragraphEmail' })}>
         Hey{' '}
         {
-          '<% if (userFullName) { %> <%= userFullName %><% } else { %>there<% } %>'
+          '<% if (userFirstName) { %> <%= userFirstName %><% } else { %>there<% } %>'
         }
         ! 👋
       </Text>

@@ -15,7 +15,7 @@ interface SendEmailParams {
     userFirstName?: string;
     inviter?: User;
   };
-  scheduledAt?: string;
+  scheduledAt?: Date;
 }
 
 @Injectable()
@@ -36,14 +36,10 @@ export class EmailService {
     scheduledAt,
   }: SendEmailParams) {
     try {
-      this.logger.log(`Email ${emailTemplateType} sending`);
-
       const emailTemplate = await this.emailTemplatesService.getByType(
         emailTemplateType,
         environmentId,
       );
-
-      this.logger.log(`Email ${emailTemplateType} found template`);
 
       await this.resend.emails.send({
         from: `${emailTemplate.fromName} <${emailTemplate.fromEmail}>`,
@@ -54,7 +50,7 @@ export class EmailService {
           preview: emailTemplate.preview,
         }),
         replyTo: emailTemplate.replyTo,
-        scheduledAt,
+        scheduledAt: scheduledAt?.toISOString(),
       });
 
       this.logger.log(`Email ${emailTemplateType} sent`);

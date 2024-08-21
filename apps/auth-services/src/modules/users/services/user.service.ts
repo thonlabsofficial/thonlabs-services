@@ -385,7 +385,6 @@ export class UserService {
   private deletePrivateData(user: User) {
     delete user.password;
     delete user.thonLabsUser;
-    delete user.authKey;
     delete user.roleId;
   }
 }
