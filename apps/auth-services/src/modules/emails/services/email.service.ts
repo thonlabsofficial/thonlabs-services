@@ -15,6 +15,7 @@ interface SendEmailParams {
     userFirstName?: string;
     inviter?: User;
   };
+  scheduledAt?: string;
 }
 
 @Injectable()
@@ -27,7 +28,13 @@ export class EmailService {
     this.resend = new Resend(process.env.EMAIL_PROVIDER_API_KEY);
   }
 
-  async send({ to, environmentId, emailTemplateType, data }: SendEmailParams) {
+  async send({
+    to,
+    environmentId,
+    emailTemplateType,
+    data,
+    scheduledAt,
+  }: SendEmailParams) {
     try {
       this.logger.log(`Email ${emailTemplateType} sending`);
 
@@ -46,7 +53,8 @@ export class EmailService {
           ...data,
           preview: emailTemplate.preview,
         }),
-        reply_to: emailTemplate.replyTo,
+        replyTo: emailTemplate.replyTo,
+        scheduledAt,
       });
 
       this.logger.log(`Email ${emailTemplateType} sent`);
