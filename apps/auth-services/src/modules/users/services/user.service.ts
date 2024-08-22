@@ -372,7 +372,16 @@ export class UserService {
     return users;
   }
 
-  async deleteUser(userId: string, environmentId: string) {
+  async deleteUser(userId: string, environmentId: string): Promise<DataReturn> {
+    const userProjectsCount = await this.userProjectsCount(userId);
+
+    if (userProjectsCount > 0) {
+      return {
+        statusCode: StatusCodes.Forbidden,
+        error: 'User that has projects cannot be deleted',
+      };
+    }
+
     await this.databaseService.user.delete({
       where: {
         id: userId,
@@ -381,17 +390,6 @@ export class UserService {
     });
 
     this.logger.log(`User ${userId} has been deleted with all relations`);
-  }
-
-  async isActiveUser(userId: string, environmentId: string) {
-    const user = await this.databaseService.user.findFirst({
-      where: {
-        id: userId,
-        environmentId,
-      },
-    });
-
-    return user?.active || false;
   }
 
   async updateStatus(userId: string, environmentId: string, active: boolean) {
@@ -408,6 +406,27 @@ export class UserService {
     this.logger.log(
       `User ${userId} has been ${active ? 'activated' : 'deactivated'}`,
     );
+  }
+
+  async userProjectsCount(userId: string) {
+    const userProjectsCount = await this.databaseService.project.count({
+      where: {
+        userOwnerId: userId,
+      },
+    });
+
+    return userProjectsCount;
+  }
+
+  async isActiveUser(userId: string, environmentId: string) {
+    const user = await this.databaseService.user.findFirst({
+      where: {
+        id: userId,
+        environmentId,
+      },
+    });
+
+    return user?.active || false;
   }
 
   private deletePrivateData(user: User, includeInternalData = false) {

@@ -46,6 +46,8 @@ export enum ErrorMessages {
   EmailTemplateNotFound = 'Email template not found',
   MaxLength = 'Max length exceeded',
   InvalidUser = 'Invalid user',
+  CannotChangeOwnStatus = 'You cannot change your own status',
+  CannotDeleteOwnUser = 'You cannot delete your own user',
 }
 
 export const exceptionsMapper = {

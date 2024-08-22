@@ -153,6 +153,13 @@ export class UserController {
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   @SchemaValidator(updateStatusValidator)
   async updateActive(@Req() req, @Param('id') id: string, @Body() payload) {
+    const session = req.session;
+    if (id === session?.id) {
+      throw new exceptionsMapper[StatusCodes.Forbidden](
+        ErrorMessages.CannotChangeOwnStatus,
+      );
+    }
+
     const environmentId = req.headers['tl-env-id'];
 
     const user = await this.userService.updateStatus(
@@ -168,9 +175,20 @@ export class UserController {
   @SecretKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   async delete(@Req() req, @Param('id') id: string) {
+    const session = req.session;
+    if (id === session?.id) {
+      throw new exceptionsMapper[StatusCodes.Forbidden](
+        ErrorMessages.CannotDeleteOwnUser,
+      );
+    }
+
     const environmentId = req.headers['tl-env-id'];
 
-    await this.userService.deleteUser(id, environmentId);
+    const data = await this.userService.deleteUser(id, environmentId);
+
+    if (data.statusCode) {
+      throw new exceptionsMapper[data.statusCode](data.error);
+    }
   }
 
   @Patch(':userId/set-as-thon-labs-user')
