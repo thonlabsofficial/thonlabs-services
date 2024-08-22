@@ -25,6 +25,7 @@ import { getFirstName } from '@/utils/services/names-helpers';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
 import {
   createUserValidator,
+  updateStatusValidator,
   updateUserGeneralDataValidator,
 } from '../validators/user-validators';
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
@@ -142,6 +143,22 @@ export class UserController {
       id,
       environmentId,
       payload,
+    );
+
+    return user;
+  }
+
+  @Patch('/:id/status')
+  @SecretKeyOrThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  @SchemaValidator(updateStatusValidator)
+  async updateActive(@Req() req, @Param('id') id: string, @Body() payload) {
+    const environmentId = req.headers['tl-env-id'];
+
+    const user = await this.userService.updateStatus(
+      id,
+      environmentId,
+      payload.active,
     );
 
     return user;

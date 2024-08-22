@@ -10,6 +10,7 @@ import {
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import Crypt from '@/utils/services/crypt';
 import rand from '@/utils/services/rand';
+import prepareString from '@/utils/services/prepare-string';
 
 @Injectable()
 export class UserService {
@@ -151,7 +152,7 @@ export class UserService {
       const user = await this.databaseService.user.create({
         data: {
           email: payload.email,
-          fullName: payload.fullName,
+          fullName: prepareString(payload.fullName),
           password,
           thonLabsUser: false,
           environmentId: payload.environmentId,
@@ -276,19 +277,30 @@ export class UserService {
     environmentId: string,
     payload: { fullName: string },
   ) {
-    const user = await this.databaseService.user.update({
+    const user = await this.getByIdAndEnv(userId, environmentId);
+
+    if (!user) {
+      return {
+        statusCode: StatusCodes.NotFound,
+        error: ErrorMessages.UserNotFound,
+      };
+    }
+
+    const updatedUser = await this.databaseService.user.update({
       where: {
         id: userId,
         environmentId,
       },
       data: {
-        fullName: payload.fullName,
+        fullName: prepareString(payload.fullName),
       },
     });
 
+    this.deletePrivateData(updatedUser, true);
+
     this.logger.log(`General data updated for ${userId}`);
 
-    return user;
+    return updatedUser;
   }
 
   async setAsThonLabsUser(userId: string) {
@@ -382,9 +394,29 @@ export class UserService {
     return user?.active || false;
   }
 
-  private deletePrivateData(user: User) {
+  async updateStatus(userId: string, environmentId: string, active: boolean) {
+    await this.databaseService.user.update({
+      where: {
+        id: userId,
+        environmentId,
+      },
+      data: {
+        active,
+      },
+    });
+
+    this.logger.log(
+      `User ${userId} has been ${active ? 'activated' : 'deactivated'}`,
+    );
+  }
+
+  private deletePrivateData(user: User, includeInternalData = false) {
     delete user.password;
     delete user.thonLabsUser;
     delete user.roleId;
+
+    if (!includeInternalData) {
+      delete user.authKey;
+    }
   }
 }
