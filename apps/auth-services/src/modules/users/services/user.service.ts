@@ -434,7 +434,7 @@ export class UserService {
     delete user.thonLabsUser;
     delete user.roleId;
 
-    if (!includeInternalData) {
+    if (includeInternalData) {
       delete user.authKey;
     }
   }
