@@ -133,7 +133,7 @@ export class ProjectService {
       },
     });
 
-    this.logger.warn('Project created', project.id);
+    this.logger.warn(`Project created (${project.id})`);
 
     // Create a default environment
     const { data: environment } = await this.environmentsService.create({

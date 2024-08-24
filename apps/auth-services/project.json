@@ -20,7 +20,8 @@
         "outputPath": "dist/apps/auth-services",
         "main": "apps/auth-services/src/main.ts",
         "tsConfig": "apps/auth-services/tsconfig.app.json",
-        "webpackConfig": "apps/auth-services/webpack.config.js"
+        "webpackConfig": "apps/auth-services/webpack.config.js",
+        "sourceMap": true
       },
       "configurations": {
         "development": {},

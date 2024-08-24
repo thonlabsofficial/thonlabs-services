@@ -33,8 +33,6 @@ export class EmailTemplateService {
     environmentId: string,
   ): Promise<DataReturn | void> {
     try {
-      const emailTemplates: Partial<EmailTemplate>[] = [];
-
       await this.databaseService.emailTemplate.deleteMany({
         where: { environmentId },
       });
@@ -46,22 +44,24 @@ export class EmailTemplateService {
       const environmentDomain = new URL(environment.appURL).hostname;
 
       for (const [type, data] of Object.entries(emailTemplatesMapper)) {
-        emailTemplates.push({
-          type: type as EmailTemplates,
-          content: unescape(render(data.content, { pretty: true })),
-          name: data.name,
-          subject: data.subject,
-          fromEmail: `${data.fromEmail}@${environmentDomain}`,
-          fromName: `${environment.project.appName} Team`,
-          preview: data.preview,
-          replyTo: data.replyTo,
-          environmentId,
-        });
-      }
+        const content = unescape(render(data.content, { pretty: true }));
 
-      await this.databaseService.emailTemplate.createMany({
-        data: emailTemplates as EmailTemplate[],
-      });
+        await this.databaseService.emailTemplate.create({
+          data: {
+            type: type as EmailTemplates,
+            content,
+            name: data.name,
+            subject: data.subject,
+            fromEmail: `${data.fromEmail}@${environmentDomain}`,
+            fromName: `${environment.project.appName} Team`,
+            preview: data.preview,
+            replyTo: data.replyTo,
+            environmentId,
+          },
+        });
+
+        this.logger.log(`Email template ${type} created`);
+      }
 
       this.logger.log(`Email templates created for env: ${environmentId}`);
     } catch (e) {

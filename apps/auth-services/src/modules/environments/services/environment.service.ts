@@ -372,8 +372,7 @@ export class EnvironmentService {
     });
 
     this.logger.warn(
-      `"${environment.name}" environment created`,
-      environment.id,
+      `"${environment.name}" environment created (${environment.id})`,
     );
 
     // Create email templates for the environment above

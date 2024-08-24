@@ -4,13 +4,12 @@ import ForgotPassword from '@/emails/forgot-password';
 import Welcome from '@/emails/welcome';
 import Invite from '@/emails/invite';
 import { EmailTemplate, EmailTemplates } from '@prisma/client';
-import { JSX } from 'react';
 
 const emailTemplatesMapper: {
   [key in EmailTemplates]: Partial<
     Omit<EmailTemplate, 'content' | 'fromName'>
   > & {
-    content: JSX.Element;
+    content: any;
   };
 } = {
   [EmailTemplates.MagicLink]: {
