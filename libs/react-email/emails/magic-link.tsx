@@ -5,7 +5,7 @@ import { buttonVariants } from '@/ui/components/button';
 import { textVariants } from '@/ui/components/text';
 
 export function MagicLink() {
-  const href = `<%= appURL %>/auth/magic/<%= token %>`;
+  const href = `<%= authURL %>/auth/magic/<%= token %>?r=<%= appURL %>`;
 
   return (
     <EmailBaseTemplate title="Your Login Link">

@@ -9,7 +9,10 @@ import {
   UnauthorizedException,
   Get,
   Patch,
+  Query,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
 import { PublicRoute } from '@/auth/modules/auth/decorators/auth.decorator';
 import { signUpValidator } from '@/auth/modules/auth/validators/signup-validators';
@@ -120,7 +123,7 @@ export class AuthController {
     } = await this.tokenStorageService.create({
       relationId: user.id,
       type: payload.password ? TokenTypes.ConfirmEmail : TokenTypes.MagicLogin,
-      expiresIn: payload.password ? '1d' : '30m',
+      expiresIn: payload.password ? '5h' : '30m',
     });
 
     if (tokenError.error) {
@@ -139,33 +142,32 @@ export class AuthController {
     };
 
     if (payload.password) {
-      // No need wait email send after signup
-      await this.emailService.send({
-        to: user.email,
-        emailTemplateType: EmailTemplates.ConfirmEmail,
-        environmentId: environment.id,
-        data: emailData,
-      });
-
       const { data: tokens } = await this.tokenStorageService.createAuthTokens(
         user,
         environment as Environment,
       );
 
-      await this.emailService.send({
-        to: user.email,
-        emailTemplateType: EmailTemplates.Welcome,
-        environmentId: environment.id,
-        data: {
-          appName: emailData.appName,
-          userFirstName: emailData.userFirstName,
-        },
-        scheduledAt: add(new Date(), { minutes: 5 }),
-      });
+      await Promise.all([
+        this.emailService.send({
+          to: user.email,
+          emailTemplateType: EmailTemplates.ConfirmEmail,
+          environmentId: environment.id,
+          data: emailData,
+        }),
+        this.emailService.send({
+          to: user.email,
+          emailTemplateType: EmailTemplates.Welcome,
+          environmentId: environment.id,
+          data: {
+            appName: emailData.appName,
+            userFirstName: emailData.userFirstName,
+          },
+          scheduledAt: add(new Date(), { minutes: 5 }),
+        }),
+      ]);
 
       return tokens;
     } else {
-      // Wait the email sending
       await Promise.all([
         this.emailService.send({
           to: user.email,
@@ -364,7 +366,6 @@ export class AuthController {
   }
 
   @PublicRoute()
-  @NeedsPublicKey()
   @HttpCode(StatusCodes.OK)
   @Get('/reset-password/:token')
   public async validateTokenResetPassword(
@@ -448,22 +449,26 @@ export class AuthController {
 
   @PublicRoute()
   @HttpCode(StatusCodes.OK)
-  @NeedsPublicKey()
   @Get('/confirm-email/:token')
-  public async confirmEmail(@Req() req, @Param('token') token: string) {
-    const { data: environment } =
-      await this.environmentService.getByPublicKeyFromRequest(req);
-
-    if (!environment) {
-      throw new UnauthorizedException(ErrorMessages.Unauthorized);
-    }
-
-    const tokenValidation = await this.authService.validateUserTokenExpiration(
+  public async confirmEmail(
+    @Param('token') token: string,
+    @Query('r') redirect = null,
+    @Res() res: Response,
+  ) {
+    let tokenValidation = await this.authService.validateUserTokenExpiration(
       token,
       TokenTypes.ConfirmEmail,
     );
 
-    if (tokenValidation.statusCode) {
+    if (tokenValidation?.statusCode) {
+      tokenValidation = await this.authService.validateUserTokenExpiration(
+        token,
+        TokenTypes.InviteUser,
+      );
+    }
+
+    // If not found both types of token, then returns 404
+    if (tokenValidation?.statusCode) {
       throw new exceptionsMapper[tokenValidation.statusCode](
         tokenValidation.error,
       );
@@ -472,15 +477,18 @@ export class AuthController {
     const updateEmailConfirmation =
       await this.userService.updateEmailConfirmation(
         tokenValidation.data.relationId,
-        environment.id,
       );
 
     await this.tokenStorageService.delete(token);
 
-    if (updateEmailConfirmation.statusCode) {
+    if (updateEmailConfirmation?.statusCode) {
       throw new exceptionsMapper[updateEmailConfirmation.statusCode](
         updateEmailConfirmation.error,
       );
+    }
+
+    if (redirect) {
+      return res.redirect(StatusCodes.MovedPermanently, redirect);
     }
   }
 }

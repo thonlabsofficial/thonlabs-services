@@ -314,6 +314,9 @@ export class AuthService {
     const tokenData = await this.tokenStorageService.getByToken(token, type);
 
     if (!tokenData) {
+      this.logger.warn(
+        `validateUserTokenExpiration: Token not found (${token.substring(0, 10)} - ${type})`,
+      );
       return {
         statusCode: StatusCodes.NotFound,
       };
@@ -322,16 +325,21 @@ export class AuthService {
     const user = await this.userService.getById(tokenData.relationId);
 
     if (!user) {
+      this.logger.warn(
+        `validateUserTokenExpiration: user not found (${tokenData.relationId})`,
+      );
       return {
         statusCode: StatusCodes.NotFound,
         error: ErrorMessages.UserNotFound,
       };
     }
 
-    const { statusCode } =
-      this.tokenStorageService.isTokenExpirationValid(tokenData);
+    const data = this.tokenStorageService.isTokenExpirationValid(tokenData);
 
-    if (statusCode) {
+    if (data?.statusCode) {
+      this.logger.warn(
+        `validateUserTokenExpiration: token expired (${token.substring(0, 10)} - ${type})`,
+      );
       return {
         statusCode: StatusCodes.NotFound,
       };

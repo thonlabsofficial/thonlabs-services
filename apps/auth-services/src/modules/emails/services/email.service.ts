@@ -14,6 +14,7 @@ interface SendEmailParams {
     appURL?: string;
     userFirstName?: string;
     inviter?: User;
+    publicKey?: string;
   };
   scheduledAt?: Date;
 }

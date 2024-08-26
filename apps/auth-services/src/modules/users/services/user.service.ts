@@ -240,8 +240,13 @@ export class UserService {
     this.logger.log(`Password updated for ${userId}`);
   }
 
-  async updateEmailConfirmation(userId: string, environmentId: string) {
-    const isActiveUser = await this.isActiveUser(userId, environmentId);
+  async updateEmailConfirmation(userId: string) {
+    const isActiveUser = await this.databaseService.user.findFirst({
+      where: {
+        id: userId,
+        active: true,
+      },
+    });
 
     if (!isActiveUser) {
       return {
@@ -253,7 +258,6 @@ export class UserService {
     await this.databaseService.user.update({
       where: {
         id: userId,
-        environmentId,
       },
       data: {
         emailConfirmed: true,
@@ -471,13 +475,14 @@ export class UserService {
     const environment =
       await this.environmentService.getDetailedById(environmentId);
 
-    const [inviter, { data: tokenData }] = await Promise.all([
+    const [inviter, { data: tokenData }, publicKey] = await Promise.all([
       this.getById(fromUserId),
       this.tokenStorageService.create({
         type: TokenTypes.InviteUser,
         expiresIn: '5h',
         relationId: user.id,
       }),
+      this.environmentService.getPublicKey(environmentId),
     ]);
 
     await this.emailService.send({
@@ -488,6 +493,7 @@ export class UserService {
         token: tokenData?.token,
         appName: environment.project.appName,
         appURL: environment.appURL,
+        publicKey,
         inviter,
         userFirstName: getFirstName(user.fullName),
       },
