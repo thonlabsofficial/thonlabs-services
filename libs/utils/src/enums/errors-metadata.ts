@@ -48,6 +48,8 @@ export enum ErrorMessages {
   InvalidUser = 'Invalid user',
   CannotChangeOwnStatus = 'You cannot change your own status',
   CannotDeleteOwnUser = 'You cannot delete your own user',
+  UserAlreadyAcceptedInvitation = 'User already accepted invitation',
+  UserIsNotActive = 'User is not active',
 }
 
 export const exceptionsMapper = {

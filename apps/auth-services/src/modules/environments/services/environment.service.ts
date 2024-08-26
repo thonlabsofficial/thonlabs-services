@@ -55,6 +55,7 @@ export class EnvironmentService {
         tokenExpiration: true,
         refreshTokenExpiration: true,
         appURL: true,
+        authProvider: true,
         createdAt: true,
         updatedAt: true,
         projectId: true,

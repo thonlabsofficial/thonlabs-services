@@ -5,7 +5,7 @@ import { buttonVariants } from '@/ui/components/button';
 import { textVariants } from '@/ui/components/text';
 
 export function Invite() {
-  const href = `<%= appURL %>/auth/invite/<%= token %>`;
+  const href = `<%= appURL %>/auth/confirm-email/<%= token %>`;
 
   return (
     <EmailBaseTemplate title="You're invited to join <%= appName %>!">

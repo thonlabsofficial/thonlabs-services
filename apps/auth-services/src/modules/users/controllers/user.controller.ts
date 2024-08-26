@@ -19,7 +19,7 @@ import {
 } from '@/utils/enums/errors-metadata';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import { EmailService } from '@/auth/modules/emails/services/email.service';
-import { EmailTemplates, TokenTypes } from '@prisma/client';
+import { AuthProviders, EmailTemplates, TokenTypes } from '@prisma/client';
 import { TokenStorageService } from '../../token-storage/services/token-storage.service';
 import { getFirstName } from '@/utils/services/names-helpers';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
@@ -67,28 +67,11 @@ export class UserController {
     const newUser = data.data;
 
     if (sendInvite === 'true') {
-      const [environment, inviter, { data: tokenData }] = await Promise.all([
-        this.environmentService.getDetailedById(environmentId),
-        this.userService.getById(session.id),
-        this.tokenStorageService.create({
-          type: TokenTypes.InviteUser,
-          expiresIn: '7d',
-          relationId: newUser.id,
-        }),
-      ]);
-
-      await this.emailService.send({
-        to: payload.email,
-        emailTemplateType: EmailTemplates.Invite,
+      await this.userService.sendInvitation(
+        session.id,
+        newUser.id,
         environmentId,
-        data: {
-          token: tokenData?.token,
-          appName: environment.project.appName,
-          appURL: environment.appURL,
-          inviter,
-          userFirstName: getFirstName(newUser.fullName),
-        },
-      });
+      );
     }
 
     delete newUser.authKey;
@@ -162,13 +145,18 @@ export class UserController {
 
     const environmentId = req.headers['tl-env-id'];
 
-    const user = await this.userService.updateStatus(
+    const data = await this.userService.updateStatus(
       id,
       environmentId,
       payload.active,
     );
 
-    return user;
+    return {
+      id: data?.data?.id,
+      fullName: data?.data?.fullName,
+      environmentId: data?.data?.environmentId,
+      active: data?.data?.active,
+    };
   }
 
   @Delete('/:id')
@@ -184,11 +172,37 @@ export class UserController {
 
     const environmentId = req.headers['tl-env-id'];
 
-    const data = await this.userService.deleteUser(id, environmentId);
+    const data = await this.userService.exclude(id, environmentId);
 
-    if (data.statusCode) {
+    if (data?.statusCode) {
       throw new exceptionsMapper[data.statusCode](data.error);
     }
+
+    return {
+      id: data?.data?.id,
+      fullName: data?.data?.fullName,
+      environmentId: data?.data?.environmentId,
+    };
+  }
+
+  @Post(':userId/resend-invitation')
+  @SecretKeyOrThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  async resendInvitation(@Param('userId') userId: string, @Req() req) {
+    const session = req.session;
+    const environmentId = req.headers['tl-env-id'];
+
+    const data = await this.userService.sendInvitation(
+      session.id,
+      userId,
+      environmentId,
+    );
+
+    if (data?.statusCode) {
+      throw new exceptionsMapper[data.statusCode](data.error);
+    }
+
+    return data?.data;
   }
 
   @Patch(':userId/set-as-thon-labs-user')

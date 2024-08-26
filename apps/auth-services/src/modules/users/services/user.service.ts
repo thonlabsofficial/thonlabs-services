@@ -1,6 +1,6 @@
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { Injectable, Logger } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { EmailTemplates, TokenTypes, User } from '@prisma/client';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import {
   ErrorCodes,
@@ -11,6 +11,9 @@ import { EnvironmentService } from '@/auth/modules/environments/services/environ
 import Crypt from '@/utils/services/crypt';
 import rand from '@/utils/services/rand';
 import prepareString from '@/utils/services/prepare-string';
+import { getFirstName } from '@/utils/services/names-helpers';
+import { EmailService } from '../../emails/services/email.service';
+import { TokenStorageService } from '../../token-storage/services/token-storage.service';
 
 @Injectable()
 export class UserService {
@@ -18,7 +21,9 @@ export class UserService {
 
   constructor(
     private databaseService: DatabaseService,
-    private environmentsService: EnvironmentService,
+    private environmentService: EnvironmentService,
+    private tokenStorageService: TokenStorageService,
+    private emailService: EmailService,
   ) {}
 
   async getOurByEmail(email: string) {
@@ -116,7 +121,7 @@ export class UserService {
     password?: string;
     environmentId: string;
   }): Promise<DataReturn<User>> {
-    const environmentExists = await this.environmentsService.getById(
+    const environmentExists = await this.environmentService.getById(
       payload.environmentId,
     );
 
@@ -175,7 +180,7 @@ export class UserService {
 
       this.logger.log(`User ${user.id} auth key created`);
 
-      const { data: environment } = await this.environmentsService.getById(
+      const { data: environment } = await this.environmentService.getById(
         payload.environmentId,
       );
 
@@ -372,7 +377,10 @@ export class UserService {
     return users;
   }
 
-  async deleteUser(userId: string, environmentId: string): Promise<DataReturn> {
+  async exclude(
+    userId: string,
+    environmentId: string,
+  ): Promise<DataReturn<User>> {
     const userProjectsCount = await this.userProjectsCount(userId);
 
     if (userProjectsCount > 0) {
@@ -382,7 +390,7 @@ export class UserService {
       };
     }
 
-    await this.databaseService.user.delete({
+    const user = await this.databaseService.user.delete({
       where: {
         id: userId,
         environmentId,
@@ -390,10 +398,18 @@ export class UserService {
     });
 
     this.logger.log(`User ${userId} has been deleted with all relations`);
+
+    this.deletePrivateData(user, true);
+
+    return { data: user };
   }
 
-  async updateStatus(userId: string, environmentId: string, active: boolean) {
-    await this.databaseService.user.update({
+  async updateStatus(
+    userId: string,
+    environmentId: string,
+    active: boolean,
+  ): Promise<DataReturn<User>> {
+    const user = await this.databaseService.user.update({
       where: {
         id: userId,
         environmentId,
@@ -406,6 +422,8 @@ export class UserService {
     this.logger.log(
       `User ${userId} has been ${active ? 'activated' : 'deactivated'}`,
     );
+
+    return { data: user };
   }
 
   async userProjectsCount(userId: string) {
@@ -427,6 +445,61 @@ export class UserService {
     });
 
     return user?.active || false;
+  }
+
+  async sendInvitation(
+    fromUserId: string,
+    toUserId: string,
+    environmentId: string,
+  ): Promise<DataReturn<User>> {
+    const user = await this.getByIdAndEnv(toUserId, environmentId);
+
+    if (!user?.active) {
+      return {
+        statusCode: StatusCodes.NotAcceptable,
+        error: ErrorMessages.UserIsNotActive,
+      };
+    }
+
+    if (user?.emailConfirmed) {
+      return {
+        statusCode: StatusCodes.BadRequest,
+        error: ErrorMessages.UserAlreadyAcceptedInvitation,
+      };
+    }
+
+    const environment =
+      await this.environmentService.getDetailedById(environmentId);
+
+    const [inviter, { data: tokenData }] = await Promise.all([
+      this.getById(fromUserId),
+      this.tokenStorageService.create({
+        type: TokenTypes.InviteUser,
+        expiresIn: '5h',
+        relationId: user.id,
+      }),
+    ]);
+
+    await this.emailService.send({
+      to: user.email,
+      emailTemplateType: EmailTemplates.Invite,
+      environmentId,
+      data: {
+        token: tokenData?.token,
+        appName: environment.project.appName,
+        appURL: environment.appURL,
+        inviter,
+        userFirstName: getFirstName(user.fullName),
+      },
+    });
+
+    return {
+      data: {
+        id: user.id,
+        fullName: user.fullName,
+        environmentId: user.environmentId,
+      } as User,
+    };
   }
 
   private deletePrivateData(user: User, includeInternalData = false) {
