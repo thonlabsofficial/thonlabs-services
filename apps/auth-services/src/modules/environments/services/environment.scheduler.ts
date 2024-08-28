@@ -48,10 +48,8 @@ export class EnvironmentScheduler {
           );
         }
       } catch (error) {
-        console.error(error);
-
-        this.logger.log(
-          `Custom domain verification failed for environment ${environmentId}`,
+        this.logger.warn(
+          `Custom domain verification failed (ENV: ${environmentId}) - Details: ${error.message}`,
         );
         await this.environmentDomainService.updateCustomDomainLastValidationAt(
           environmentId,

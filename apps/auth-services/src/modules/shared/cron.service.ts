@@ -13,6 +13,12 @@ export class CronService {
 
   startJob(name: CronJobs) {
     const job = this.schedulerRegistry.getCronJob(name);
+
+    if (job.running) {
+      this.logger.log(`Job ${name} is already running`);
+      return;
+    }
+
     job.start();
     this.logger.log(`Started cron job ${name}`);
   }
