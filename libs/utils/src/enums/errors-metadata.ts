@@ -51,6 +51,7 @@ export enum ErrorMessages {
   CannotDeleteOwnUser = 'You cannot delete your own user',
   UserAlreadyAcceptedInvitation = 'User already accepted invitation',
   UserIsNotActive = 'User is not active',
+  InvalidDomainFormat = 'Invalid domain format',
 }
 
 export const exceptionsMapper = {

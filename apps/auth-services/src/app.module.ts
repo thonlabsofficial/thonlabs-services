@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule, seconds } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
+import { ScheduleModule } from '@nestjs/schedule';
 import { SchemaValidatorGuard } from '@/auth/modules/shared/decorators/schema-validator.decorator';
 import { AuthModule } from '@/auth/modules/auth/auth.module';
 import { AuthGuard } from '@/auth/modules/auth/decorators/auth.decorator';
@@ -32,6 +33,7 @@ import { PublicKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/p
     JwtModule.register({
       global: true,
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     UserModule,
     ProjectModule,

@@ -47,6 +47,12 @@ enum AuthProviders {
   EmailAndPassword
 }
 
+enum CustomDomainStatus {
+  Verifying
+  Verified
+  Failed
+}
+
 model User {
   id                String             @id @default(uuid())
   fullName          String?
@@ -117,17 +123,21 @@ model Role {
 }
 
 model Environment {
-  id                     String        @id
-  name                   String
-  active                 Boolean       @default(true)
-  publicKey              String        @unique
-  secretKey              String        @unique
-  tokenExpiration        String        @default("1d")
-  refreshTokenExpiration String?       @default("10d")
-  appURL                 String?
-  authProvider           AuthProviders @default(MagicLogin)
-  createdAt              DateTime      @default(now())
-  updatedAt              DateTime      @updatedAt
+  id                            String              @id
+  name                          String
+  active                        Boolean             @default(true)
+  publicKey                     String              @unique
+  secretKey                     String              @unique
+  tokenExpiration               String              @default("1d")
+  refreshTokenExpiration        String?             @default("10d")
+  appURL                        String?
+  authProvider                  AuthProviders       @default(MagicLogin)
+  createdAt                     DateTime            @default(now())
+  updatedAt                     DateTime            @updatedAt
+  customDomain                  String?
+  customDomainStartValidationAt DateTime?
+  customDomainLastValidationAt  DateTime?
+  customDomainStatus            CustomDomainStatus?
 
   project         Project                      @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   projectId       String

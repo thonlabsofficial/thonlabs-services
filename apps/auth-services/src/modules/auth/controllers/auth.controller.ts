@@ -322,7 +322,12 @@ export class AuthController {
   @NeedsPublicKey()
   @Post('/reset-password')
   @SchemaValidator(requestResetPasswordValidator)
-  public async requestResetPassword(@Req() req, @Body() payload) {
+  public async requestResetPassword(
+    @Req() req,
+    @Body() payload,
+    @Query('r') redirect = null,
+    @Res() res: Response,
+  ) {
     const { data: environment } =
       await this.environmentService.getByPublicKeyFromRequest(req);
 
@@ -362,6 +367,10 @@ export class AuthController {
           token: token.data.token,
         },
       });
+    }
+
+    if (redirect) {
+      return res.redirect(StatusCodes.MovedPermanently, redirect);
     }
   }
 

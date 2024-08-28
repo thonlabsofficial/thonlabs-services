@@ -86,6 +86,12 @@ export class HasEnvAccessGuard implements CanActivate {
       );
 
       if (!tokenData?.relationId) {
+        this.logger.error(
+          `Refresh token relation ID not found (ENV: ${environmentId})`,
+        );
+        res.status(StatusCodes.Unauthorized).json({
+          error: ErrorMessages.Unauthorized,
+        });
         return false;
       }
 
@@ -98,6 +104,9 @@ export class HasEnvAccessGuard implements CanActivate {
         this.logger.error(
           `User not found for Relation ID ${tokenData.relationId} (ENV: ${environmentId})`,
         );
+        res.status(StatusCodes.Unauthorized).json({
+          error: ErrorMessages.Unauthorized,
+        });
         return false;
       }
 

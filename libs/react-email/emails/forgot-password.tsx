@@ -5,7 +5,7 @@ import { buttonVariants } from '@/ui/components/button';
 import { textVariants } from '@/ui/components/text';
 
 export function ForgotPassword() {
-  const href = `<%= appURL %>/auth/reset-password/<%= token %>`;
+  const href = `<%= authURL %>/auth/reset-password/<%= token %>?r=<%= appURL %>`;
 
   return (
     <EmailBaseTemplate title="Reset Your Account Password">
