@@ -1,7 +1,12 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { DataReturn } from '@/utils/interfaces/data-return';
-import { AuthProviders, Environment, Project } from '@prisma/client';
+import {
+  AuthProviders,
+  CustomDomainStatus,
+  Environment,
+  Project,
+} from '@prisma/client';
 import { ProjectService } from '@/auth/modules/projects/services/project.service';
 import {
   StatusCodes,
@@ -36,6 +41,10 @@ export class EnvironmentService {
         refreshTokenExpiration: true,
         authProvider: true,
         appURL: true,
+        customDomain: true,
+        customDomainStatus: true,
+        customDomainStartValidationAt: true,
+        customDomainLastValidationAt: true,
         createdAt: true,
         updatedAt: true,
         projectId: true,

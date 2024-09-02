@@ -14,7 +14,7 @@ export class EnvironmentDomainController {
   @ThonLabsOnly()
   @HasEnvAccess({ param: 'envId' })
   @SchemaValidator(setEnvironmentDomainValidator)
-  async create(@Param('envId') envId: string, @Body() payload) {
+  async set(@Param('envId') envId: string, @Body() payload) {
     const result = await this.environmentDomainService.setCustomDomain(
       envId,
       payload.customDomain,
@@ -23,6 +23,8 @@ export class EnvironmentDomainController {
     if (result?.statusCode) {
       throw new exceptionsMapper[result.statusCode](result.error);
     }
+
+    return result?.data;
   }
 
   @Delete('/')
@@ -48,6 +50,6 @@ export class EnvironmentDomainController {
       throw new exceptionsMapper[result.statusCode](result.error);
     }
 
-    return result.data;
+    return result?.data;
   }
 }

@@ -7,6 +7,8 @@ import { differenceInHours } from 'date-fns/differenceInHours';
 import { CronJobs, CronService } from '@/auth/modules/shared/cron.service';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import prepareString from '@/utils/services/prepare-string';
+import dns from 'dns/promises';
+import getEnvIdHash from '@/utils/services/get-env-id-hash';
 
 @Injectable()
 export class EnvironmentDomainService {
@@ -37,7 +39,14 @@ export class EnvironmentDomainService {
   async setCustomDomain(
     environmentId: string,
     customDomain: string,
-  ): Promise<DataReturn<{ customDomainStatus: CustomDomainStatus }>> {
+  ): Promise<
+    DataReturn<{
+      customDomain: string;
+      customDomainStatus: CustomDomainStatus;
+      customDomainStartValidationAt: Date;
+      customDomainLastValidationAt: Date;
+    }>
+  > {
     const environment =
       await this.environmentService.getDetailedById(environmentId);
 
@@ -76,7 +85,7 @@ export class EnvironmentDomainService {
       };
     }
 
-    const data = await this.databaseService.environment.update({
+    await this.databaseService.environment.update({
       where: {
         id: environmentId,
       },
@@ -85,23 +94,36 @@ export class EnvironmentDomainService {
         customDomainStartValidationAt: new Date(),
         customDomainStatus: CustomDomainStatus.Verifying,
       },
-      select: {
-        customDomainStatus: true,
-      },
     });
 
     this.logger.log(
       `Updated custom domain for environment ${environmentId} to ${customDomain}`,
     );
 
+    await this.verifyAllCustomDomains();
     this.cronService.startJob(CronJobs.CustomDomainVerification);
+
+    const data = await this.databaseService.environment.findUnique({
+      where: { id: environmentId },
+      select: {
+        customDomainStatus: true,
+        customDomain: true,
+        customDomainStartValidationAt: true,
+        customDomainLastValidationAt: true,
+      },
+    });
 
     return { data };
   }
 
-  async verifyCustomDomain(
-    environmentId: string,
-  ): Promise<DataReturn<{ customDomainStatus: CustomDomainStatus }>> {
+  async verifyCustomDomain(environmentId: string): Promise<
+    DataReturn<{
+      customDomain: string;
+      customDomainStatus: CustomDomainStatus;
+      customDomainStartValidationAt: Date;
+      customDomainLastValidationAt: Date;
+    }>
+  > {
     const environment = await this.databaseService.environment.findUnique({
       where: {
         id: environmentId,
@@ -117,7 +139,7 @@ export class EnvironmentDomainService {
       };
     }
 
-    const data = await this.databaseService.environment.update({
+    await this.databaseService.environment.update({
       where: {
         id: environmentId,
       },
@@ -126,12 +148,20 @@ export class EnvironmentDomainService {
         customDomainLastValidationAt: null,
         customDomainStatus: CustomDomainStatus.Verifying,
       },
-      select: {
-        customDomainStatus: true,
-      },
     });
 
+    await this.verifyAllCustomDomains();
     this.cronService.startJob(CronJobs.CustomDomainVerification);
+
+    const data = await this.databaseService.environment.findUnique({
+      where: { id: environmentId },
+      select: {
+        customDomainStatus: true,
+        customDomain: true,
+        customDomainStartValidationAt: true,
+        customDomainLastValidationAt: true,
+      },
+    });
 
     return { data };
   }
@@ -212,6 +242,43 @@ export class EnvironmentDomainService {
         customDomainLastValidationAt: new Date(),
       },
     });
+  }
+
+  async verifyAllCustomDomains() {
+    const domainsToVerify = await this.fetchCustomDomainsToVerify();
+
+    if (domainsToVerify.length === 0) {
+      this.logger.log('No domains to verify, stopping job...');
+      this.cronService.stopJob(CronJobs.CustomDomainVerification);
+      return;
+    }
+
+    this.logger.log(`Found ${domainsToVerify.length} domains to verify`);
+
+    for (const domain of domainsToVerify) {
+      const environmentId = domain.id;
+
+      try {
+        const appDomain = `${getEnvIdHash(environmentId)}.auth.${new URL(process.env.APP_ROOT_URL).hostname}`;
+
+        this.logger.log(
+          `Checking DNS for domain ${domain.customDomain} -> CNAME -> ${appDomain} (ENV: ${environmentId})`,
+        );
+
+        const checkDNS = await dns.resolveCname(domain.customDomain);
+        if (checkDNS.includes(appDomain)) {
+          await this.updateCustomDomainStatus(
+            environmentId,
+            CustomDomainStatus.Verified,
+          );
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Custom domain verification failed (ENV: ${environmentId}) - Details: ${error.message}`,
+        );
+        await this.updateCustomDomainLastValidationAt(environmentId);
+      }
+    }
   }
 
   private _normalizeDomain(domain: string) {
