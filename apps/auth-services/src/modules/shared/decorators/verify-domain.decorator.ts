@@ -63,7 +63,7 @@ export class VerifyDomainGuard implements CanActivate {
 
       if (!isAllowedEndpoint) {
         this.logger.error(
-          `The domain ${originDomain} is not authorized to access ${currentEndpoint}`,
+          `The domain ${originDomain} is not authorized to access ${currentEndpoint} (not allowed)`,
         );
         res.status(StatusCodes.NotFound).send('');
         return false;
