@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { EnvironmentDomainService } from '@/auth/modules/environments/services/environment-domain.service';
 import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
 import { ThonLabsOnly } from '@/auth/modules/shared/decorators/thon-labs-only.decorator';
@@ -9,6 +17,20 @@ import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validat
 @Controller('environments/:envId/domains')
 export class EnvironmentDomainController {
   constructor(private environmentDomainService: EnvironmentDomainService) {}
+
+  @Post('/reverify')
+  @ThonLabsOnly()
+  @HasEnvAccess({ param: 'envId' })
+  async get(@Param('envId') envId: string) {
+    const result =
+      await this.environmentDomainService.reverifyCustomDomain(envId);
+
+    if (result?.statusCode) {
+      throw new exceptionsMapper[result.statusCode](result.error);
+    }
+
+    return result?.data;
+  }
 
   @Patch('/')
   @ThonLabsOnly()

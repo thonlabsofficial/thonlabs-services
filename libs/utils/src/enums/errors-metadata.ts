@@ -52,6 +52,7 @@ export enum ErrorMessages {
   UserAlreadyAcceptedInvitation = 'User already accepted invitation',
   UserIsNotActive = 'User is not active',
   InvalidDomainFormat = 'Invalid domain format',
+  NoCustomDomainFound = 'No custom domain found for this environment',
 }
 
 export const exceptionsMapper = {

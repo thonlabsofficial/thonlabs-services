@@ -14,7 +14,7 @@ import { EnvironmentDomainService } from '@/auth/modules/environments/services/e
     EnvironmentDomainService,
     EnvironmentScheduler,
   ],
-  exports: [EnvironmentService],
+  exports: [EnvironmentService, EnvironmentDomainService],
   imports: [SharedModule, forwardRef(() => ProjectModule), EmailModule],
   controllers: [EnvironmentController, EnvironmentDomainController],
 })

@@ -38,6 +38,7 @@ testem.log
 .env
 .env.*
 !.env.example
+/certs
 
 # System Files
 .DS_Store

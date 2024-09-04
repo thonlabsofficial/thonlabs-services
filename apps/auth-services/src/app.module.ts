@@ -18,6 +18,7 @@ import { ThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/thon-labs-on
 import { HasEnvAccessGuard } from '@/auth/modules/shared/decorators/has-env-access.decorator';
 import { UserOwnsProjectGuard } from '@/auth/modules/shared/decorators/user-owns-project.decorator';
 import { PublicKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
+import { VerifyDomainGuard } from '@/auth/modules/shared/decorators/verify-domain.decorator';
 
 @Module({
   imports: [
@@ -45,6 +46,10 @@ import { PublicKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/p
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: VerifyDomainGuard,
     },
     {
       provide: APP_GUARD,

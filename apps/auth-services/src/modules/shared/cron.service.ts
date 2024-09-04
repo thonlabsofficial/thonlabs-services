@@ -2,7 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 
 export enum CronJobs {
-  CustomDomainVerification = 'custom-domain-verification',
+  VerifyNewCustomDomains = 'verify-new-custom-domains',
+  VerifyCurrentCustomDomains = 'verify-current-custom-domains',
 }
 
 @Injectable()

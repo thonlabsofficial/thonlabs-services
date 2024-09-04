@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { CustomDomainStatus } from '@prisma/client';
-import { StatusCodes } from '@/utils/enums/errors-metadata';
+import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { differenceInHours } from 'date-fns/differenceInHours';
 import { CronJobs, CronService } from '@/auth/modules/shared/cron.service';
@@ -21,11 +21,15 @@ export class EnvironmentDomainService {
     private environmentService: EnvironmentService,
   ) {}
 
-  async fetchCustomDomainsToVerify() {
+  async fetch({
+    customDomainStatus,
+  }: {
+    customDomainStatus: CustomDomainStatus;
+  }) {
     const environments = await this.databaseService.environment.findMany({
       where: {
         customDomain: { not: null },
-        customDomainStatus: CustomDomainStatus.Verifying,
+        customDomainStatus,
       },
       select: {
         id: true,
@@ -34,6 +38,36 @@ export class EnvironmentDomainService {
     });
 
     return environments;
+  }
+
+  async getCustomDomain(environmentId: string) {
+    const data = await this.databaseService.environment.findUnique({
+      where: { id: environmentId },
+      select: {
+        customDomainStatus: true,
+        customDomain: true,
+        customDomainStartValidationAt: true,
+        customDomainLastValidationAt: true,
+      },
+    });
+
+    return data;
+  }
+
+  async getByCustomDomainAndEnvironmentId(
+    customDomain: string,
+    environmentId: string,
+  ) {
+    const data = await this.databaseService.environment.findUnique({
+      where: {
+        id: environmentId,
+        customDomain,
+        customDomainStatus: CustomDomainStatus.Verified,
+      },
+      select: { customDomainStatus: true, customDomain: true },
+    });
+
+    return data;
   }
 
   async setCustomDomain(
@@ -100,19 +134,10 @@ export class EnvironmentDomainService {
       `Updated custom domain for environment ${environmentId} to ${customDomain}`,
     );
 
-    await this.verifyAllCustomDomains();
-    this.cronService.startJob(CronJobs.CustomDomainVerification);
+    await this.verifyCustomDomains([{ id: environmentId, customDomain }]);
+    this.cronService.startJob(CronJobs.VerifyNewCustomDomains);
 
-    const data = await this.databaseService.environment.findUnique({
-      where: { id: environmentId },
-      select: {
-        customDomainStatus: true,
-        customDomain: true,
-        customDomainStartValidationAt: true,
-        customDomainLastValidationAt: true,
-      },
-    });
-
+    const data = await this.getCustomDomain(environmentId);
     return { data };
   }
 
@@ -150,19 +175,12 @@ export class EnvironmentDomainService {
       },
     });
 
-    await this.verifyAllCustomDomains();
-    this.cronService.startJob(CronJobs.CustomDomainVerification);
+    await this.verifyCustomDomains([
+      { id: environmentId, customDomain: environment.customDomain },
+    ]);
+    this.cronService.startJob(CronJobs.VerifyNewCustomDomains);
 
-    const data = await this.databaseService.environment.findUnique({
-      where: { id: environmentId },
-      select: {
-        customDomainStatus: true,
-        customDomain: true,
-        customDomainStartValidationAt: true,
-        customDomainLastValidationAt: true,
-      },
-    });
-
+    const data = await this.getCustomDomain(environmentId);
     return { data };
   }
 
@@ -244,16 +262,46 @@ export class EnvironmentDomainService {
     });
   }
 
-  async verifyAllCustomDomains() {
-    const domainsToVerify = await this.fetchCustomDomainsToVerify();
+  async reverifyCustomDomain(environmentId: string): Promise<
+    DataReturn<{
+      customDomain: string;
+      customDomainStatus: CustomDomainStatus;
+      customDomainStartValidationAt: Date;
+      customDomainLastValidationAt: Date;
+    }>
+  > {
+    const environment = await this.databaseService.environment.findUnique({
+      where: { id: environmentId },
+      select: { customDomain: true },
+    });
 
+    if (!environment?.customDomain) {
+      return {
+        statusCode: StatusCodes.NotFound,
+        error: ErrorMessages.NoCustomDomainFound,
+      };
+    }
+
+    await this.verifyCustomDomains([
+      { id: environmentId, customDomain: environment.customDomain },
+    ]);
+
+    const data = await this.getCustomDomain(environmentId);
+    return { data };
+  }
+
+  async verifyCustomDomains(
+    domainsToVerify: {
+      id: string;
+      customDomain: string;
+    }[],
+  ) {
     if (domainsToVerify.length === 0) {
-      this.logger.log('No domains to verify, stopping job...');
-      this.cronService.stopJob(CronJobs.CustomDomainVerification);
+      this.logger.log('No domains to verify');
       return;
     }
 
-    this.logger.log(`Found ${domainsToVerify.length} domains to verify`);
+    this.logger.log(`Verifying ${domainsToVerify.length} domains`);
 
     for (const domain of domainsToVerify) {
       const environmentId = domain.id;
