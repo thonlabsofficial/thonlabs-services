@@ -17,9 +17,20 @@ import {
 interface Props {
   title: React.ReactNode;
   children?: React.ReactNode;
+  preview?: string;
+  appName?: string;
+  farewell?: string;
+  signature?: string;
 }
 
-export function EmailBaseTemplate({ title = '', children }: Props) {
+export function EmailBaseTemplate({
+  title = '',
+  children,
+  preview = null,
+  appName = '',
+  farewell = '',
+  signature = '',
+}: Props) {
   return (
     <Tailwind
       config={{
@@ -49,9 +60,15 @@ export function EmailBaseTemplate({ title = '', children }: Props) {
             maxWidth: 0,
           }}
         >
-          {'<% if (preview) { %>'}
-          {'<%= preview %>'}
-          {'<% } %>'}
+          {preview !== null || preview !== undefined ? (
+            preview
+          ) : (
+            <>
+              {'<% if (preview) { %>'}
+              {'<%= preview %>'}
+              {'<% } %>'}
+            </>
+          )}
         </div>
         <Head />
         <Body
@@ -84,8 +101,20 @@ export function EmailBaseTemplate({ title = '', children }: Props) {
             <Section className="px-7">{children}</Section>
 
             <Section className="px-7 mb-6">
-              <Text className="font-bold text-zinc-800">
-                {'<%= appName %>'} Team
+              <Text className="mb-0 font-bold text-zinc-800">
+                {farewell && (
+                  <>
+                    <span className="mb-0 text-zinc-800 font-normal">
+                      {farewell}
+                    </span>
+                    <br />
+                  </>
+                )}
+                {signature ? (
+                  signature
+                ) : (
+                  <>{appName ? appName : '<%= appName %>'} Team</>
+                )}
               </Text>
             </Section>
           </Container>

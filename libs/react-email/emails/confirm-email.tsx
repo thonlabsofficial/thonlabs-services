@@ -50,7 +50,13 @@ export function ConfirmEmail() {
       >
         In case of the button not works, you can confirm through the link:
       </Text>
-      <Link href={href} className="mt-0 text-blue-500 text-sm">
+      <Link
+        href={href}
+        className={textVariants({
+          variant: 'link',
+          className: 'text-sm',
+        })}
+      >
         {href}
       </Link>
 
@@ -62,7 +68,12 @@ export function ConfirmEmail() {
       >
         If you didn't initiate this sign-up request, please disregard this
         message or contact our security team{' '}
-        <Link href={href} className="mt-0 mb-3 text-blue-500">
+        <Link
+          href="mailto:security@thonlabs.io"
+          className={textVariants({
+            variant: 'link',
+          })}
+        >
           security@thonlabs.io
         </Link>
         .

@@ -46,7 +46,13 @@ export function ForgotPassword() {
         In case of the button not works, you can reset the password through the
         link:
       </Text>
-      <Link href={href} className="mt-0 text-blue-500 text-sm">
+      <Link
+        href={href}
+        className={textVariants({
+          variant: 'link',
+          className: 'text-sm',
+        })}
+      >
         {href}
       </Link>
 
@@ -58,7 +64,12 @@ export function ForgotPassword() {
       >
         If you didn't initiate this reset password request, please disregard
         this message or contact our security team on{' '}
-        <Link href={href} className="mt-0 mb-3 text-blue-500">
+        <Link
+          href="mailto:security@thonlabs.io"
+          className={textVariants({
+            variant: 'link',
+          })}
+        >
           security@thonlabs.io
         </Link>
         .

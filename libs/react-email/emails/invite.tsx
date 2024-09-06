@@ -45,6 +45,25 @@ export function Invite() {
       >
         Accept Invitation
       </Link>
+
+      <Text
+        className={textVariants({
+          variant: 'paragraphEmail',
+          className: 'mt-4 mb-0',
+        })}
+      >
+        In case of the button not works, you can accept the invite through the
+        link:
+      </Text>
+      <Link
+        href={href}
+        className={textVariants({
+          variant: 'link',
+          className: 'text-sm',
+        })}
+      >
+        {href}
+      </Link>
     </EmailBaseTemplate>
   );
 }

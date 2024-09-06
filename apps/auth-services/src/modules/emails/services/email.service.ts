@@ -1,11 +1,32 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EmailTemplates, User } from '@prisma/client';
-import { Resend } from 'resend';
+import { CreateEmailOptions, Resend } from 'resend';
 import * as ejs from 'ejs';
 import { EmailTemplateService } from './email-template.service';
+import { render } from '@react-email/render';
+import { ReactElement } from 'react';
+
+export enum EmailInternalFromTypes {
+  SUPPORT = 'support',
+}
+
+export const internalEmails = {
+  [EmailInternalFromTypes.SUPPORT]: {
+    from: 'ThonLabs Support Team <support@thonlabs.io>',
+    url: process.env.API_ROOT_URL,
+  },
+};
+
+interface InternalSendEmailParams {
+  from: EmailInternalFromTypes;
+  to: CreateEmailOptions['to'];
+  subject: CreateEmailOptions['subject'];
+  content: ReactElement;
+  scheduledAt?: Date;
+}
 
 interface SendEmailParams {
-  to: string;
+  to: CreateEmailOptions['to'];
   emailTemplateType: EmailTemplates;
   environmentId: string;
   data?: {
@@ -60,6 +81,35 @@ export class EmailService {
         `Error on sending email ${emailTemplateType} - Env: ${environmentId}`,
         e,
       );
+    }
+  }
+
+  async sendInternal({
+    from,
+    to,
+    subject,
+    content,
+    scheduledAt,
+  }: InternalSendEmailParams) {
+    try {
+      const internalEmail = internalEmails[from];
+
+      if (!internalEmail) {
+        this.logger.error(`Invalid internal email type "${from}"`);
+        return;
+      }
+
+      await this.resend.emails.send({
+        from: internalEmail.from,
+        to,
+        subject,
+        html: render(content),
+        scheduledAt: scheduledAt?.toISOString(),
+      });
+
+      this.logger.log(`Email "${subject}" sent (internal)`);
+    } catch (e) {
+      this.logger.error(`Error on sending email ${subject}`, e);
     }
   }
 }

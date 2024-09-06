@@ -7,6 +7,7 @@ import { DataReturn } from '@/utils/interfaces/data-return';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { unescape } from 'lodash';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
+import { getRootDomain } from '@/utils/services/domain';
 
 @Injectable()
 export class EmailTemplateService {
@@ -41,7 +42,7 @@ export class EmailTemplateService {
       const environment =
         await this.environmentService.getDetailedById(environmentId);
 
-      const environmentDomain = new URL(environment.appURL).hostname;
+      const emailDomain = getRootDomain(new URL(environment.appURL).hostname);
 
       for (const [type, data] of Object.entries(emailTemplatesMapper)) {
         const content = unescape(render(data.content, { pretty: true }));
@@ -52,7 +53,7 @@ export class EmailTemplateService {
             content,
             name: data.name,
             subject: data.subject,
-            fromEmail: `${data.fromEmail}@${environmentDomain}`,
+            fromEmail: `${data.fromEmail}@${emailDomain}`,
             fromName: `${environment.project.appName} Team`,
             preview: data.preview,
             replyTo: data.replyTo,

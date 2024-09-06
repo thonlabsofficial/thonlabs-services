@@ -9,6 +9,14 @@ import { EnvironmentService } from '@/auth/modules/environments/services/environ
 import prepareString from '@/utils/services/prepare-string';
 import dns from 'dns/promises';
 import getEnvIdHash from '@/utils/services/get-env-id-hash';
+import {
+  EmailInternalFromTypes,
+  EmailService,
+  internalEmails,
+} from '@/auth/modules/emails/services/email.service';
+import { CustomDomainResult } from '@/emails/internals/custom-domain-result';
+import { CustomDomainRemoved } from '@/emails/internals/custom-domain-removed';
+import { getFirstName } from '@/utils/services/names-helpers';
 
 @Injectable()
 export class EnvironmentDomainService {
@@ -19,6 +27,7 @@ export class EnvironmentDomainService {
     private databaseService: DatabaseService,
     private cronService: CronService,
     private environmentService: EnvironmentService,
+    private emailService: EmailService,
   ) {}
 
   async fetch({
@@ -185,17 +194,28 @@ export class EnvironmentDomainService {
   }
 
   async excludeCustomDomain(environmentId: string) {
-    const environment = await this.databaseService.environment.findUnique({
-      where: { id: environmentId },
-      select: { customDomain: true },
-    });
+    const environmentHasCustomDomain =
+      await this.databaseService.environment.count({
+        where: {
+          id: environmentId,
+          customDomain: {
+            not: null,
+          },
+        },
+      });
 
-    if (!environment?.customDomain) {
+    if (!environmentHasCustomDomain) {
       return {
         statusCode: StatusCodes.NotFound,
         error: 'No custom domain found for this environment',
       };
     }
+
+    const { customDomain, customDomainStatus } =
+      await this.databaseService.environment.findUnique({
+        where: { id: environmentId },
+        select: { customDomain: true, customDomainStatus: true },
+      });
 
     await this.databaseService.environment.update({
       where: { id: environmentId },
@@ -206,6 +226,36 @@ export class EnvironmentDomainService {
         customDomainStatus: null,
       },
     });
+
+    if (customDomainStatus === CustomDomainStatus.Verified) {
+      const removedAt = new Date();
+      const environment = await this.databaseService.environment.findUnique({
+        where: { id: environmentId },
+        select: {
+          id: true,
+          name: true,
+          project: {
+            select: {
+              id: true,
+              appName: true,
+              userOwner: true,
+            },
+          },
+        },
+      });
+      this.emailService.sendInternal({
+        from: EmailInternalFromTypes.SUPPORT,
+        to: `${environment.project.userOwner.fullName} <${environment.project.userOwner.email}>`,
+        subject: 'Custom Domain Removed',
+        content: CustomDomainRemoved({
+          environment: { ...environment, customDomain },
+          project: environment.project,
+          removedAt,
+          userFirstName: getFirstName(environment.project.userOwner.fullName),
+          tlAppURL: internalEmails[EmailInternalFromTypes.SUPPORT].url,
+        }),
+      });
+    }
 
     this.logger.log(`Removed custom domain for environment ${environmentId}`);
   }
@@ -225,41 +275,6 @@ export class EnvironmentDomainService {
     this.logger.log(
       `Updated custom domain status for environment ${environmentId} to ${status}`,
     );
-  }
-
-  async updateCustomDomainLastValidationAt(environmentId: string) {
-    const data = await this.databaseService.environment.findUnique({
-      where: { id: environmentId },
-      select: {
-        customDomainStartValidationAt: true,
-        customDomainLastValidationAt: true,
-      },
-    });
-
-    if (
-      differenceInHours(
-        data.customDomainLastValidationAt,
-        data.customDomainStartValidationAt,
-      ) >= this.customDomainVerificationCronTimeInHours
-    ) {
-      await this.updateCustomDomainStatus(
-        environmentId,
-        CustomDomainStatus.Failed,
-      );
-
-      this.logger.warn(
-        `Custom domain verification failed for environment ${environmentId} after ${this.customDomainVerificationCronTimeInHours} hours`,
-      );
-
-      return;
-    }
-
-    await this.databaseService.environment.update({
-      where: { id: environmentId },
-      data: {
-        customDomainLastValidationAt: new Date(),
-      },
-    });
   }
 
   async reverifyCustomDomain(environmentId: string): Promise<
@@ -305,6 +320,18 @@ export class EnvironmentDomainService {
 
     for (const domain of domainsToVerify) {
       const environmentId = domain.id;
+      const customDomainVerified = await this.databaseService.environment.count(
+        {
+          where: {
+            id: environmentId,
+            customDomainStatus: CustomDomainStatus.Verified,
+          },
+        },
+      );
+
+      if (customDomainVerified) {
+        continue;
+      }
 
       try {
         const appDomain = `${getEnvIdHash(environmentId)}.auth.${new URL(process.env.APP_ROOT_URL).hostname}`;
@@ -319,12 +346,122 @@ export class EnvironmentDomainService {
             environmentId,
             CustomDomainStatus.Verified,
           );
+
+          const environment = await this.databaseService.environment.findUnique(
+            {
+              where: { id: environmentId },
+              select: {
+                id: true,
+                name: true,
+                customDomain: true,
+                customDomainLastValidationAt: true,
+                customDomainStartValidationAt: true,
+                project: {
+                  select: {
+                    id: true,
+                    appName: true,
+                    userOwner: true,
+                  },
+                },
+              },
+            },
+          );
+          this.emailService.sendInternal({
+            from: EmailInternalFromTypes.SUPPORT,
+            to: `${environment.project.userOwner.fullName} <${environment.project.userOwner.email}>`,
+            subject: 'Custom Domain Successfully Verified',
+            content: CustomDomainResult({
+              environment: {
+                ...environment,
+                customDomainStatus: CustomDomainStatus.Verified,
+              },
+              project: environment.project,
+              userFirstName: getFirstName(
+                environment.project.userOwner.fullName,
+              ),
+            }),
+          });
         }
       } catch (error) {
         this.logger.warn(
           `Custom domain verification failed (ENV: ${environmentId}) - Details: ${error.message}`,
         );
-        await this.updateCustomDomainLastValidationAt(environmentId);
+
+        const {
+          customDomainStatus,
+          customDomainLastValidationAt,
+          customDomainStartValidationAt,
+        } = await this.databaseService.environment.findUnique({
+          where: { id: environmentId },
+          select: {
+            customDomainStatus: true,
+            customDomainStartValidationAt: true,
+            customDomainLastValidationAt: true,
+          },
+        });
+
+        if (
+          customDomainStatus !== CustomDomainStatus.Failed &&
+          differenceInHours(
+            customDomainLastValidationAt,
+            customDomainStartValidationAt,
+          ) >= this.customDomainVerificationCronTimeInHours
+        ) {
+          await this.updateCustomDomainStatus(
+            environmentId,
+            CustomDomainStatus.Failed,
+          );
+
+          this.logger.warn(
+            `Custom domain verification failed for environment ${environmentId} after ${this.customDomainVerificationCronTimeInHours} hours`,
+          );
+
+          const environment = await this.databaseService.environment.findUnique(
+            {
+              where: { id: environmentId },
+              select: {
+                id: true,
+                name: true,
+                customDomain: true,
+                customDomainLastValidationAt: true,
+                customDomainStartValidationAt: true,
+                project: {
+                  select: {
+                    id: true,
+                    appName: true,
+                    userOwner: true,
+                  },
+                },
+              },
+            },
+          );
+
+          this.emailService.sendInternal({
+            from: EmailInternalFromTypes.SUPPORT,
+            to: `${environment.project.userOwner.fullName} <${environment.project.userOwner.email}>`,
+            subject: 'Custom Domain Verification Failed',
+            content: CustomDomainResult({
+              environment: {
+                ...environment,
+                customDomainStatus: CustomDomainStatus.Failed,
+              },
+              project: environment.project,
+              userFirstName: getFirstName(
+                environment.project.userOwner.fullName,
+              ),
+              tlAppURL: internalEmails[EmailInternalFromTypes.SUPPORT].url,
+            }),
+          });
+
+          return;
+        }
+
+        await this.databaseService.environment.update({
+          where: { id: environmentId },
+          data: {
+            customDomainLastValidationAt: new Date(),
+          },
+        });
       }
     }
   }
