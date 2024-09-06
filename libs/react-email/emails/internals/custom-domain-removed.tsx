@@ -23,7 +23,7 @@ export function CustomDomainRemoved({
   return (
     <EmailBaseTemplate
       title="Custom Domain Removed"
-      preview={`Updates about your custom domain "${environment.customDomain}"`}
+      preview={`Updates about your custom domain "${environment.customDomain}".`}
       farewell="Best regards,"
       signature="ThonLabs Support Team"
     >

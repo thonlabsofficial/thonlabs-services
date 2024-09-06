@@ -24,7 +24,7 @@ export function CustomDomainResult({
   return (
     <EmailBaseTemplate
       title={`${validationSuccess ? 'Custom Domain Successfully Verified' : 'Custom Domain Verification Failed'}`}
-      preview={`We have an update about your custom domain "${environment.customDomain}"`}
+      preview={`We have an update about your custom domain "${environment.customDomain}".`}
       farewell="Best regards,"
       signature="ThonLabs Support Team"
     >
