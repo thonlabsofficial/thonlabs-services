@@ -5,14 +5,14 @@ import { buttonVariants } from '@/ui/components/button';
 import { textVariants } from '@/ui/components/text';
 
 export function MagicLink() {
-  const href = `<%= appURL %>/auth/magic/<%= token %>`;
+  const href = `<%= environment.appURL %>/auth/magic/<%= token %>`;
 
   return (
     <EmailBaseTemplate title="Your Login Link">
       <Text className={textVariants({ variant: 'paragraphEmail' })}>
         Hey{' '}
         {
-          '<% if (userFirstName) { %> <%= userFirstName %><% } else { %>there<% } %>'
+          '<% if (user.firstName) { %> <%= user.firstName %><% } else { %>there<% } %>'
         }
         ! 👋
       </Text>

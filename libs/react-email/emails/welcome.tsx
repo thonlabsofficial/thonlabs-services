@@ -6,14 +6,14 @@ import { textVariants } from '@/ui/components/text';
 export function Welcome() {
   return (
     <EmailBaseTemplate
-      title="Welcome to <%= appName %>"
+      title="Welcome to <%= environment.project.appName %>"
       signature="Gus from ThonLabs"
       farewell="Best regards,"
     >
       <Text className={textVariants({ variant: 'paragraphEmail' })}>
         Hey{' '}
         {
-          '<% if (userFirstName) { %> <%= userFirstName %><% } else { %>there<% } %>'
+          '<% if (user.firstName) { %> <%= user.firstName %><% } else { %>there<% } %>'
         }
         ! 👋
       </Text>
@@ -29,9 +29,10 @@ export function Welcome() {
           variant: 'paragraphEmail',
         })}
       >
-        {'<%= appName %>'} is an all-in-one platform that establishes the
-        foundation for any SaaS product, allowing founders and software
-        engineers to focus on what truly matters: their own product development.
+        {'<%= environment.project.appName %>'} is an all-in-one platform that
+        establishes the foundation for any SaaS product, allowing founders and
+        software engineers to focus on what truly matters: their own product
+        development.
       </Text>
 
       <Text className={textVariants({ variant: 'paragraphEmail' })}>

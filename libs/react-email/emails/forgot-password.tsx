@@ -5,14 +5,14 @@ import { buttonVariants } from '@/ui/components/button';
 import { textVariants } from '@/ui/components/text';
 
 export function ForgotPassword() {
-  const href = `<%= authURL %>/auth/reset-password/<%= token %>?r=<%= appURL %>`;
+  const href = `<%= environment.appURL %>/auth/reset-password/<%= token %>`;
 
   return (
     <EmailBaseTemplate title="Reset Your Account Password">
       <Text className={textVariants({ variant: 'paragraphEmail' })}>
         Hey{' '}
         {
-          '<% if (userFirstName) { %> <%= userFirstName %><% } else { %>there<% } %>'
+          '<% if (user.firstName) { %> <%= user.firstName %><% } else { %>there<% } %>'
         }
         ! 👋
       </Text>

@@ -15,6 +15,7 @@ import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
 import { ProjectService } from '@/auth/modules/projects/services/project.service';
 import { getFirstName } from '@/utils/services/names-helpers';
+import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -32,6 +33,7 @@ export class AuthService {
     private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
     private projectService: ProjectService,
+    private environmentService: EnvironmentService,
   ) {}
 
   async authenticateFromEmailAndPassword(
@@ -101,7 +103,7 @@ export class AuthService {
     }
   }
 
-  async loginOrCreateFromMagicLink({
+  async sendMagicLink({
     email,
     fullName,
     environment,
@@ -139,37 +141,30 @@ export class AuthService {
       this.logger.log(`User ${user.id} created from magic link`);
     }
 
-    const { data: project } = await this.projectService.getByEnvironmentId(
-      environment.id,
-    );
-
     const {
       data: { token },
     } = await this.tokenStorageService.create({
       type: TokenTypes.MagicLogin,
       relationId: user.id,
       expiresIn: '30m',
+      environmentId: environment.id,
     });
 
     await this.emailService.send({
       to: email,
+      userId: user.id,
       emailTemplateType: EmailTemplates.MagicLink,
       environmentId: environment.id,
       data: {
         token,
-        appName: project.appName,
-        appURL: environment.appURL,
-        userFirstName: getFirstName(user.fullName),
       },
     });
   }
 
   async authenticateFromMagicLink({
     token,
-    environmentId,
   }: {
     token: string;
-    environmentId: string;
   }): Promise<DataReturn<{ token: string; refreshToken?: string }>> {
     const data = await this.tokenStorageService.getByToken(
       token,
@@ -205,9 +200,9 @@ export class AuthService {
       };
     }
 
-    if (user.environmentId !== environmentId) {
+    if (user.environmentId !== data.environmentId) {
       this.logger.error(
-        `Magic token not allowed for user ${data.relationId} on env ${environmentId}`,
+        `Magic token not allowed for user ${data.relationId} on env ${data.environmentId}`,
       );
       return {
         statusCode: StatusCodes.Unauthorized,
@@ -324,7 +319,7 @@ export class AuthService {
 
     const user = await this.userService.getById(tokenData.relationId);
 
-    if (!user) {
+    if (!user || user.environmentId !== tokenData.environmentId) {
       this.logger.warn(
         `validateUserTokenExpiration: user not found (${tokenData.relationId})`,
       );

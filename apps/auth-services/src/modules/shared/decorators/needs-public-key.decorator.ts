@@ -41,7 +41,7 @@ export class NeedsPublicKeyGuard implements CanActivate {
 
     if (!req.headers['tl-public-key'] || !req.headers['tl-env-id']) {
       res.status(StatusCodes.Unauthorized).json({
-        code: ErrorCodes.Unauthorized,
+        statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
       });
       return false;
@@ -57,7 +57,7 @@ export class NeedsPublicKeyGuard implements CanActivate {
 
     if (!environment) {
       res.status(StatusCodes.Unauthorized).json({
-        code: ErrorCodes.Unauthorized,
+        statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
       });
       return false;

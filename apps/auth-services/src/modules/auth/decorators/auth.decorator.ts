@@ -93,7 +93,7 @@ export class AuthGuard implements CanActivate {
 
       return true;
     } catch (e) {
-      this.logger.log('Invalid Token', e);
+      this.logger.error('Invalid Token', e);
       throw new UnauthorizedException();
     }
   }

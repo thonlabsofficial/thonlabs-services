@@ -47,6 +47,7 @@ import {
 import { getFirstName } from '@/utils/services/names-helpers';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 import { add } from 'date-fns';
+import { PublicKeyOrThonLabsOnly } from '../../shared/decorators/public-key-or-thon-labs-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -124,20 +125,15 @@ export class AuthController {
       relationId: user.id,
       type: payload.password ? TokenTypes.ConfirmEmail : TokenTypes.MagicLogin,
       expiresIn: payload.password ? '5h' : '30m',
+      environmentId: environment.id,
     });
 
     if (tokenError.error) {
       throw new exceptionsMapper[tokenError.statusCode](tokenError.error);
     }
 
-    const { data: project } = await this.projectService.getByEnvironmentId(
-      environment.id,
-    );
-
     const emailData = {
       token,
-      appName: project.appName,
-      appURL: environment.appURL,
       userFirstName: getFirstName(user.fullName),
     };
 
@@ -149,19 +145,17 @@ export class AuthController {
 
       await Promise.all([
         this.emailService.send({
+          userId: user.id,
           to: user.email,
           emailTemplateType: EmailTemplates.ConfirmEmail,
           environmentId: environment.id,
           data: emailData,
         }),
         this.emailService.send({
+          userId: user.id,
           to: user.email,
           emailTemplateType: EmailTemplates.Welcome,
           environmentId: environment.id,
-          data: {
-            appName: emailData.appName,
-            userFirstName: emailData.userFirstName,
-          },
           scheduledAt: add(new Date(), { minutes: 5 }),
         }),
       ]);
@@ -170,19 +164,17 @@ export class AuthController {
     } else {
       await Promise.all([
         this.emailService.send({
+          userId: user.id,
           to: user.email,
           emailTemplateType: EmailTemplates.MagicLink,
           environmentId: environment.id,
           data: emailData,
         }),
         this.emailService.send({
+          userId: user.id,
           to: user.email,
           emailTemplateType: EmailTemplates.Welcome,
           environmentId: environment.id,
-          data: {
-            appName: emailData.appName,
-            userFirstName: emailData.userFirstName,
-          },
           scheduledAt: add(new Date(), { minutes: 5 }),
         }),
       ]);
@@ -221,7 +213,7 @@ export class AuthController {
 
       return result.data;
     } else if (environment.authProvider === AuthProviders.MagicLogin) {
-      const result = await this.authService.loginOrCreateFromMagicLink({
+      const result = await this.authService.sendMagicLink({
         email: payload.email,
         environment,
       });
@@ -240,20 +232,9 @@ export class AuthController {
   @NeedsPublicKey()
   @Post('/magic/:token')
   @SchemaValidator(authenticateFromMagicLinkValidator, ['params'])
-  public async authenticateFromMagicLink(
-    @Param('token') token: string,
-    @Req() req,
-  ) {
-    const { data: environment, ...envError } =
-      await this.environmentService.getByPublicKeyFromRequest(req);
-
-    if (envError?.error) {
-      throw new exceptionsMapper[envError.statusCode](envError.error);
-    }
-
+  public async authenticateFromMagicLink(@Param('token') token: string) {
     const data = await this.authService.authenticateFromMagicLink({
       token,
-      environmentId: environment.id,
     });
 
     if (data?.error) {
@@ -298,6 +279,7 @@ export class AuthController {
 
   @Post('/logout')
   @HttpCode(StatusCodes.OK)
+  @PublicKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   public async logout(@Req() req) {
     const { sub: userId } = decodeSession(req);
@@ -322,12 +304,7 @@ export class AuthController {
   @NeedsPublicKey()
   @Post('/reset-password')
   @SchemaValidator(requestResetPasswordValidator)
-  public async requestResetPassword(
-    @Req() req,
-    @Body() payload,
-    @Query('r') redirect = null,
-    @Res() res: Response,
-  ) {
+  public async requestResetPassword(@Req() req, @Body() payload) {
     const { data: environment } =
       await this.environmentService.getByPublicKeyFromRequest(req);
 
@@ -350,6 +327,7 @@ export class AuthController {
         expiresIn: '30m',
         relationId: user.id,
         type: TokenTypes.ResetPassword,
+        environmentId: environment.id,
       });
 
       if (token.error) {
@@ -359,35 +337,24 @@ export class AuthController {
       await this.emailService.send({
         emailTemplateType: EmailTemplates.ForgotPassword,
         environmentId: environment.id,
+        userId: user.id,
         to: user.email,
         data: {
-          userFirstName: getFirstName(user.fullName),
-          appURL: environment.appURL,
-          appName: environment.project.appName,
           token: token.data.token,
         },
       });
     }
-
-    if (redirect) {
-      return res.redirect(StatusCodes.MovedPermanently, redirect);
-    }
   }
 
   @PublicRoute()
+  @NeedsPublicKey()
   @HttpCode(StatusCodes.OK)
   @Get('/reset-password/:token')
   public async validateTokenResetPassword(
-    @Req() req,
     @Param('token') token: string,
+    @Query('r') redirect = null,
+    @Res() res: Response,
   ) {
-    const { data: environment } =
-      await this.environmentService.getByPublicKeyFromRequest(req);
-
-    if (!environment) {
-      throw new UnauthorizedException(ErrorMessages.Unauthorized);
-    }
-
     const tokenValidation = await this.authService.validateUserTokenExpiration(
       token,
       TokenTypes.ResetPassword,
@@ -401,7 +368,7 @@ export class AuthController {
 
     const isActiveUser = await this.userService.isActiveUser(
       tokenValidation.data.relationId,
-      environment.id,
+      tokenValidation.data.environmentId,
     );
 
     if (!isActiveUser) {
@@ -457,13 +424,10 @@ export class AuthController {
   }
 
   @PublicRoute()
+  @NeedsPublicKey()
   @HttpCode(StatusCodes.OK)
   @Get('/confirm-email/:token')
-  public async confirmEmail(
-    @Param('token') token: string,
-    @Query('r') redirect = null,
-    @Res() res: Response,
-  ) {
+  public async confirmEmail(@Param('token') token: string) {
     let tokenValidation = await this.authService.validateUserTokenExpiration(
       token,
       TokenTypes.ConfirmEmail,
@@ -486,6 +450,7 @@ export class AuthController {
     const updateEmailConfirmation =
       await this.userService.updateEmailConfirmation(
         tokenValidation.data.relationId,
+        tokenValidation.data.environmentId,
       );
 
     await this.tokenStorageService.delete(token);
@@ -494,10 +459,6 @@ export class AuthController {
       throw new exceptionsMapper[updateEmailConfirmation.statusCode](
         updateEmailConfirmation.error,
       );
-    }
-
-    if (redirect) {
-      return res.redirect(StatusCodes.MovedPermanently, redirect);
     }
   }
 }

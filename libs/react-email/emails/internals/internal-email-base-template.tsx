@@ -18,16 +18,16 @@ interface Props {
   title: React.ReactNode;
   children?: React.ReactNode;
   preview?: string;
-  appName?: string;
   farewell?: string;
   signature?: string;
 }
 
-export function EmailBaseTemplate({
+export function InternalEmailBaseTemplate({
   title = '',
   children,
-  signature,
+  preview = undefined,
   farewell = '',
+  signature = '',
 }: Props) {
   return (
     <Tailwind
@@ -58,8 +58,7 @@ export function EmailBaseTemplate({
             maxWidth: 0,
           }}
         >
-          {'<% if (preview) { %>'}
-          {'<%= preview %>'}
+          {preview}
           <div
             style={{
               display: 'none',
@@ -95,7 +94,6 @@ export function EmailBaseTemplate({
             <wbr />
             &nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;
           </div>
-          {'<% } %>'}
         </div>
         <Head />
         <Body
@@ -137,9 +135,7 @@ export function EmailBaseTemplate({
                     <br />
                   </>
                 )}
-                {signature
-                  ? signature
-                  : '<%= environment.project.appName %> Team'}
+                {signature}
               </Text>
             </Section>
           </Container>
@@ -149,4 +145,4 @@ export function EmailBaseTemplate({
   );
 }
 
-export default EmailBaseTemplate;
+export default InternalEmailBaseTemplate;

@@ -30,9 +30,7 @@ export class EmailTemplateService {
     return emailTemplate;
   }
 
-  async createDefaultTemplates(
-    environmentId: string,
-  ): Promise<DataReturn | void> {
+  async createDefaultTemplates(environmentId: string): Promise<DataReturn> {
     try {
       await this.databaseService.emailTemplate.deleteMany({
         where: { environmentId },
@@ -87,6 +85,10 @@ export class EmailTemplateService {
       replyTo: string;
     },
   ): Promise<DataReturn<EmailTemplate>> {
+    console.log(unescape(payload.content));
+
+    return;
+
     const emailTemplateCount = await this.databaseService.emailTemplate.count({
       where: {
         id,

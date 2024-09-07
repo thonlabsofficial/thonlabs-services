@@ -1,6 +1,6 @@
 import { Link, Text } from '@react-email/components';
 import * as React from 'react';
-import EmailBaseTemplate from '../email-base-template';
+import InternalEmailBaseTemplate from './internal-email-base-template';
 import { textVariants } from '@/ui/components/text';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Environment, Project } from '@prisma/client';
@@ -21,7 +21,7 @@ export function CustomDomainRemoved({
   removedAt = new Date(),
 }: Props) {
   return (
-    <EmailBaseTemplate
+    <InternalEmailBaseTemplate
       title="Custom Domain Removed"
       preview={`Updates about your custom domain "${environment.customDomain}".`}
       farewell="Best regards,"
@@ -129,7 +129,7 @@ export function CustomDomainRemoved({
         If you have any further questions or need assistance, feel free to reach
         out.
       </Text>
-    </EmailBaseTemplate>
+    </InternalEmailBaseTemplate>
   );
 }
 

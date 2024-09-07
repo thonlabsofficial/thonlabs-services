@@ -19,6 +19,7 @@ import prepareString from '@/utils/services/prepare-string';
 import Crypt from '@/utils/services/crypt';
 import ms from 'ms';
 import { EmailTemplateService } from '../../emails/services/email-template.service';
+import getEnvIdHash from '@/utils/services/get-env-id-hash';
 
 @Injectable()
 export class EnvironmentService {

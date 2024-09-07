@@ -76,10 +76,12 @@ export class TokenStorageService {
     type,
     relationId,
     expiresIn,
+    environmentId,
   }: {
     type: TokenTypes;
     relationId: string;
     expiresIn: string | number;
+    environmentId?: string;
   }): Promise<DataReturn<TokenStorage>> {
     // Register a new token for magic link
     let foundTokenToUse = false;
@@ -99,6 +101,7 @@ export class TokenStorageService {
 
     const tokenData = await this.databaseService.tokenStorage.create({
       data: {
+        environmentId,
         relationId,
         type,
         token,

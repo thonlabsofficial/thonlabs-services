@@ -7,14 +7,16 @@ import { EmailModule } from '@/auth/modules/emails/email.module';
 import { EnvironmentScheduler } from '@/auth/modules/environments/services/environment.scheduler';
 import { EnvironmentDomainController } from '@/auth/modules/environments/controllers/environment-domain.controller';
 import { EnvironmentDomainService } from '@/auth/modules/environments/services/environment-domain.service';
+import { EnvironmentHelper } from '@/auth/modules/environments/services/environment.helper';
 
 @Module({
   providers: [
     EnvironmentService,
     EnvironmentDomainService,
     EnvironmentScheduler,
+    EnvironmentHelper,
   ],
-  exports: [EnvironmentService, EnvironmentDomainService],
+  exports: [EnvironmentService, EnvironmentDomainService, EnvironmentHelper],
   imports: [SharedModule, forwardRef(() => ProjectModule), EmailModule],
   controllers: [EnvironmentController, EnvironmentDomainController],
 })

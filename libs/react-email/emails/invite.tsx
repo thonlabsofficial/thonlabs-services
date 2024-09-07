@@ -5,14 +5,14 @@ import { buttonVariants } from '@/ui/components/button';
 import { textVariants } from '@/ui/components/text';
 
 export function Invite() {
-  const href = `<%= authURL %>/auth/confirm-email/<%= token %>?r=<%= appURL %>`;
+  const href = `<%= environment.appURL %>/auth/confirm-email/<%= token %>`;
 
   return (
-    <EmailBaseTemplate title="You're invited to join <%= appName %>!">
+    <EmailBaseTemplate title="You're invited to join <%= environment.project.appName %>!">
       <Text className={textVariants({ variant: 'paragraphEmail' })}>
         Hey{' '}
         {
-          '<% if (userFirstName) { %> <%= userFirstName %><% } else { %>there<% } %>'
+          '<% if (user.firstName) { %> <%= user.firstName %><% } else { %>there<% } %>'
         }
         ! 👋
       </Text>
@@ -32,9 +32,10 @@ export function Invite() {
           variant: 'paragraphEmail',
         })}
       >
-        {'<%= appName %>'} is an all-in-one platform that establishes the
-        foundation for any SaaS product, allowing founders and software
-        engineers to focus on what truly matters: their own product development.
+        {'<%= environment.project.appName %>'} is an all-in-one platform that
+        establishes the foundation for any SaaS product, allowing founders and
+        software engineers to focus on what truly matters: their own product
+        development.
       </Text>
 
       <Link

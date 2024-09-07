@@ -5,7 +5,7 @@ import { buttonVariants } from '@/ui/components/button';
 import { textVariants } from '@/ui/components/text';
 
 export function ConfirmEmail() {
-  const href = `<%= authURL %>/auth/confirm-email/<%= token %>?r=<%= appURL %>`;
+  const href = `<%= environment.appURL %>/auth/confirm-email/<%= token %>`;
 
   return (
     <EmailBaseTemplate title="Confirm Your Email">
@@ -17,7 +17,7 @@ export function ConfirmEmail() {
       >
         Hey{' '}
         {
-          '<% if (userFirstName) { %> <%= userFirstName %><% } else { %>there<% } %>'
+          '<% if (user.firstName) { %> <%= user.firstName %><% } else { %>there<% } %>'
         }
         ! 👋
       </Text>
@@ -28,9 +28,10 @@ export function ConfirmEmail() {
           className: 'mb-3',
         })}
       >
-        We've received a request to sign up for {'<%= appName %>'} using this
-        email address. To complete the registration process, kindly confirm your
-        email by clicking on the button below.
+        We've received a request to sign up for{' '}
+        {'<%= environment.project.appName %>'} using this email address. To
+        complete the registration process, kindly confirm your email by clicking
+        on the button below.
       </Text>
 
       <Link

@@ -145,6 +145,7 @@ model Environment {
   projectConfigs  ProjectConfigOnEnvironment[]
   emailsDomains   EmailDomain[]
   emailsTemplates EmailTemplate[]
+  TokenStorage    TokenStorage[]
 
   @@map("environments")
 }
@@ -205,6 +206,9 @@ model TokenStorage {
   // Relation ID can be user ID or any other ID that's related to the token
   // and it's necesasry to complete some action.
   relationId String
+
+  environment   Environment? @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  environmentId String?
 
   @@map("tokens_storage")
 }

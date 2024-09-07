@@ -1,6 +1,6 @@
 import { Link, Text } from '@react-email/components';
 import * as React from 'react';
-import EmailBaseTemplate from '../email-base-template';
+import InternalEmailBaseTemplate from './internal-email-base-template';
 import { textVariants } from '@/ui/components/text';
 import { CustomDomainStatus, Environment, Project } from '@prisma/client';
 import { format } from 'date-fns-tz';
@@ -22,7 +22,7 @@ export function CustomDomainResult({
     environment.customDomainStatus === CustomDomainStatus.Verified;
 
   return (
-    <EmailBaseTemplate
+    <InternalEmailBaseTemplate
       title={`${validationSuccess ? 'Custom Domain Successfully Verified' : 'Custom Domain Verification Failed'}`}
       preview={`We have an update about your custom domain "${environment.customDomain}".`}
       farewell="Best regards,"
@@ -270,7 +270,7 @@ export function CustomDomainResult({
           </Text>
         </>
       )}
-    </EmailBaseTemplate>
+    </InternalEmailBaseTemplate>
   );
 }
 

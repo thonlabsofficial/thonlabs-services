@@ -14,31 +14,37 @@ const emailTemplatesMapper: {
 } = {
   [EmailTemplates.MagicLink]: {
     name: 'Magic Login',
-    subject: 'Your Login Access Link For <%= appName %>',
+    subject: 'Your Login Access Link For <%= environment.project.appName %>',
+    preview: 'Use the link to access the platform',
     fromEmail: 'security',
     content: MagicLink(),
   },
   [EmailTemplates.ConfirmEmail]: {
     name: 'Confirm Email',
-    subject: 'Confirm Your Email For <%= appName %>',
+    subject: 'Confirm Your Email For <%= environment.project.appName %>',
+    preview: 'Use the link to confirm your email',
     fromEmail: 'security',
     content: ConfirmEmail(),
   },
   [EmailTemplates.ForgotPassword]: {
     name: 'Forgot Password',
-    subject: 'Reset Your Account Password For <%= appName %>',
+    subject:
+      'Reset Your Account Password For <%= environment.project.appName %>',
+    preview: 'Use the link to reset your password',
     fromEmail: 'security',
     content: ForgotPassword(),
   },
   [EmailTemplates.Welcome]: {
     name: 'Welcome',
-    subject: 'Welcome to <%= appName %>!',
+    subject: 'Welcome to <%= environment.project.appName %>!',
+    preview: 'Some words from founder',
     fromEmail: 'hello',
     content: Welcome(),
   },
   [EmailTemplates.Invite]: {
     name: 'Invite User',
-    subject: "You're invited to join <%= appName %>!",
+    subject: "You're invited to join <%= environment.project.appName %>!",
+    preview: 'Use the link to join the platform',
     fromEmail: 'security',
     content: Invite(),
   },

@@ -240,11 +240,12 @@ export class UserService {
     this.logger.log(`Password updated for ${userId}`);
   }
 
-  async updateEmailConfirmation(userId: string) {
+  async updateEmailConfirmation(userId: string, environmentId: string) {
     const isActiveUser = await this.databaseService.user.findFirst({
       where: {
         id: userId,
         active: true,
+        environmentId,
       },
     });
 
@@ -475,27 +476,24 @@ export class UserService {
     const environment =
       await this.environmentService.getDetailedById(environmentId);
 
-    const [inviter, { data: tokenData }, publicKey] = await Promise.all([
+    const [inviter, { data: tokenData }] = await Promise.all([
       this.getById(fromUserId),
       this.tokenStorageService.create({
         type: TokenTypes.InviteUser,
         expiresIn: '5h',
         relationId: user.id,
+        environmentId,
       }),
-      this.environmentService.getPublicKey(environmentId),
     ]);
 
     await this.emailService.send({
+      userId: user.id,
       to: user.email,
       emailTemplateType: EmailTemplates.Invite,
       environmentId,
       data: {
         token: tokenData?.token,
-        appName: environment.project.appName,
-        appURL: environment.appURL,
-        publicKey,
         inviter,
-        userFirstName: getFirstName(user.fullName),
       },
     });
 

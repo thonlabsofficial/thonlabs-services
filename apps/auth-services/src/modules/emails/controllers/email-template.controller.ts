@@ -1,10 +1,11 @@
-import { Body, Controller, Param, Put, Req } from '@nestjs/common';
+import { Body, Controller, Param, Post, Put, Req } from '@nestjs/common';
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
 import { updateTemplateValidator } from '../validators/email-template-validators';
 import { exceptionsMapper } from '@/utils/enums/errors-metadata';
+import { SecretKeyOrThonLabsOnly } from '../../shared/decorators/secret-key-or-thon-labs-user.decorator';
 
 @Controller('email-templates')
 export class EmailTemplateController {
@@ -28,5 +29,19 @@ export class EmailTemplateController {
     }
 
     return result?.data;
+  }
+
+  @Post('')
+  @SecretKeyOrThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  async createDefaultTemplates(@Req() req) {
+    const environmentId = req.headers['tl-env-id'];
+
+    const result =
+      await this.emailTemplateService.createDefaultTemplates(environmentId);
+
+    if (result?.statusCode) {
+      throw new exceptionsMapper[result.statusCode](result.error);
+    }
   }
 }
