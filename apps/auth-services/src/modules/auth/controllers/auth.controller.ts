@@ -221,6 +221,10 @@ export class AuthController {
       if (result?.error) {
         throw new exceptionsMapper[result.statusCode](result.error);
       }
+
+      return {
+        emailSent: true,
+      };
     } else {
       throw new exceptionsMapper[StatusCodes.Unauthorized](
         ErrorMessages.InvalidCredentials,

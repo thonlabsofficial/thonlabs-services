@@ -54,10 +54,7 @@ export class AuthService {
 
     if (!user.active) {
       this.logger.error(`User ${user.id} is not active`);
-      return {
-        statusCode: StatusCodes.Unauthorized,
-        error: ErrorMessages.InvalidCredentials,
-      };
+      return error;
     }
 
     if (!user.password) {
@@ -105,11 +102,9 @@ export class AuthService {
 
   async sendMagicLink({
     email,
-    fullName,
     environment,
   }: {
     email: string;
-    fullName?: string;
     environment: Partial<Environment>;
   }): Promise<DataReturn<AuthenticateMethodsReturn>> {
     let user: Omit<User, 'environment'> = await this.userService.getByEmail(
@@ -117,29 +112,17 @@ export class AuthService {
       environment.id,
     );
 
-    if (user) {
-      await Promise.all([
-        this.tokenStorageService.deleteMany(TokenTypes.Refresh, user.id),
-        this.tokenStorageService.deleteMany(TokenTypes.MagicLogin, user.id),
-      ]);
-    } else {
-      const result = await this.userService.create({
-        email,
-        environmentId: environment.id,
-        fullName,
-      });
-
-      if (result.error) {
-        return {
-          error: result.error,
-          statusCode: result.statusCode,
-        };
-      }
-
-      user = result.data;
-
-      this.logger.log(`User ${user.id} created from magic link`);
+    if (!user) {
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.EmailNotFound,
+      };
     }
+
+    await Promise.all([
+      this.tokenStorageService.deleteMany(TokenTypes.Refresh, user.id),
+      this.tokenStorageService.deleteMany(TokenTypes.MagicLogin, user.id),
+    ]);
 
     const {
       data: { token },

@@ -53,6 +53,7 @@ export enum ErrorMessages {
   UserIsNotActive = 'User is not active',
   InvalidDomainFormat = 'Invalid domain format',
   NoCustomDomainFound = 'No custom domain found for this environment',
+  EmailNotFound = 'Email not found',
 }
 
 export const exceptionsMapper = {
