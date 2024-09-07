@@ -558,4 +558,15 @@ export class EnvironmentService {
       };
     }
   }
+
+  async getData(environmentId: string) {
+    const environment = await this.databaseService.environment.findUnique({
+      where: { id: environmentId },
+      select: {
+        authProvider: true,
+      },
+    });
+
+    return environment;
+  }
 }

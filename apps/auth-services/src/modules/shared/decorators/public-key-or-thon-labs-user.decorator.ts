@@ -58,7 +58,6 @@ export class PublicKeyOrThonLabsOnlyGuard implements CanActivate {
             `Environment ${req.headers['tl-env-id']} not found for public key`,
           );
           res.status(StatusCodes.Unauthorized).json({
-            code: ErrorCodes.Unauthorized,
             error: ErrorMessages.Unauthorized,
           });
           return false;
@@ -75,7 +74,6 @@ export class PublicKeyOrThonLabsOnlyGuard implements CanActivate {
               `User ${session.sub} is not a Thon Labs user (session)`,
             );
             res.status(StatusCodes.Unauthorized).json({
-              code: ErrorCodes.Unauthorized,
               error: ErrorMessages.Unauthorized,
             });
             return false;
@@ -88,7 +86,6 @@ export class PublicKeyOrThonLabsOnlyGuard implements CanActivate {
               `User ${session.sub} is not a Thon Labs user (db)`,
             );
             res.status(StatusCodes.Unauthorized).json({
-              code: ErrorCodes.Unauthorized,
               error: ErrorMessages.Unauthorized,
             });
             return false;
@@ -103,7 +100,6 @@ export class PublicKeyOrThonLabsOnlyGuard implements CanActivate {
       );
 
       res.status(StatusCodes.Unauthorized).json({
-        code: ErrorCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
       });
 
@@ -112,7 +108,6 @@ export class PublicKeyOrThonLabsOnlyGuard implements CanActivate {
       this.logger.log('Invalid Token');
 
       res.status(StatusCodes.Unauthorized).json({
-        code: ErrorCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
       });
 
