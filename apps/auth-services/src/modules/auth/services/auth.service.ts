@@ -13,9 +13,6 @@ import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { UserService } from '@/auth/modules/users/services/user.service';
 import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
-import { ProjectService } from '@/auth/modules/projects/services/project.service';
-import { getFirstName } from '@/utils/services/names-helpers';
-import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -32,8 +29,6 @@ export class AuthService {
     private userService: UserService,
     private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
-    private projectService: ProjectService,
-    private environmentService: EnvironmentService,
   ) {}
 
   async authenticateFromEmailAndPassword(
@@ -148,7 +143,7 @@ export class AuthService {
     token,
   }: {
     token: string;
-  }): Promise<DataReturn<{ token: string; refreshToken?: string }>> {
+  }): Promise<DataReturn<AuthenticateMethodsReturn>> {
     const data = await this.tokenStorageService.getByToken(
       token,
       TokenTypes.MagicLogin,
@@ -193,7 +188,7 @@ export class AuthService {
       };
     }
 
-    const tokens = this.tokenStorageService.createAuthTokens(
+    const { data: tokenData } = await this.tokenStorageService.createAuthTokens(
       user,
       user.environment,
     );
@@ -203,16 +198,9 @@ export class AuthService {
       data.relationId,
     );
 
-    this.userService.updateLastLogin(user.id, user.environment.id);
+    await this.userService.updateLastLogin(user.id, user.environment.id);
 
-    return {
-      ...tokens,
-      user: {
-        email: user.email,
-        profilePicture: user.profilePicture,
-        fullName: user.fullName,
-      },
-    };
+    return { data: tokenData };
   }
 
   async reAuthenticateFromRefreshToken({

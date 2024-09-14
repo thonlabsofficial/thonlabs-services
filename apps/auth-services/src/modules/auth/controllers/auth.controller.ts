@@ -234,7 +234,7 @@ export class AuthController {
 
   @PublicRoute()
   @NeedsPublicKey()
-  @Post('/magic/:token')
+  @Get('/magic/:token')
   @SchemaValidator(authenticateFromMagicLinkValidator, ['params'])
   public async authenticateFromMagicLink(@Param('token') token: string) {
     const data = await this.authService.authenticateFromMagicLink({
@@ -245,7 +245,7 @@ export class AuthController {
       throw new exceptionsMapper[data.statusCode](data.error);
     }
 
-    return data;
+    return data?.data;
   }
 
   @PublicRoute()

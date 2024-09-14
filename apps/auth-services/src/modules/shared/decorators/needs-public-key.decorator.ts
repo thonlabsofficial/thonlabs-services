@@ -7,6 +7,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -20,6 +21,8 @@ export const NeedsPublicKey = () =>
 
 @Injectable()
 export class NeedsPublicKeyGuard implements CanActivate {
+  private readonly logger = new Logger(NeedsPublicKeyGuard.name);
+
   constructor(
     private reflector: Reflector,
     private environmentService: EnvironmentService,
@@ -40,6 +43,7 @@ export class NeedsPublicKeyGuard implements CanActivate {
     const res = http.getResponse();
 
     if (!req.headers['tl-public-key'] || !req.headers['tl-env-id']) {
+      this.logger.error('Missing public key or environment id');
       res.status(StatusCodes.Unauthorized).json({
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
@@ -56,6 +60,7 @@ export class NeedsPublicKeyGuard implements CanActivate {
     );
 
     if (!environment) {
+      this.logger.error(`Invalid environment ${req.headers['tl-env-id']}`);
       res.status(StatusCodes.Unauthorized).json({
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
