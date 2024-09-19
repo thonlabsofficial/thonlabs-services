@@ -3,8 +3,8 @@ import { DatabaseService } from '@/auth/modules/shared/database/database.service
 import { DataReturn } from '@/utils/interfaces/data-return';
 import {
   AuthProviders,
-  CustomDomainStatus,
   Environment,
+  EnvironmentData,
   Project,
 } from '@prisma/client';
 import { ProjectService } from '@/auth/modules/projects/services/project.service';
@@ -19,7 +19,7 @@ import prepareString from '@/utils/services/prepare-string';
 import Crypt from '@/utils/services/crypt';
 import ms from 'ms';
 import { EmailTemplateService } from '../../emails/services/email-template.service';
-import getEnvIdHash from '@/utils/services/get-env-id-hash';
+import { EnvironmentDataService } from './environment-data.service';
 
 @Injectable()
 export class EnvironmentService {
@@ -30,6 +30,7 @@ export class EnvironmentService {
     @Inject(forwardRef(() => ProjectService))
     private projectService: ProjectService,
     private emailTemplateService: EmailTemplateService,
+    private environmentDataService: EnvironmentDataService,
   ) {}
 
   async getById(id: string): Promise<DataReturn<Environment>> {
@@ -462,6 +463,7 @@ export class EnvironmentService {
       authProvider: AuthProviders;
       tokenExpiration: string;
       refreshTokenExpiration?: string;
+      enableSignUp: boolean;
     },
   ): Promise<DataReturn> {
     if (ms(payload.tokenExpiration) < 300000) {
@@ -481,16 +483,22 @@ export class EnvironmentService {
       };
     }
 
-    await this.databaseService.environment.update({
-      where: {
-        id: environmentId,
-      },
-      data: {
-        authProvider: payload.authProvider,
-        tokenExpiration: payload.tokenExpiration,
-        refreshTokenExpiration: payload.refreshTokenExpiration,
-      },
-    });
+    await Promise.all([
+      this.databaseService.environment.update({
+        where: {
+          id: environmentId,
+        },
+        data: {
+          authProvider: payload.authProvider,
+          tokenExpiration: payload.tokenExpiration,
+          refreshTokenExpiration: payload.refreshTokenExpiration,
+        },
+      }),
+      this.environmentDataService.update(environmentId, {
+        id: 'enableSignUp',
+        value: payload.enableSignUp,
+      }),
+    ]);
 
     this.logger.log(`Updated auth settings for ${environmentId}`);
   }
@@ -568,5 +576,28 @@ export class EnvironmentService {
     });
 
     return environment;
+  }
+
+  async setEnvironmentData(
+    environmentId: string,
+    payload: { id: string; value: any },
+  ): Promise<DataReturn<EnvironmentData>> {
+    const environmentData = await this.databaseService.environmentData.upsert({
+      where: { id: payload.id, environmentId },
+      create: {
+        id: payload.id,
+        value: payload.value,
+        environmentId,
+      },
+      update: {
+        value: payload.value,
+      },
+    });
+
+    this.logger.log(
+      `Updated environment data ${payload.id} (ENV: ${environmentId})`,
+    );
+
+    return { data: environmentData };
   }
 }

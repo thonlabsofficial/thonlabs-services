@@ -90,6 +90,7 @@ export class AuthController {
       this.environmentService.updateAuthSettings(environment.id, {
         ...environment,
         authProvider: AuthProviders.EmailAndPassword,
+        enableSignUp: true,
       }),
       await this.environmentService.getPublicKey(environment.id),
     ]);

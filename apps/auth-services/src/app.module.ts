@@ -27,7 +27,7 @@ import { VerifyDomainGuard } from '@/auth/modules/shared/decorators/verify-domai
       throttlers: [
         {
           ttl: seconds(120),
-          limit: 30,
+          limit: 100,
         },
       ],
     }),

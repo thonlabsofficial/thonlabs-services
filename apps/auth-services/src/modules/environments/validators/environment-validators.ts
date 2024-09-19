@@ -14,6 +14,7 @@ export const updateAuthSettingsValidator = z.object({
   tokenExpiration: z.string(),
   refreshTokenExpiration: z.string().optional().nullable(),
   authProvider: z.nativeEnum(AuthProviders),
+  enableSignUp: z.boolean(),
 });
 
 export const updateGeneralSettingsValidator = z.object({

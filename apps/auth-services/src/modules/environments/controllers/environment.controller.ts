@@ -120,13 +120,4 @@ export class EnvironmentController {
   async delete(@Param('id') id: string) {
     await this.environmentService.delete(id);
   }
-
-  @PublicRoute()
-  @Get('/:id/data')
-  @PublicKeyOrThonLabsOnly()
-  async getData(@Param('id') id: string) {
-    const data = await this.environmentService.getData(id);
-
-    return data;
-  }
 }

@@ -70,6 +70,7 @@ export class HasEnvAccessGuard implements CanActivate {
     const result = await this.environmentService.getById(environmentId);
 
     if (!result?.data) {
+      this.logger.error(`Environment not found`);
       res.status(StatusCodes.NotFound).json({
         error: ErrorMessages.EnvironmentNotFound,
       });

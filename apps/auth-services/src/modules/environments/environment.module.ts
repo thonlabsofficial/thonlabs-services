@@ -8,6 +8,8 @@ import { EnvironmentScheduler } from '@/auth/modules/environments/services/envir
 import { EnvironmentDomainController } from '@/auth/modules/environments/controllers/environment-domain.controller';
 import { EnvironmentDomainService } from '@/auth/modules/environments/services/environment-domain.service';
 import { EnvironmentHelper } from '@/auth/modules/environments/services/environment.helper';
+import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
+import { EnvironmentDataController } from '@/auth/modules/environments/controllers/environment-data.controller';
 
 @Module({
   providers: [
@@ -15,9 +17,19 @@ import { EnvironmentHelper } from '@/auth/modules/environments/services/environm
     EnvironmentDomainService,
     EnvironmentScheduler,
     EnvironmentHelper,
+    EnvironmentDataService,
   ],
-  exports: [EnvironmentService, EnvironmentDomainService, EnvironmentHelper],
+  exports: [
+    EnvironmentService,
+    EnvironmentDomainService,
+    EnvironmentHelper,
+    EnvironmentDataService,
+  ],
   imports: [SharedModule, forwardRef(() => ProjectModule), EmailModule],
-  controllers: [EnvironmentController, EnvironmentDomainController],
+  controllers: [
+    EnvironmentController,
+    EnvironmentDomainController,
+    EnvironmentDataController,
+  ],
 })
 export class EnvironmentModule {}
