@@ -271,6 +271,8 @@ export class AuthService {
     }
 
     await this.tokenStorageService.deleteAllByRelation(user.id);
+
+    this.logger.log(`User ${user.id} logged out`);
   }
 
   async validateUserTokenExpiration(
