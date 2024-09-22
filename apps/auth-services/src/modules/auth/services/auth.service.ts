@@ -292,11 +292,11 @@ export class AuthService {
 
     if (!user || user.environmentId !== tokenData.environmentId) {
       this.logger.warn(
-        `validateUserTokenExpiration: user not found (${tokenData.relationId})`,
+        `validateUserTokenExpiration: invalid user (${tokenData.relationId})`,
       );
       return {
-        statusCode: StatusCodes.NotFound,
-        error: ErrorMessages.UserNotFound,
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.InvalidUser,
       };
     }
 
@@ -307,7 +307,8 @@ export class AuthService {
         `validateUserTokenExpiration: token expired (${token.substring(0, 10)} - ${type})`,
       );
       return {
-        statusCode: StatusCodes.NotFound,
+        statusCode: StatusCodes.Unauthorized,
+        data: tokenData,
       };
     }
 

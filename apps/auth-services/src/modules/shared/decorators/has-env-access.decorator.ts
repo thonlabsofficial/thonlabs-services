@@ -77,10 +77,12 @@ export class HasEnvAccessGuard implements CanActivate {
       return false;
     }
 
-    let session = decodeSession(req);
+    let user = decodeSession(req);
 
-    /* Special validation only for Refresh Token */
-    if (!session && req.url === '/auth/refresh' && req?.body?.token) {
+    if (!user && req.url === '/auth/refresh' && req?.body?.token) {
+      /* 
+        Special validation only for Refresh Token
+      */
       const tokenData = await this.tokenStorageService.getByToken(
         req.body.token,
         TokenTypes.Refresh,
@@ -96,12 +98,12 @@ export class HasEnvAccessGuard implements CanActivate {
         return false;
       }
 
-      const user = await this.userService.getByIdAndEnv(
+      const relationUser = await this.userService.getByIdAndEnv(
         tokenData.relationId,
         environmentId,
       );
 
-      if (!user) {
+      if (!relationUser) {
         this.logger.error(
           `User not found for Relation ID ${tokenData.relationId} (ENV: ${environmentId})`,
         );
@@ -111,9 +113,32 @@ export class HasEnvAccessGuard implements CanActivate {
         return false;
       }
 
-      session = {
-        sub: user.id,
-        thonLabsUser: user.thonLabsUser,
+      user = {
+        sub: relationUser.id,
+        thonLabsUser: relationUser.thonLabsUser,
+      } as SessionData;
+    } else if (!user && req?.params?.userId) {
+      /* 
+        If session is empty but there is userId on params
+        commonly from usage of public/secret key 
+      */
+      // const userData = await this.userService.getByIdAndEnv(
+      //   req.params.userId,
+      //   environmentId,
+      // );
+
+      // if (!userData) {
+      //   this.logger.error(
+      //     `User not found for ID ${req.params.userId} (ENV: ${environmentId})`,
+      //   );
+      //   res.status(StatusCodes.Unauthorized).json({
+      //     error: ErrorMessages.Unauthorized,
+      //   });
+      //   return false;
+      // }
+
+      user = {
+        sub: req.params.userId,
       } as SessionData;
     }
 
@@ -125,29 +150,29 @@ export class HasEnvAccessGuard implements CanActivate {
       and to use this approach the user should use a public or secret key
       e.g.: to consume the API directly on their UI
     */
-    if (session.thonLabsUser) {
+    if (user?.thonLabsUser) {
       const userOwnsEnvironment = await this.userService.ownsEnvironment(
-        session.sub,
+        user.sub,
         environmentId,
       );
 
       if (!userOwnsEnvironment) {
         this.logger.error(
-          `User ${session.sub} not owns the Environment ${environmentId}`,
+          `User ${user.sub} not owns the Environment ${environmentId}`,
         );
       }
 
       return userOwnsEnvironment;
     } else if (
-      req['tl-env-id'] &&
-      (req['tl-public-key'] || req['tl-secret-key'])
+      req?.headers['tl-env-id'] &&
+      (req?.headers['tl-public-key'] || req?.headers['tl-secret-key'])
     ) {
       const userBelongsToEnvironment =
-        await this.environmentService.userBelongsTo(session.sub, environmentId);
+        await this.environmentService.userBelongsTo(user.sub, environmentId);
 
       if (!userBelongsToEnvironment) {
         this.logger.error(
-          `User ${session.sub} not belongs to Environment ${environmentId}`,
+          `User ${user.sub} not belongs to Environment ${environmentId}`,
         );
       }
 

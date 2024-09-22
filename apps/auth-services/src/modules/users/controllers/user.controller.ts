@@ -75,6 +75,7 @@ export class UserController {
     }
 
     delete newUser.authKey;
+    delete newUser.thonLabsUser;
 
     return newUser;
   }
@@ -194,6 +195,24 @@ export class UserController {
 
     const data = await this.userService.sendInvitation(
       session.id,
+      userId,
+      environmentId,
+    );
+
+    if (data?.statusCode) {
+      throw new exceptionsMapper[data.statusCode](data.error);
+    }
+
+    return data?.data;
+  }
+
+  @Post(':userId/resend-confirmation-email')
+  @SecretKeyOrThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  async resendConfirmationEmail(@Param('userId') userId: string, @Req() req) {
+    const environmentId = req.headers['tl-env-id'];
+
+    const data = await this.userService.sendConfirmationEmail(
       userId,
       environmentId,
     );

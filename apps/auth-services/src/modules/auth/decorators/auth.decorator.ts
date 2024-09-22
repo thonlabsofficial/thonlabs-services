@@ -18,6 +18,9 @@ export const AUTH_VALIDATION_DISABLED = 'authValidationDisabled';
 
 export const PublicRoute = () => SetMetadata(AUTH_VALIDATION_DISABLED, true);
 
+export const ByPassAuthGuard = (context: ExecutionContext) =>
+  Reflect.defineMetadata(AUTH_VALIDATION_DISABLED, true, context.getHandler());
+
 @Injectable()
 export class AuthGuard implements CanActivate {
   private readonly logger = new Logger(AuthGuard.name);
@@ -41,6 +44,7 @@ export class AuthGuard implements CanActivate {
     const http = context.switchToHttp();
     const req = http.getRequest();
     const res = http.getResponse();
+
     const session = decodeSession(req);
 
     if (!session) {

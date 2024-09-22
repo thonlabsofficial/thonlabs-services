@@ -14,6 +14,8 @@ import { EnvironmentDataService } from '@/auth/modules/environments/services/env
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
 import { setEnvironmentDataValidator } from '@/auth/modules/environments/validators/environment-data-validators';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
+import { NeedsPublicKey } from '../../shared/decorators/needs-public-key.decorator';
+import { PublicRoute } from '../../auth/decorators/auth.decorator';
 
 @Controller('environments/:envId/data')
 export class EnvironmentDataController {
@@ -23,8 +25,8 @@ export class EnvironmentDataController {
   ) {}
 
   @Get('/')
-  @ThonLabsOnly()
-  @HasEnvAccess({ param: 'envId' })
+  @PublicRoute()
+  @NeedsPublicKey()
   async fetch(@Param('envId') environmentId: string) {
     const [envLegacyData, envData] = await Promise.all([
       this.environmentService.getData(environmentId),

@@ -70,43 +70,43 @@ export class EmailService {
     data,
     scheduledAt,
   }: SendEmailParams) {
+    const emailTemplate = await this.emailTemplatesService.getByType(
+      emailTemplateType,
+      environmentId,
+    );
+
+    const emailData = data || {};
+
+    if (environmentId) {
+      const environment = await this.getEnvironmentData(environmentId);
+      emailData.environment = environment;
+    }
+
+    if (userId) {
+      const user = await this.getUserData(userId);
+      emailData.user = {
+        ...user,
+        firstName: getFirstName(user.fullName),
+      };
+    }
+
+    let subject;
+    let html;
+
     try {
-      const emailTemplate = await this.emailTemplatesService.getByType(
-        emailTemplateType,
-        environmentId,
+      subject = ejs.render(emailTemplate.subject, emailData);
+      html = ejs.render(emailTemplate.content, {
+        ...emailData,
+        preview: emailTemplate.preview,
+      });
+    } catch (e) {
+      this.logger.error(
+        `Error on rendering email ${emailTemplateType} - Env: ${environmentId}`,
+        e,
       );
+    }
 
-      const emailData = data;
-
-      if (environmentId) {
-        const environment = await this.getEnvironmentData(environmentId);
-        emailData.environment = environment;
-      }
-
-      if (userId) {
-        const user = await this.getUserData(userId);
-        emailData.user = {
-          ...user,
-          firstName: getFirstName(user.fullName),
-        };
-      }
-
-      let subject;
-      let html;
-
-      try {
-        subject = ejs.render(emailTemplate.subject, data);
-        html = ejs.render(emailTemplate.content, {
-          ...emailData,
-          preview: emailTemplate.preview,
-        });
-      } catch (e) {
-        this.logger.error(
-          `Error on rendering email ${emailTemplateType} - Env: ${environmentId}`,
-          e,
-        );
-      }
-
+    try {
       await this.resend.emails.send({
         from: `${emailTemplate.fromName} <${emailTemplate.fromEmail}>`,
         to,
@@ -116,7 +116,9 @@ export class EmailService {
         scheduledAt: scheduledAt?.toISOString(),
       });
 
-      this.logger.log(`Email ${emailTemplateType} sent`);
+      this.logger.log(
+        `Email ${emailTemplateType} ${scheduledAt ? 'scheduled' : 'sent'}`,
+      );
     } catch (e) {
       this.logger.error(
         `Error on sending email ${emailTemplateType} - Env: ${environmentId}`,

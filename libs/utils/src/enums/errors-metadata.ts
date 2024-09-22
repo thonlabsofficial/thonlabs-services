@@ -50,6 +50,7 @@ export enum ErrorMessages {
   CannotChangeOwnStatus = 'You cannot change your own status',
   CannotDeleteOwnUser = 'You cannot delete your own user',
   UserAlreadyAcceptedInvitation = 'User already accepted invitation',
+  UserAlreadyConfirmedEmail = 'User already confirmed email',
   UserIsNotActive = 'User is not active',
   InvalidDomainFormat = 'Invalid domain format',
   NoCustomDomainFound = 'No custom domain found for this environment',

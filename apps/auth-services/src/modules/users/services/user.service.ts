@@ -180,16 +180,16 @@ export class UserService {
 
       this.logger.log(`User ${user.id} auth key created`);
 
-      const { data: environment } = await this.environmentService.getById(
+      const environment = await this.environmentService.getDetailedById(
         payload.environmentId,
       );
 
-      if (environment.projectId.startsWith('prj-thon-labs-')) {
+      this.deletePrivateData(user);
+
+      if (environment.project.main) {
         await this.setAsThonLabsUser(user.id);
         user.thonLabsUser = true;
       }
-
-      this.deletePrivateData(user);
 
       return { data: user };
     } catch (e) {
@@ -473,9 +473,6 @@ export class UserService {
       };
     }
 
-    const environment =
-      await this.environmentService.getDetailedById(environmentId);
-
     const [inviter, { data: tokenData }] = await Promise.all([
       this.getById(fromUserId),
       this.tokenStorageService.create({
@@ -494,6 +491,54 @@ export class UserService {
       data: {
         token: tokenData?.token,
         inviter,
+      },
+    });
+
+    return {
+      data: {
+        id: user.id,
+        fullName: user.fullName,
+        environmentId: user.environmentId,
+      } as User,
+    };
+  }
+
+  async sendConfirmationEmail(
+    userId: string,
+    environmentId: string,
+  ): Promise<DataReturn<User>> {
+    const user = await this.getByIdAndEnv(userId, environmentId);
+
+    if (!user?.active) {
+      return {
+        statusCode: StatusCodes.NotAcceptable,
+        error: ErrorMessages.UserIsNotActive,
+      };
+    }
+
+    if (user?.emailConfirmed) {
+      return {
+        statusCode: StatusCodes.NotAcceptable,
+        error: ErrorMessages.UserAlreadyConfirmedEmail,
+      };
+    }
+
+    const {
+      data: { token },
+    } = await this.tokenStorageService.create({
+      relationId: user.id,
+      type: TokenTypes.ConfirmEmail,
+      expiresIn: '5h',
+      environmentId,
+    });
+
+    await this.emailService.send({
+      userId: user.id,
+      to: user.email,
+      emailTemplateType: EmailTemplates.ConfirmEmail,
+      environmentId,
+      data: {
+        token,
       },
     });
 

@@ -48,6 +48,7 @@ import { getFirstName } from '@/utils/services/names-helpers';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 import { add } from 'date-fns';
 import { PublicKeyOrThonLabsOnly } from '../../shared/decorators/public-key-or-thon-labs-user.decorator';
+import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
 
 @Controller('auth')
 export class AuthController {
@@ -55,6 +56,7 @@ export class AuthController {
     private userService: UserService,
     private projectService: ProjectService,
     private environmentService: EnvironmentService,
+    private environmentDataService: EnvironmentDataService,
     private authService: AuthService,
     private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
@@ -108,6 +110,17 @@ export class AuthController {
 
     if (!environment) {
       throw new UnauthorizedException(ErrorMessages.Unauthorized);
+    }
+
+    const { data: enableSignUp } = await this.environmentDataService.get(
+      environment.id,
+      'enableSignUp',
+    );
+
+    if (!enableSignUp) {
+      throw new exceptionsMapper[StatusCodes.Forbidden](
+        ErrorMessages.Forbidden,
+      );
     }
 
     const { data: user, ...userError } = await this.userService.create({
@@ -355,11 +368,7 @@ export class AuthController {
   @NeedsPublicKey()
   @HttpCode(StatusCodes.OK)
   @Get('/reset-password/:token')
-  public async validateTokenResetPassword(
-    @Param('token') token: string,
-    @Query('r') redirect = null,
-    @Res() res: Response,
-  ) {
+  public async validateTokenResetPassword(@Param('token') token: string) {
     const tokenValidation = await this.authService.validateUserTokenExpiration(
       token,
       TokenTypes.ResetPassword,
@@ -432,13 +441,16 @@ export class AuthController {
   @NeedsPublicKey()
   @HttpCode(StatusCodes.OK)
   @Get('/confirm-email/:token')
-  public async confirmEmail(@Param('token') token: string) {
+  public async confirmEmail(
+    @Param('token') token: string,
+    @Res() res: Response,
+  ) {
     let tokenValidation = await this.authService.validateUserTokenExpiration(
       token,
       TokenTypes.ConfirmEmail,
     );
 
-    if (tokenValidation?.statusCode) {
+    if (tokenValidation?.statusCode === StatusCodes.NotFound) {
       tokenValidation = await this.authService.validateUserTokenExpiration(
         token,
         TokenTypes.InviteUser,
@@ -447,6 +459,27 @@ export class AuthController {
 
     // If not found both types of token, then returns 404
     if (tokenValidation?.statusCode) {
+      if (tokenValidation?.data?.relationId) {
+        /*
+          If token is expired but has relationId, then resend the confirmation email
+          the request is not valid, but it's like a retry to make sure the user will
+          validate his email.
+        */
+        const emailSent = await this.userService.sendConfirmationEmail(
+          tokenValidation.data.relationId,
+          tokenValidation.data.environmentId,
+        );
+
+        await this.tokenStorageService.delete(token);
+
+        if (emailSent.data) {
+          throw new exceptionsMapper[StatusCodes.NotAcceptable]({
+            statusCode: StatusCodes.NotAcceptable,
+            emailResent: true,
+          });
+        }
+      }
+
       throw new exceptionsMapper[tokenValidation.statusCode](
         tokenValidation.error,
       );
@@ -465,5 +498,7 @@ export class AuthController {
         updateEmailConfirmation.error,
       );
     }
+
+    return res.status(StatusCodes.OK).json({});
   }
 }

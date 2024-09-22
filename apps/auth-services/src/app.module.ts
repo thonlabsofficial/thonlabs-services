@@ -53,15 +53,15 @@ import { VerifyDomainGuard } from '@/auth/modules/shared/decorators/verify-domai
     },
     {
       provide: APP_GUARD,
-      useClass: AuthGuard,
-    },
-    {
-      provide: APP_GUARD,
       useClass: SecretKeyOrThonLabsOnlyGuard,
     },
     {
       provide: APP_GUARD,
       useClass: PublicKeyOrThonLabsOnlyGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
     },
     {
       provide: APP_GUARD,
