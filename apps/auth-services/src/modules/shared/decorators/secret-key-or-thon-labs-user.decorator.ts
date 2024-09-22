@@ -10,7 +10,7 @@ import { Reflector } from '@nestjs/core';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import decodeSession from '@/utils/services/decode-session';
 import { UserService } from '@/auth/modules/users/services/user.service';
-import { ByPassAuthGuard } from '../../auth/decorators/auth.decorator';
+import { AuthGuard } from '../../auth/decorators/auth.decorator';
 
 const SECRET_KEY_OR_THON_LABS_ONLY_KEY = 'SecretKeyOrThonLabsOnly';
 
@@ -37,6 +37,8 @@ export class SecretKeyOrThonLabsOnlyGuard implements CanActivate {
       return true;
     }
 
+    AuthGuard.enableAuthGuard(context);
+
     const http = context.switchToHttp();
     const req = http.getRequest();
     const res = http.getResponse();
@@ -60,7 +62,7 @@ export class SecretKeyOrThonLabsOnlyGuard implements CanActivate {
           return false;
         }
 
-        ByPassAuthGuard(context);
+        AuthGuard.disableAuthGuard(context);
 
         return true;
       } else {
