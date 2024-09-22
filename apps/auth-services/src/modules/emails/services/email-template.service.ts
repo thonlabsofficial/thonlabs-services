@@ -85,10 +85,6 @@ export class EmailTemplateService {
       replyTo: string;
     },
   ): Promise<DataReturn<EmailTemplate>> {
-    console.log(unescape(payload.content));
-
-    return;
-
     const emailTemplateCount = await this.databaseService.emailTemplate.count({
       where: {
         id,
