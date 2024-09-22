@@ -122,20 +122,6 @@ export class HasEnvAccessGuard implements CanActivate {
         If session is empty but there is userId on params
         commonly from usage of public/secret key 
       */
-      // const userData = await this.userService.getByIdAndEnv(
-      //   req.params.userId,
-      //   environmentId,
-      // );
-
-      // if (!userData) {
-      //   this.logger.error(
-      //     `User not found for ID ${req.params.userId} (ENV: ${environmentId})`,
-      //   );
-      //   res.status(StatusCodes.Unauthorized).json({
-      //     error: ErrorMessages.Unauthorized,
-      //   });
-      //   return false;
-      // }
 
       user = {
         sub: req.params.userId,
@@ -150,6 +136,8 @@ export class HasEnvAccessGuard implements CanActivate {
       and to use this approach the user should use a public or secret key
       e.g.: to consume the API directly on their UI
     */
+    let hasAccess = false;
+
     if (user?.thonLabsUser) {
       const userOwnsEnvironment = await this.userService.ownsEnvironment(
         user.sub,
@@ -157,13 +145,15 @@ export class HasEnvAccessGuard implements CanActivate {
       );
 
       if (!userOwnsEnvironment) {
-        this.logger.error(
+        this.logger.warn(
           `User ${user.sub} not owns the Environment ${environmentId}`,
         );
       }
 
-      return userOwnsEnvironment;
-    } else if (
+      hasAccess = userOwnsEnvironment;
+    }
+
+    if (
       req?.headers['tl-env-id'] &&
       (req?.headers['tl-public-key'] || req?.headers['tl-secret-key'])
     ) {
@@ -171,12 +161,14 @@ export class HasEnvAccessGuard implements CanActivate {
         await this.environmentService.userBelongsTo(user.sub, environmentId);
 
       if (!userBelongsToEnvironment) {
-        this.logger.error(
+        this.logger.warn(
           `User ${user.sub} not belongs to Environment ${environmentId}`,
         );
       }
 
-      return userBelongsToEnvironment;
+      hasAccess = userBelongsToEnvironment;
     }
+
+    return hasAccess;
   }
 }
