@@ -417,8 +417,7 @@ export class AuthController {
       TokenTypes.ResetPassword,
     );
 
-    if (tokenValidation.statusCode) {
-      await this.tokenStorageService.delete(token);
+    if (tokenValidation?.statusCode) {
       throw new exceptionsMapper[tokenValidation.statusCode](
         tokenValidation.error,
       );
@@ -433,7 +432,7 @@ export class AuthController {
       ),
     ]);
 
-    if (updatePassword.statusCode) {
+    if (updatePassword?.statusCode) {
       throw new exceptionsMapper[updatePassword.statusCode](
         updatePassword.error,
       );
@@ -533,6 +532,7 @@ export class AuthController {
         return res.status(StatusCodes.OK).json({
           tokenType: TokenTypes.ResetPassword,
           token: resetPasswordToken?.data?.token,
+          email: user.email,
         });
       } else if (environment.authProvider === AuthProviders.MagicLogin) {
         const magicLoginToken = await this.authService.generateMagicLoginToken(
