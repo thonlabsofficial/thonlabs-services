@@ -11,6 +11,7 @@ import {
   Patch,
   Query,
   Res,
+  Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
@@ -52,6 +53,8 @@ import { EnvironmentDataService } from '@/auth/modules/environments/services/env
 
 @Controller('auth')
 export class AuthController {
+  private logger = new Logger(AuthController.name);
+
   constructor(
     private userService: UserService,
     private projectService: ProjectService,
@@ -459,7 +462,10 @@ export class AuthController {
 
     // If not found both types of token, then returns 404
     if (tokenValidation?.statusCode) {
-      if (tokenValidation?.data?.relationId) {
+      if (
+        tokenValidation?.data?.type === TokenTypes.ConfirmEmail &&
+        tokenValidation?.data?.relationId
+      ) {
         /*
           If token is expired but has relationId, then resend the confirmation email
           the request is not valid, but it's like a retry to make sure the user will
@@ -485,17 +491,72 @@ export class AuthController {
       );
     }
 
+    const userId = tokenValidation.data.relationId;
+    const environmentId = tokenValidation.data.environmentId;
+
     const updateEmailConfirmation =
-      await this.userService.updateEmailConfirmation(
-        tokenValidation.data.relationId,
-        tokenValidation.data.environmentId,
-      );
+      await this.userService.updateEmailConfirmation(userId, environmentId);
 
     await this.tokenStorageService.delete(token);
 
     if (updateEmailConfirmation?.statusCode) {
       throw new exceptionsMapper[updateEmailConfirmation.statusCode](
         updateEmailConfirmation.error,
+      );
+    }
+
+    /*
+      In case of invitation, after confirm the email the user
+      needs to set a password or login using magic link.
+    */
+    const user = await this.userService.getById(userId);
+    const { data: environment } =
+      await this.environmentService.getById(environmentId);
+
+    if (
+      tokenValidation.data.type === TokenTypes.InviteUser &&
+      !user.lastSignIn
+    ) {
+      if (environment.authProvider === AuthProviders.EmailAndPassword) {
+        const resetPasswordToken =
+          await this.authService.generateResetPasswordToken(
+            user.id,
+            environmentId,
+          );
+
+        if (resetPasswordToken?.statusCode) {
+          throw new exceptionsMapper[resetPasswordToken.statusCode](
+            resetPasswordToken.error,
+          );
+        }
+
+        return res.status(StatusCodes.OK).json({
+          tokenType: TokenTypes.ResetPassword,
+          token: resetPasswordToken?.data?.token,
+        });
+      } else if (environment.authProvider === AuthProviders.MagicLogin) {
+        const magicLoginToken = await this.authService.generateMagicLoginToken(
+          user.id,
+          environmentId,
+        );
+
+        if (magicLoginToken?.statusCode) {
+          throw new exceptionsMapper[magicLoginToken.statusCode](
+            magicLoginToken.error,
+          );
+        }
+
+        return res.status(StatusCodes.OK).json({
+          tokenType: TokenTypes.MagicLogin,
+          token: magicLoginToken?.data?.token,
+        });
+      }
+
+      this.logger.error(
+        'Error on generating reset password or magic login token.',
+      );
+      throw new exceptionsMapper[StatusCodes.Internal](
+        ErrorMessages.InternalError,
       );
     }
 

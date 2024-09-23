@@ -116,8 +116,8 @@ export class TokenStorageService {
   }
 
   async createAuthTokens(
-    user: User,
-    environment: Environment,
+    user: Partial<User>,
+    environment: Partial<Environment>,
   ): Promise<DataReturn<AuthenticateMethodsReturn>> {
     // Delete all refresh tokens
     await this.deleteMany(TokenTypes.Refresh, user.id);

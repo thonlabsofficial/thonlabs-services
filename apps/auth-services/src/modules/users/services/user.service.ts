@@ -11,7 +11,6 @@ import { EnvironmentService } from '@/auth/modules/environments/services/environ
 import Crypt from '@/utils/services/crypt';
 import rand from '@/utils/services/rand';
 import prepareString from '@/utils/services/prepare-string';
-import { getFirstName } from '@/utils/services/names-helpers';
 import { EmailService } from '../../emails/services/email.service';
 import { TokenStorageService } from '../../token-storage/services/token-storage.service';
 
@@ -56,10 +55,19 @@ export class UserService {
   async getDetailedById(id: string) {
     const data = await this.databaseService.user.findFirst({
       where: { id },
-      include: {
+      select: {
+        active: true,
+        createdAt: true,
+        email: true,
+        fullName: true,
+        id: true,
+        lastSignIn: true,
+        profilePicture: true,
+        updatedAt: true,
+        environmentId: true,
+        emailConfirmed: true,
+        invitedAt: true,
         environment: true,
-        role: true,
-        userSubscriptions: true,
         projects: true,
       },
     });
@@ -120,6 +128,7 @@ export class UserService {
     email: string;
     password?: string;
     environmentId: string;
+    invitedAt?: Date;
   }): Promise<DataReturn<User>> {
     const environmentExists = await this.environmentService.getById(
       payload.environmentId,
@@ -161,6 +170,7 @@ export class UserService {
           password,
           thonLabsUser: false,
           environmentId: payload.environmentId,
+          invitedAt: payload.invitedAt,
         },
       });
 
@@ -240,7 +250,10 @@ export class UserService {
     this.logger.log(`Password updated for ${userId}`);
   }
 
-  async updateEmailConfirmation(userId: string, environmentId: string) {
+  async updateEmailConfirmation(
+    userId: string,
+    environmentId: string,
+  ): Promise<DataReturn> {
     const isActiveUser = await this.databaseService.user.findFirst({
       where: {
         id: userId,
@@ -373,6 +386,7 @@ export class UserService {
         updatedAt: true,
         environmentId: true,
         emailConfirmed: true,
+        invitedAt: true,
       },
       where: {
         environmentId: params.environmentId,
@@ -473,6 +487,12 @@ export class UserService {
       };
     }
 
+    const invitedAt = new Date();
+    await this.databaseService.user.update({
+      where: { id: user.id },
+      data: { invitedAt },
+    });
+
     const [inviter, { data: tokenData }] = await Promise.all([
       this.getById(fromUserId),
       this.tokenStorageService.create({
@@ -499,6 +519,7 @@ export class UserService {
         id: user.id,
         fullName: user.fullName,
         environmentId: user.environmentId,
+        invitedAt,
       } as User,
     };
   }

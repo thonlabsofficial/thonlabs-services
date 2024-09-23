@@ -13,6 +13,7 @@ import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { UserService } from '@/auth/modules/users/services/user.service';
 import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
+import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -26,6 +27,7 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
+    private databaseService: DatabaseService,
     private userService: UserService,
     private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
@@ -41,7 +43,26 @@ export class AuthService {
       error: ErrorMessages.InvalidEmailOrPass,
     };
 
-    const user = await this.userService.getByEmail(email, environmentId);
+    const user = await this.databaseService.user.findFirst({
+      where: { email: email, environmentId },
+      select: {
+        id: true,
+        thonLabsUser: true,
+        email: true,
+        profilePicture: true,
+        fullName: true,
+        authKey: true,
+        environmentId: true,
+        active: true,
+        password: true,
+        environment: {
+          select: {
+            tokenExpiration: true,
+            refreshTokenExpiration: true,
+          },
+        },
+      },
+    });
 
     if (!user) {
       return error;
@@ -77,7 +98,7 @@ export class AuthService {
 
       this.logger.log('Created auth tokens');
 
-      this.userService.updateLastLogin(user.id, user.environment.id);
+      this.userService.updateLastLogin(user.id, user.environmentId);
 
       return {
         data,
@@ -95,17 +116,44 @@ export class AuthService {
     }
   }
 
+  async generateMagicLoginToken(
+    userId: string,
+    environmentId: string,
+  ): Promise<DataReturn<TokenStorage>> {
+    await Promise.all([
+      this.tokenStorageService.deleteMany(TokenTypes.Refresh, userId),
+      this.tokenStorageService.deleteMany(TokenTypes.MagicLogin, userId),
+    ]);
+
+    const token = await this.tokenStorageService.create({
+      type: TokenTypes.MagicLogin,
+      relationId: userId,
+      expiresIn: '30m',
+      environmentId: environmentId,
+    });
+
+    if (token?.error) {
+      this.logger.error(
+        `generateMagicLoginToken: error creating token for user ${userId}`,
+      );
+
+      return {
+        statusCode: StatusCodes.Internal,
+        error: ErrorMessages.InternalError,
+      };
+    }
+
+    return { data: token?.data };
+  }
+
   async sendMagicLink({
     email,
     environment,
   }: {
     email: string;
     environment: Partial<Environment>;
-  }): Promise<DataReturn<AuthenticateMethodsReturn>> {
-    let user: Omit<User, 'environment'> = await this.userService.getByEmail(
-      email,
-      environment.id,
-    );
+  }) {
+    const user = await this.userService.getByEmail(email, environment.id);
 
     if (!user) {
       return {
@@ -114,19 +162,14 @@ export class AuthService {
       };
     }
 
-    await Promise.all([
-      this.tokenStorageService.deleteMany(TokenTypes.Refresh, user.id),
-      this.tokenStorageService.deleteMany(TokenTypes.MagicLogin, user.id),
-    ]);
+    const token = await this.generateMagicLoginToken(user.id, environment.id);
 
-    const {
-      data: { token },
-    } = await this.tokenStorageService.create({
-      type: TokenTypes.MagicLogin,
-      relationId: user.id,
-      expiresIn: '30m',
-      environmentId: environment.id,
-    });
+    if (token?.statusCode) {
+      return {
+        statusCode: StatusCodes.Internal,
+        error: ErrorMessages.InternalError,
+      };
+    }
 
     await this.emailService.send({
       to: email,
@@ -134,7 +177,7 @@ export class AuthService {
       emailTemplateType: EmailTemplates.MagicLink,
       environmentId: environment.id,
       data: {
-        token,
+        token: token?.data?.token,
       },
     });
   }
@@ -168,7 +211,33 @@ export class AuthService {
       };
     }
 
-    const user = await this.userService.getDetailedById(data.relationId);
+    const user = await this.databaseService.user.findFirst({
+      where: { id: data.relationId },
+      select: {
+        id: true,
+        active: true,
+        thonLabsUser: true,
+        email: true,
+        profilePicture: true,
+        fullName: true,
+        authKey: true,
+        environmentId: true,
+        environment: {
+          select: {
+            tokenExpiration: true,
+            refreshTokenExpiration: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      this.logger.error(`User ${data.relationId} not found`);
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.InvalidUser,
+      };
+    }
 
     if (!user.active) {
       this.logger.error(`User ${user.id} is not active`);
@@ -198,7 +267,7 @@ export class AuthService {
       data.relationId,
     );
 
-    await this.userService.updateLastLogin(user.id, user.environment.id);
+    await this.userService.updateLastLogin(user.id, user.environmentId);
 
     return { data: tokenData };
   }
@@ -232,7 +301,41 @@ export class AuthService {
       };
     }
 
-    const user = await this.userService.getDetailedById(data.relationId);
+    const user = await this.databaseService.user.findFirst({
+      where: { id: data.relationId },
+      select: {
+        id: true,
+        active: true,
+        thonLabsUser: true,
+        email: true,
+        profilePicture: true,
+        fullName: true,
+        authKey: true,
+        environmentId: true,
+        environment: {
+          select: {
+            tokenExpiration: true,
+            refreshTokenExpiration: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      this.logger.error(`User ${data.relationId} not found`);
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.InvalidUser,
+      };
+    }
+
+    if (!user?.active) {
+      this.logger.error(`User ${user.id} is not active`);
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.InvalidUser,
+      };
+    }
 
     if (user.environmentId !== environmentId) {
       this.logger.error(
@@ -315,5 +418,30 @@ export class AuthService {
     }
 
     return { data: tokenData };
+  }
+
+  async generateResetPasswordToken(
+    userId: string,
+    environmentId: string,
+  ): Promise<DataReturn<TokenStorage>> {
+    const token = await this.tokenStorageService.create({
+      expiresIn: '30m',
+      relationId: userId,
+      type: TokenTypes.ResetPassword,
+      environmentId: environmentId,
+    });
+
+    if (token?.error) {
+      this.logger.error(
+        `generateResetPasswordToken: error creating token for user ${userId}`,
+      );
+
+      return {
+        statusCode: StatusCodes.Internal,
+        error: ErrorMessages.InternalError,
+      };
+    }
+
+    return { data: token?.data };
   }
 }

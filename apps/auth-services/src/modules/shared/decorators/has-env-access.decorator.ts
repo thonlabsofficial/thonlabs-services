@@ -128,6 +128,14 @@ export class HasEnvAccessGuard implements CanActivate {
       } as SessionData;
     }
 
+    if (!user) {
+      this.logger.warn('User not exists');
+      res.status(StatusCodes.Unauthorized).json({
+        error: ErrorMessages.Unauthorized,
+      });
+      return false;
+    }
+
     /*
       If is a Thon Labs user means the user should owns the environment
       e.g.: to manage directly on Thon Labs UI

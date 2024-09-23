@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN     "invitedAt" TIMESTAMP(3),
+ALTER COLUMN "invited" DROP NOT NULL,
+ALTER COLUMN "invited" DROP DEFAULT;
