@@ -37,7 +37,7 @@ export class EnvironmentDataService {
     });
 
     this.logger.log(
-      `Created environment data ${payload.id} (ENV: ${environmentId})`,
+      `Upserted environment data ${payload.id} (ENV: ${environmentId})`,
     );
 
     return { data: environmentData as EnvironmentData };

@@ -494,7 +494,7 @@ export class EnvironmentService {
           refreshTokenExpiration: payload.refreshTokenExpiration,
         },
       }),
-      this.environmentDataService.update(environmentId, {
+      this.environmentDataService.upsert(environmentId, {
         id: 'enableSignUp',
         value: payload.enableSignUp,
       }),

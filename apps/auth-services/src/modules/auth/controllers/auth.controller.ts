@@ -195,6 +195,10 @@ export class AuthController {
           scheduledAt: add(new Date(), { minutes: 5 }),
         }),
       ]);
+
+      return {
+        emailSent: true,
+      };
     }
   }
 
