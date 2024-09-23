@@ -319,15 +319,6 @@ export class EnvironmentService {
       };
     }
 
-    const urlExists = await this.validateURL(
-      payload.appURL,
-      projectExists.userOwnerId,
-    );
-
-    if (urlExists?.error) {
-      return urlExists;
-    }
-
     const normalizedName = normalizeString(payload.name);
     let id = normalizeString(`env-${normalizedName}-${rand(1)}`);
 
@@ -507,19 +498,6 @@ export class EnvironmentService {
     environmentId: string,
     payload: { name: string; appURL: string },
   ) {
-    const environment = await this.getDetailedById(environmentId);
-
-    if (payload.appURL !== environment.appURL) {
-      const urlExists = await this.validateURL(
-        payload.appURL,
-        environment.project.userOwnerId,
-      );
-
-      if (urlExists?.error) {
-        return urlExists;
-      }
-    }
-
     await this.databaseService.environment.update({
       where: {
         id: environmentId,

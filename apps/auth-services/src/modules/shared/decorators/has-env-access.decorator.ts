@@ -144,7 +144,6 @@ export class HasEnvAccessGuard implements CanActivate {
       and to use this approach the user should use a public or secret key
       e.g.: to consume the API directly on their UI
     */
-    let hasAccess = false;
 
     if (user?.thonLabsUser) {
       const userOwnsEnvironment = await this.userService.ownsEnvironment(
@@ -152,13 +151,13 @@ export class HasEnvAccessGuard implements CanActivate {
         environmentId,
       );
 
-      if (!userOwnsEnvironment) {
-        this.logger.warn(
-          `User ${user.sub} not owns the Environment ${environmentId}`,
-        );
+      if (userOwnsEnvironment) {
+        return true;
       }
 
-      hasAccess = userOwnsEnvironment;
+      this.logger.warn(
+        `User ${user.sub} not owns the Environment ${environmentId}`,
+      );
     }
 
     if (
@@ -168,15 +167,15 @@ export class HasEnvAccessGuard implements CanActivate {
       const userBelongsToEnvironment =
         await this.environmentService.userBelongsTo(user.sub, environmentId);
 
-      if (!userBelongsToEnvironment) {
-        this.logger.warn(
-          `User ${user.sub} not belongs to Environment ${environmentId}`,
-        );
+      if (userBelongsToEnvironment) {
+        return true;
       }
 
-      hasAccess = userBelongsToEnvironment;
+      this.logger.warn(
+        `User ${user.sub} not belongs to Environment ${environmentId}`,
+      );
     }
 
-    return hasAccess;
+    return false;
   }
 }

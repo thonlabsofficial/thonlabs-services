@@ -104,14 +104,7 @@ export class EnvironmentController {
   @HasEnvAccess()
   @SchemaValidator(updateGeneralSettingsValidator)
   async updateGeneralSettings(@Param('id') id: string, @Body() payload) {
-    const result = await this.environmentService.updateGeneralSettings(
-      id,
-      payload,
-    );
-
-    if (result?.error) {
-      throw new exceptionsMapper[result.statusCode](result.error);
-    }
+    await this.environmentService.updateGeneralSettings(id, payload);
   }
 
   @Delete('/:id')
