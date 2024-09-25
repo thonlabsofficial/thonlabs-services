@@ -412,6 +412,7 @@ export class EnvironmentDomainService {
       customDomain: string;
       customDomainTXT: string;
     }[],
+    sendEmail = true,
   ) {
     if (domainsToVerify.length === 0) {
       this.logger.log('No domains to validate');
@@ -493,7 +494,7 @@ export class EnvironmentDomainService {
         environmentId,
       );
 
-      if (customDomainFullyVerified) {
+      if (customDomainFullyVerified && sendEmail) {
         const environment = await this.databaseService.environment.findUnique({
           where: { id: environmentId },
           select: {

@@ -44,6 +44,9 @@ export class EnvironmentScheduler {
       return;
     }
 
-    await this.environmentDomainService.validateCustomDomains(domainsToVerify);
+    await this.environmentDomainService.validateCustomDomains(
+      domainsToVerify,
+      false,
+    );
   }
 }
