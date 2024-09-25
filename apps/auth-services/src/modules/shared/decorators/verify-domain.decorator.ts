@@ -96,12 +96,12 @@ export class VerifyDomainGuard implements CanActivate {
         return true;
       }
 
-      const customDomain =
-        await this.environmentDomainService.getByCustomDomainAndEnvironmentId(
+      const customDomainFullyVerified =
+        await this.environmentDomainService.customDomainFullyVerified(
           originDomain,
           req.headers['tl-env-id'],
         );
-      if (customDomain) {
+      if (customDomainFullyVerified) {
         return true;
       }
 

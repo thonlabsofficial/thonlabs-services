@@ -47,11 +47,21 @@ export class EnvironmentService {
         customDomainStatus: true,
         customDomainStartValidationAt: true,
         customDomainLastValidationAt: true,
+        customDomainTXT: true,
+        customDomainTXTStatus: true,
         createdAt: true,
         updatedAt: true,
         projectId: true,
       },
     });
+
+    if (environment.customDomainTXT) {
+      environment.customDomainTXT = await Crypt.decrypt(
+        environment.customDomainTXT,
+        Crypt.generateIV(environment.id),
+        process.env.ENCODE_SECRET,
+      );
+    }
 
     return { data: environment as Environment };
   }

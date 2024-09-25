@@ -27,10 +27,10 @@ export class EnvironmentScheduler {
       return;
     }
 
-    await this.environmentDomainService.verifyCustomDomains(domainsToVerify);
+    await this.environmentDomainService.validateCustomDomains(domainsToVerify);
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, {
+  @Cron(CronExpression.EVERY_HOUR, {
     name: CronJobs.VerifyCurrentCustomDomains,
   })
   async verifyCurrentCustomDomainsCron() {
@@ -44,6 +44,6 @@ export class EnvironmentScheduler {
       return;
     }
 
-    await this.environmentDomainService.verifyCustomDomains(domainsToVerify);
+    await this.environmentDomainService.validateCustomDomains(domainsToVerify);
   }
 }
