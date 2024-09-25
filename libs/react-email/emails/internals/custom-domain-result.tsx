@@ -3,7 +3,7 @@ import * as React from 'react';
 import InternalEmailBaseTemplate from './internal-email-base-template';
 import { textVariants } from '@/ui/components/text';
 import { CustomDomainStatus, Environment, Project } from '@prisma/client';
-import { format } from 'date-fns-tz';
+import { formatInTimeZone } from 'date-fns-tz';
 
 interface Props {
   environment?: Partial<Environment>;
@@ -87,12 +87,10 @@ export function CustomDomainResult({
           >
             <strong>Verification started at:</strong>{' '}
             {environment.customDomainStartValidationAt &&
-              format(
+              formatInTimeZone(
                 environment.customDomainStartValidationAt,
+                'UTC',
                 "MM/dd/yyyy h:mma 'UTC'",
-                {
-                  timeZone: 'UTC',
-                },
               )}
           </Text>
           <Text
@@ -103,12 +101,10 @@ export function CustomDomainResult({
           >
             <strong>Verification concluded at:</strong>{' '}
             {environment.customDomainLastValidationAt &&
-              format(
+              formatInTimeZone(
                 environment.customDomainLastValidationAt,
+                'UTC',
                 "MM/dd/yyyy h:mma 'UTC'",
-                {
-                  timeZone: 'UTC',
-                },
               )}
           </Text>
 
@@ -224,12 +220,10 @@ export function CustomDomainResult({
           >
             <strong>Verification started at:</strong>{' '}
             {environment.customDomainStartValidationAt &&
-              format(
+              formatInTimeZone(
                 environment.customDomainStartValidationAt,
+                'UTC',
                 "MM/dd/yyyy h:mma 'UTC'",
-                {
-                  timeZone: 'UTC',
-                },
               )}
           </Text>
           <Text
@@ -240,12 +234,10 @@ export function CustomDomainResult({
           >
             <strong>Verification failed at:</strong>{' '}
             {environment.customDomainLastValidationAt &&
-              format(
+              formatInTimeZone(
                 environment.customDomainLastValidationAt,
+                'UTC',
                 "MM/dd/yyyy h:mma 'UTC'",
-                {
-                  timeZone: 'UTC',
-                },
               )}
           </Text>
 
