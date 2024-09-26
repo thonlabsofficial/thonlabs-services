@@ -50,7 +50,7 @@ import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 import { add } from 'date-fns';
 import { PublicKeyOrThonLabsOnly } from '../../shared/decorators/public-key-or-thon-labs-user.decorator';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
-
+import { NeedsInternalKey } from '@/auth/modules/shared/decorators/needs-internal-key.decorator';
 @Controller('auth')
 export class AuthController {
   private logger = new Logger(AuthController.name);
@@ -67,16 +67,10 @@ export class AuthController {
 
   @Post('/signup/owner')
   @PublicRoute()
+  @NeedsInternalKey()
   public async signUpOwner(
     @Body() payload: { password: string; environmentId: string },
-    @Headers() headers,
   ) {
-    if (
-      headers['thon-labs-staff-api-key'] !== process.env.TL_INTERNAL_API_KEY
-    ) {
-      throw new UnauthorizedException();
-    }
-
     const { data: user } = await this.userService.createOwner({
       password: payload.password,
     });

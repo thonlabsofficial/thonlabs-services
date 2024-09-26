@@ -19,6 +19,7 @@ import { HasEnvAccessGuard } from '@/auth/modules/shared/decorators/has-env-acce
 import { UserOwnsProjectGuard } from '@/auth/modules/shared/decorators/user-owns-project.decorator';
 import { PublicKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
 import { VerifyDomainGuard } from '@/auth/modules/shared/decorators/verify-domain.decorator';
+import { NeedsInternalKeyGuard } from './modules/shared/decorators/needs-internal-key.decorator';
 
 @Module({
   imports: [
@@ -70,6 +71,10 @@ import { VerifyDomainGuard } from '@/auth/modules/shared/decorators/verify-domai
     { provide: APP_GUARD, useClass: ThonLabsOnlyGuard },
     { provide: APP_GUARD, useClass: HasEnvAccessGuard },
     { provide: APP_GUARD, useClass: UserOwnsProjectGuard },
+    {
+      provide: APP_GUARD,
+      useClass: NeedsInternalKeyGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: SchemaValidatorGuard,
