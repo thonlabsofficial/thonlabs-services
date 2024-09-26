@@ -20,6 +20,7 @@ import { UserOwnsProjectGuard } from '@/auth/modules/shared/decorators/user-owns
 import { PublicKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
 import { VerifyDomainGuard } from '@/auth/modules/shared/decorators/verify-domain.decorator';
 import { NeedsInternalKeyGuard } from './modules/shared/decorators/needs-internal-key.decorator';
+import { InternalsModule } from './modules/internals/internals.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { NeedsInternalKeyGuard } from './modules/shared/decorators/needs-interna
     EnvironmentModule,
     EmailModule,
     TokenStorageModule,
+    InternalsModule,
   ],
   providers: [
     {

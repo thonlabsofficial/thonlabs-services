@@ -55,7 +55,7 @@ export class EnvironmentService {
       },
     });
 
-    if (environment.customDomainTXT) {
+    if (environment?.customDomainTXT) {
       environment.customDomainTXT = await Crypt.decrypt(
         environment.customDomainTXT,
         Crypt.generateIV(environment.id),

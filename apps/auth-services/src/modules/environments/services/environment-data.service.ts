@@ -12,6 +12,15 @@ export class EnvironmentDataService {
 
   constructor(private databaseService: DatabaseService) {}
 
+  /**
+   * Upserts environment data.
+   *
+   * @param {string} environmentId - The ID of the environment.
+   * @param {Object} payload - The payload containing the data to upsert.
+   * @param {string} payload.id - The ID of the data.
+   * @param {any} payload.value - The value of the data.
+   * @returns {Promise<DataReturn<EnvironmentData>>} - The upserted environment data.
+   */
   async upsert(
     environmentId: string,
     payload: { id: string; value: any },
@@ -43,6 +52,15 @@ export class EnvironmentDataService {
     return { data: environmentData as EnvironmentData };
   }
 
+  /**
+   * Updates environment data.
+   *
+   * @param {string} environmentId - The ID of the environment.
+   * @param {Object} payload - The payload containing the data to update.
+   * @param {string} payload.id - The ID of the data.
+   * @param {any} payload.value - The value of the data.
+   * @returns {Promise<DataReturn<EnvironmentData>>} - The updated environment data.
+   */
   async update(
     environmentId: string,
     payload: { id: string; value: any },
@@ -75,7 +93,13 @@ export class EnvironmentDataService {
     return { data: environmentData as EnvironmentData };
   }
 
-  async fetch(environmentId: string) {
+  /**
+   * Fetches all environment data for a given environment ID.
+   *
+   * @param {string} environmentId - The ID of the environment.
+   * @returns {Promise<Record<string, any>>} - The fetched environment data.
+   */
+  async fetch(environmentId: string): Promise<Record<string, any>> {
     const environmentData = await this.databaseService.environmentData.findMany(
       {
         where: { environmentId },
@@ -95,10 +119,17 @@ export class EnvironmentDataService {
     return values;
   }
 
+  /**
+   * Gets environment data by ID.
+   *
+   * @param {string} environmentId - The ID of the environment.
+   * @param {string} id - The ID of the data.
+   * @returns {Promise<DataReturn<EnvironmentData>>} - The fetched environment data.
+   */
   async get(
     environmentId: string,
     id: string,
-  ): Promise<DataReturn<EnvironmentData>> {
+  ): Promise<DataReturn<EnvironmentData['value']>> {
     const environmentData =
       await this.databaseService.environmentData.findUnique({
         where: { id: camelCase(id), environmentId },
@@ -106,6 +137,8 @@ export class EnvironmentDataService {
           value: true,
         },
       });
+
+    console.log({ id: camelCase(id), environmentId });
 
     if (!environmentData) {
       const error = `Environment data ID ${id} not found`;
@@ -117,9 +150,16 @@ export class EnvironmentDataService {
       };
     }
 
-    return { data: environmentData as EnvironmentData };
+    return { data: environmentData?.value };
   }
 
+  /**
+   * Deletes environment data by ID.
+   *
+   * @param {string} environmentId - The ID of the environment.
+   * @param {string} id - The ID of the data.
+   * @returns {Promise<DataReturn<EnvironmentData>>} - The deleted environment data.
+   */
   async delete(
     environmentId: string,
     id: string,
@@ -127,7 +167,10 @@ export class EnvironmentDataService {
     const environmentData = await this.get(environmentId, id);
 
     if (environmentData?.statusCode) {
-      return environmentData;
+      return {
+        statusCode: environmentData.statusCode,
+        error: environmentData.error,
+      };
     }
 
     await this.databaseService.environmentData.delete({

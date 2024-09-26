@@ -55,6 +55,7 @@ export enum ErrorMessages {
   InvalidDomainFormat = 'Invalid domain format',
   NoCustomDomainFound = 'No custom domain found for this environment',
   EmailNotFound = 'Email not found',
+  UserAlreadyInWaitlist = 'User already in waitlist',
 }
 
 export const exceptionsMapper = {

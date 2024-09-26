@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { DatabaseService } from '../../shared/database/database.service';
 import { EmailTemplate, EmailTemplates } from '@prisma/client';
 import { render } from '@react-email/render';
-import emailTemplatesMapper from '../mappers/email-templates-mapper';
+import emailTemplatesMapper from '@/auth/modules/emails/constants/email-templates';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { unescape } from 'lodash';

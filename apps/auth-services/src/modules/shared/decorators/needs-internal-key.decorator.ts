@@ -22,7 +22,7 @@ export class NeedsInternalKeyGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const needsInternalKey = this.reflector.get(
       NEEDS_INTERNAL_KEY_VALIDATOR_KEY,
-      context.getHandler(),
+      context.getClass(),
     );
 
     if (!needsInternalKey) {

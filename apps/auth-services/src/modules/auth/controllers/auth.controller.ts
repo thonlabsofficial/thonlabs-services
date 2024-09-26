@@ -5,11 +5,9 @@ import {
   Param,
   Post,
   Req,
-  Headers,
   UnauthorizedException,
   Get,
   Patch,
-  Query,
   Res,
   Logger,
 } from '@nestjs/common';
@@ -18,7 +16,6 @@ import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validat
 import { PublicRoute } from '@/auth/modules/auth/decorators/auth.decorator';
 import { signUpValidator } from '@/auth/modules/auth/validators/signup-validators';
 import { UserService } from '@/auth/modules/users/services/user.service';
-import { ProjectService } from '@/auth/modules/projects/services/project.service';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import {
   ErrorMessages,
@@ -50,52 +47,18 @@ import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 import { add } from 'date-fns';
 import { PublicKeyOrThonLabsOnly } from '../../shared/decorators/public-key-or-thon-labs-user.decorator';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
-import { NeedsInternalKey } from '@/auth/modules/shared/decorators/needs-internal-key.decorator';
 @Controller('auth')
 export class AuthController {
   private logger = new Logger(AuthController.name);
 
   constructor(
     private userService: UserService,
-    private projectService: ProjectService,
     private environmentService: EnvironmentService,
     private environmentDataService: EnvironmentDataService,
     private authService: AuthService,
     private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
   ) {}
-
-  @Post('/signup/owner')
-  @PublicRoute()
-  @NeedsInternalKey()
-  public async signUpOwner(
-    @Body() payload: { password: string; environmentId: string },
-  ) {
-    const { data: user } = await this.userService.createOwner({
-      password: payload.password,
-    });
-
-    const {
-      data: { project, environment },
-    } = await this.projectService.create({
-      appName: 'ThonLabs',
-      userId: user.id,
-      appURL: 'https://thonlabs.io',
-      main: true,
-    });
-
-    const [, , publicKey] = await Promise.all([
-      this.userService.setEnvironment(user.id, environment.id),
-      this.environmentService.updateAuthSettings(environment.id, {
-        ...environment,
-        authProvider: AuthProviders.EmailAndPassword,
-        enableSignUp: true,
-      }),
-      await this.environmentService.getPublicKey(environment.id),
-    ]);
-
-    return { user, project, ...{ ...environment, publicKey } };
-  }
 
   @PublicRoute()
   @Post('/signup')
