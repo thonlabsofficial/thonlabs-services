@@ -138,8 +138,6 @@ export class EnvironmentDataService {
         },
       });
 
-    console.log({ id: camelCase(id), environmentId });
-
     if (!environmentData) {
       const error = `Environment data ID ${id} not found`;
       this.logger.warn(`${error} (ENV: ${environmentId})`);

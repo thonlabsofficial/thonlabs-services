@@ -17,8 +17,6 @@ import {
   updateAuthSettingsValidator,
 } from '../validators/environment-validators';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
-import { PublicKeyOrThonLabsOnly } from '../../shared/decorators/public-key-or-thon-labs-user.decorator';
-import { PublicRoute } from '../../auth/decorators/auth.decorator';
 
 @Controller('environments')
 export class EnvironmentController {
