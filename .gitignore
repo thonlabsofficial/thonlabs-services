@@ -39,6 +39,8 @@ testem.log
 .env.*
 !.env.example
 /certs
+fly.toml
+fly.*.toml
 
 # System Files
 .DS_Store

@@ -26,7 +26,7 @@ RUN pnpm prune --prod && \
 FROM node:20-slim AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 ENV PORT=8080
 
 RUN apt-get update -y && \ 
@@ -34,13 +34,12 @@ RUN apt-get update -y && \
 
 RUN npm install -g pnpm
 
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 thonlabs
+USER thonlabs
+
 COPY --from=builder --chown=thonlabs:nodejs /app/package.json /app/pnpm-lock.yaml ./
 COPY --from=builder --chown=thonlabs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=thonlabs:nodejs /app/dist ./dist
-
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 thonlabs
-
-USER thonlabs
 
 CMD ["node", "dist/apps/auth-services/main.js"]
