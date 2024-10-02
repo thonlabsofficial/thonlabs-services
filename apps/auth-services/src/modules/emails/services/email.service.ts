@@ -10,11 +10,16 @@ import { getFirstName } from '@/utils/services/names-helpers';
 
 export enum EmailInternalFromTypes {
   SUPPORT = 'support',
+  FOUNDER = 'founder',
 }
 
 export const internalEmails = {
   [EmailInternalFromTypes.SUPPORT]: {
     from: 'ThonLabs Support Team <support@thonlabs.io>',
+    url: process.env.API_ROOT_URL,
+  },
+  [EmailInternalFromTypes.FOUNDER]: {
+    from: 'Gus <gus@thonlabs.io>',
     url: process.env.API_ROOT_URL,
   },
 };

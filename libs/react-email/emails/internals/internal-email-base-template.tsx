@@ -107,7 +107,7 @@ export function InternalEmailBaseTemplate({
               <Column className="text-center py-6">
                 <Link href="https://thonlabs.io">
                   <Img
-                    src={`${process.env.NODE_ENV === 'production' ? 'https://thonlabs.io' : 'http://localhost:3101'}/thon-labs-logo-light.svg`}
+                    src="https://thonlabs.io/thon-labs-logo-light.png"
                     alt="Thon Labs Logo"
                     className="w-[147px] h-[22px] mx-auto"
                   />

@@ -3,6 +3,9 @@ import { Resend } from 'resend';
 import { maskData, MaskDataTypes } from '@/utils/services/mask-data';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { StatusCodes } from '@/utils/enums/errors-metadata';
+import { EmailInternalFromTypes, EmailService } from './email.service';
+import { getFirstName } from '@/utils/services/names-helpers';
+import { JoinWaitlistDone } from '@/emails/internals/join-waitlist-done';
 
 export enum AudiencesIDs {
   Waitlist = '9171d01f-f98e-4dcf-ab4b-bf45918a2601',
@@ -14,7 +17,7 @@ export class AudienceService {
 
   private resend: Resend;
 
-  constructor() {
+  constructor(private readonly emailService: EmailService) {
     this.resend = new Resend(process.env.EMAIL_PROVIDER_API_KEY);
   }
 
@@ -25,13 +28,24 @@ export class AudienceService {
     const [firstName, lastName] = fullName.split(' ');
 
     try {
-      await this.resend.contacts.create({
+      const { data } = await this.resend.contacts.create({
         audienceId,
         email,
         firstName,
         lastName,
         unsubscribed: false,
       });
+
+      if (data?.id) {
+        await this.emailService.sendInternal({
+          from: EmailInternalFromTypes.SUPPORT,
+          to: `${fullName} <${email}>`,
+          subject: 'You joined ThonLabs waitlist',
+          content: JoinWaitlistDone({
+            userFirstName: getFirstName(fullName),
+          }),
+        });
+      }
 
       this.logger.log(
         `Added ${maskData(MaskDataTypes.Email, email)} to audience ${audienceId}`,
