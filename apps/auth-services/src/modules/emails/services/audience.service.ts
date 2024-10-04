@@ -38,7 +38,7 @@ export class AudienceService {
 
       if (data?.id) {
         await this.emailService.sendInternal({
-          from: EmailInternalFromTypes.SUPPORT,
+          from: EmailInternalFromTypes.FOUNDER,
           to: `${fullName} <${email}>`,
           subject: 'You joined ThonLabs waitlist',
           content: JoinWaitlistDone({

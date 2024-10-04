@@ -1,6 +1,6 @@
 import { Text } from '@react-email/components';
 import * as React from 'react';
-import InternalEmailBaseTemplate from './internal-email-base-template';
+import InternalSimpleEmailBaseTemplate from './internal-simple-email-base-template';
 import { textVariants } from '@/ui/components/text';
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
 
 export function JoinWaitlistDone({ userFirstName = '' }: Props) {
   return (
-    <InternalEmailBaseTemplate
+    <InternalSimpleEmailBaseTemplate
       title="You joined ThonLabs waitlist"
       preview="Thank you for joining the waitlist for ThonLabs!"
       farewell="Best regards,"
@@ -18,7 +18,7 @@ export function JoinWaitlistDone({ userFirstName = '' }: Props) {
       <Text
         className={textVariants({
           variant: 'paragraphEmail',
-          className: 'mb-4',
+          className: 'mt-0 mb-4',
         })}
       >
         Hey {userFirstName ? userFirstName : ''},
@@ -61,12 +61,12 @@ export function JoinWaitlistDone({ userFirstName = '' }: Props) {
       <Text
         className={textVariants({
           variant: 'paragraphEmail',
-          className: 'mb-3',
+          className: 'mb-0',
         })}
       >
         Thanks again for your trust, and I can't wait to show you what’s coming!
       </Text>
-    </InternalEmailBaseTemplate>
+    </InternalSimpleEmailBaseTemplate>
   );
 }
 

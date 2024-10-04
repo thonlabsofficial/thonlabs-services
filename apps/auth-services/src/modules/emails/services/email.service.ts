@@ -19,7 +19,7 @@ export const internalEmails = {
     url: process.env.API_ROOT_URL,
   },
   [EmailInternalFromTypes.FOUNDER]: {
-    from: 'Gus <gus@thonlabs.io>',
+    from: 'Gus from ThonLabs <gus@thonlabs.io>',
     url: process.env.API_ROOT_URL,
   },
 };
