@@ -43,10 +43,11 @@ import {
   requestResetPasswordValidator,
 } from '../validators/reset-password-validators';
 import { getFirstName } from '@/utils/services/names-helpers';
-import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
+import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
 import { add } from 'date-fns';
-import { PublicKeyOrThonLabsOnly } from '../../shared/decorators/public-key-or-thon-labs-user.decorator';
+import { PublicKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
+import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
 @Controller('auth')
 export class AuthController {
   private logger = new Logger(AuthController.name);
@@ -58,6 +59,7 @@ export class AuthController {
     private authService: AuthService,
     private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
+    private emailTemplateService: EmailTemplateService,
   ) {}
 
   @PublicRoute()
@@ -111,47 +113,55 @@ export class AuthController {
       userFirstName: getFirstName(user.fullName),
     };
 
+    const { data: welcomeEmailEnabled } =
+      await this.emailTemplateService.isEnabled(
+        EmailTemplates.Welcome,
+        environment.id,
+      );
+
     if (payload.password) {
       const { data: tokens } = await this.tokenStorageService.createAuthTokens(
         user,
         environment as Environment,
       );
 
-      await Promise.all([
-        this.emailService.send({
-          userId: user.id,
-          to: user.email,
-          emailTemplateType: EmailTemplates.ConfirmEmail,
-          environmentId: environment.id,
-          data: emailData,
-        }),
-        this.emailService.send({
+      await this.emailService.send({
+        userId: user.id,
+        to: user.email,
+        emailTemplateType: EmailTemplates.ConfirmEmail,
+        environmentId: environment.id,
+        data: emailData,
+      });
+
+      if (welcomeEmailEnabled) {
+        await this.emailService.send({
           userId: user.id,
           to: user.email,
           emailTemplateType: EmailTemplates.Welcome,
           environmentId: environment.id,
           scheduledAt: add(new Date(), { minutes: 5 }),
-        }),
-      ]);
+        });
+      }
 
       return tokens;
     } else {
-      await Promise.all([
-        this.emailService.send({
-          userId: user.id,
-          to: user.email,
-          emailTemplateType: EmailTemplates.MagicLink,
-          environmentId: environment.id,
-          data: emailData,
-        }),
-        this.emailService.send({
+      await this.emailService.send({
+        userId: user.id,
+        to: user.email,
+        emailTemplateType: EmailTemplates.MagicLink,
+        environmentId: environment.id,
+        data: emailData,
+      });
+
+      if (welcomeEmailEnabled) {
+        await this.emailService.send({
           userId: user.id,
           to: user.email,
           emailTemplateType: EmailTemplates.Welcome,
           environmentId: environment.id,
           scheduledAt: add(new Date(), { minutes: 5 }),
-        }),
-      ]);
+        });
+      }
 
       return {
         emailSent: true,
