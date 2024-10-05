@@ -56,6 +56,7 @@ export enum ErrorMessages {
   NoCustomDomainFound = 'No custom domain found for this environment',
   EmailNotFound = 'Email not found',
   UserAlreadyInWaitlist = 'You are already in our waitlist',
+  EmailTemplateRequiredEnabled = 'This email template is required to be enabled',
 }
 
 export const exceptionsMapper = {

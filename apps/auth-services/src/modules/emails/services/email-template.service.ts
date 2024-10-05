@@ -30,6 +30,29 @@ export class EmailTemplateService {
     return emailTemplate;
   }
 
+  async getById(id: string, environmentId: string) {
+    const emailTemplate = await this.databaseService.emailTemplate.findUnique({
+      where: {
+        id,
+        environmentId,
+      },
+      select: {
+        id: true,
+        type: true,
+        name: true,
+        subject: true,
+        fromName: true,
+        fromEmail: true,
+        preview: true,
+        replyTo: true,
+        enabled: true,
+        content: true,
+      },
+    });
+
+    return emailTemplate;
+  }
+
   async createDefaultTemplates(environmentId: string): Promise<DataReturn> {
     try {
       await this.databaseService.emailTemplate.deleteMany({
@@ -81,17 +104,18 @@ export class EmailTemplateService {
       fromName: string;
       fromEmail: string;
       content: string;
-      preview: string;
+      preview?: string;
       replyTo: string;
     },
   ): Promise<DataReturn<EmailTemplate>> {
     const emailTemplateCount = await this.databaseService.emailTemplate.count({
       where: {
         id,
+        environmentId,
       },
     });
 
-    if (emailTemplateCount === 0) {
+    if (!emailTemplateCount) {
       this.logger.error(`Email template ${id} not found`);
       return {
         statusCode: StatusCodes.NotFound,
@@ -99,26 +123,116 @@ export class EmailTemplateService {
       };
     }
 
-    const emailTemplate = await this.databaseService.emailTemplate.update({
-      where: {
-        id,
-        environmentId,
-      },
-      data: {
-        name: payload.name,
-        subject: payload.subject,
-        fromName: payload.fromName,
-        fromEmail: payload.fromEmail,
-        content: unescape(payload.content),
-        preview: payload.preview,
-        replyTo: payload.replyTo,
-      },
-    });
+    const updatedEmailTemplate =
+      await this.databaseService.emailTemplate.update({
+        where: {
+          id,
+          environmentId,
+        },
+        data: {
+          name: payload.name,
+          subject: payload.subject,
+          fromName: payload.fromName,
+          fromEmail: payload.fromEmail,
+          content: unescape(payload.content),
+          preview: payload.preview,
+          replyTo: payload.replyTo,
+        },
+      });
 
     this.logger.log(`Email template ${id} updated`);
 
     return {
-      data: emailTemplate,
+      data: updatedEmailTemplate,
+    };
+  }
+
+  async updateEnabledStatus(
+    id: string,
+    environmentId: string,
+    enabled: boolean,
+  ) {
+    const emailTemplate = await this.databaseService.emailTemplate.findUnique({
+      where: {
+        id,
+        environmentId,
+      },
+      select: {
+        type: true,
+      },
+    });
+
+    if (!emailTemplate) {
+      return {
+        statusCode: StatusCodes.NotFound,
+        error: ErrorMessages.EmailTemplateNotFound,
+      };
+    }
+
+    const requiredEnabledTypes: EmailTemplates[] = [
+      EmailTemplates.ConfirmEmail,
+      EmailTemplates.ForgotPassword,
+      EmailTemplates.Invite,
+      EmailTemplates.MagicLink,
+    ];
+
+    if (requiredEnabledTypes.includes(emailTemplate.type)) {
+      return {
+        statusCode: StatusCodes.NotAcceptable,
+        error: ErrorMessages.EmailTemplateRequiredEnabled,
+      };
+    }
+
+    const updatedEmailTemplate =
+      await this.databaseService.emailTemplate.update({
+        where: {
+          id,
+          environmentId,
+        },
+        data: {
+          enabled,
+        },
+        select: {
+          id: true,
+          enabled: true,
+        },
+      });
+
+    this.logger.log(`Email template ${id} status updated`);
+
+    return { data: updatedEmailTemplate };
+  }
+
+  async fetch(environmentId: string) {
+    const templates = await this.databaseService.emailTemplate.findMany({
+      where: {
+        environmentId,
+      },
+      select: {
+        id: true,
+        type: true,
+        name: true,
+        enabled: true,
+        updatedAt: true,
+      },
+    });
+
+    return { data: { items: templates } };
+  }
+
+  async isEnabled(type: EmailTemplates, environmentId: string) {
+    const emailTemplate = await this.databaseService.emailTemplate.findFirst({
+      where: {
+        type,
+        environmentId,
+      },
+      select: {
+        enabled: true,
+      },
+    });
+
+    return {
+      data: emailTemplate?.enabled,
     };
   }
 }

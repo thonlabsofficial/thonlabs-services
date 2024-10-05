@@ -17,11 +17,6 @@ import {
   StatusCodes,
   exceptionsMapper,
 } from '@/utils/enums/errors-metadata';
-import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
-import { EmailService } from '@/auth/modules/emails/services/email.service';
-import { AuthProviders, EmailTemplates, TokenTypes } from '@prisma/client';
-import { TokenStorageService } from '../../token-storage/services/token-storage.service';
-import { getFirstName } from '@/utils/services/names-helpers';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
 import {
   createUserValidator,
@@ -34,12 +29,7 @@ import { PublicKeyOrThonLabsOnly } from '../../shared/decorators/public-key-or-t
 
 @Controller('users')
 export class UserController {
-  constructor(
-    private userService: UserService,
-    private environmentService: EnvironmentService,
-    private emailService: EmailService,
-    private tokenStorageService: TokenStorageService,
-  ) {}
+  constructor(private userService: UserService) {}
 
   @Post('/')
   @HttpCode(StatusCodes.Created)
