@@ -7,7 +7,7 @@ export const updateTemplateValidator = z.object({
   fromEmail: z.string({ required_error: 'From email is required' }),
   content: z.string({ required_error: 'Content is required' }),
   preview: z.string().optional().nullable(),
-  replyTo: z.string({ required_error: 'Reply to is required' }),
+  replyTo: z.string().optional().nullable(),
 });
 
 export type UpdateTemplatePayload = z.infer<typeof updateTemplateValidator>;

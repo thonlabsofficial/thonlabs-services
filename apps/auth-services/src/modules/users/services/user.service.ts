@@ -400,15 +400,6 @@ export class UserService {
     userId: string,
     environmentId: string,
   ): Promise<DataReturn<User>> {
-    const userProjectsCount = await this.userProjectsCount(userId);
-
-    if (userProjectsCount > 0) {
-      return {
-        statusCode: StatusCodes.Forbidden,
-        error: 'User that has projects cannot be deleted',
-      };
-    }
-
     const user = await this.databaseService.user.delete({
       where: {
         id: userId,
