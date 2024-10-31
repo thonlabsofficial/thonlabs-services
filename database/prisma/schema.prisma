@@ -191,6 +191,8 @@ model EmailTemplate {
   fromName      String
   fromEmail     String
   content       String         @db.Text
+  contentJSON   Json?
+  bodyStyles    Json?
   preview       String?
   replyTo       String?
   createdAt     DateTime       @default(now())

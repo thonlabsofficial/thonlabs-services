@@ -8,6 +8,7 @@ import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { unescape } from 'lodash';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import { getRootDomain } from '@/utils/services/domain';
+import { JsonValue } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class EmailTemplateService {
@@ -47,6 +48,10 @@ export class EmailTemplateService {
         replyTo: true,
         enabled: true,
         content: true,
+        contentJSON: true,
+        bodyStyles: true,
+        updatedAt: true,
+        environmentId: true,
       },
     });
 
@@ -99,13 +104,14 @@ export class EmailTemplateService {
     id: string,
     environmentId: string,
     payload: {
-      name: string;
       subject: string;
       fromName: string;
       fromEmail: string;
       content: string;
       preview?: string;
       replyTo: string;
+      contentJSON: JsonValue;
+      bodyStyles: JsonValue;
     },
   ): Promise<DataReturn<EmailTemplate>> {
     const emailTemplateCount = await this.databaseService.emailTemplate.count({
@@ -130,11 +136,12 @@ export class EmailTemplateService {
           environmentId,
         },
         data: {
-          name: payload.name,
           subject: payload.subject,
           fromName: payload.fromName,
           fromEmail: payload.fromEmail,
           content: unescape(payload.content),
+          contentJSON: payload.contentJSON,
+          bodyStyles: payload.bodyStyles,
           preview: payload.preview,
           replyTo: payload.replyTo,
         },
@@ -214,6 +221,7 @@ export class EmailTemplateService {
         name: true,
         enabled: true,
         updatedAt: true,
+        environmentId: true,
       },
     });
 

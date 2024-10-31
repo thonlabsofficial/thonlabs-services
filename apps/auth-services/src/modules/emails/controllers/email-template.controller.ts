@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Put,
-  Req,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
@@ -24,7 +15,7 @@ import { NeedsInternalKey } from '../../shared/decorators/needs-internal-key.dec
 export class EmailTemplateController {
   constructor(private emailTemplateService: EmailTemplateService) {}
 
-  @Put('/:id')
+  @Patch('/:id')
   @ThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   @SchemaValidator(updateTemplateValidator)
