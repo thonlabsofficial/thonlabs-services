@@ -57,6 +57,7 @@ export enum ErrorMessages {
   EmailNotFound = 'Email not found',
   UserAlreadyInWaitlist = 'You are already in our waitlist',
   EmailTemplateRequiredEnabled = 'This email template is required to be enabled',
+  InvalidEmailTemplateEJS = 'The template has invalid EJS, please check the syntax',
 }
 
 export const exceptionsMapper = {

@@ -9,6 +9,7 @@ import { unescape } from 'lodash';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import { getRootDomain } from '@/utils/services/domain';
 import { JsonValue } from '@prisma/client/runtime/library';
+import * as ejs from 'ejs';
 
 @Injectable()
 export class EmailTemplateService {
@@ -129,6 +130,49 @@ export class EmailTemplateService {
       };
     }
 
+    const content = unescape(payload.content);
+
+    try {
+      const emailData = {
+        token: 'test-token',
+        environment: {
+          id: 'test-env-id',
+          name: 'test-env-name',
+          appURL: 'https://test.thonlabs.com',
+          project: {
+            id: 'test-project-id',
+            appName: 'test-app-name',
+          },
+        },
+        user: {
+          id: 'test-user-id',
+          firstName: 'test-user-first-name',
+          fullName: 'test-user-full-name',
+          email: 'test-user-email',
+          lastSignIn: new Date(),
+          emailConfirmed: true,
+          profilePicture: 'test-user-profile-picture',
+        },
+        inviter: {
+          fullName: 'test-inviter-full-name',
+          email: 'test-inviter-email',
+        },
+      };
+
+      ejs.render(payload.fromName, emailData);
+      ejs.render(payload.subject, emailData);
+      ejs.render(content, {
+        ...emailData,
+        preview: ejs.render(payload.preview, emailData),
+      });
+    } catch (e) {
+      this.logger.error(`Error on rendering email template ${id}`, e);
+      return {
+        statusCode: StatusCodes.BadRequest,
+        error: ErrorMessages.InvalidEmailTemplateEJS,
+      };
+    }
+
     const updatedEmailTemplate =
       await this.databaseService.emailTemplate.update({
         where: {
@@ -139,7 +183,7 @@ export class EmailTemplateService {
           subject: payload.subject,
           fromName: payload.fromName,
           fromEmail: payload.fromEmail,
-          content: unescape(payload.content),
+          content,
           contentJSON: payload.contentJSON,
           bodyStyles: payload.bodyStyles,
           preview: payload.preview,

@@ -485,7 +485,13 @@ export class UserService {
     });
 
     const [inviter, { data: tokenData }] = await Promise.all([
-      this.getById(fromUserId),
+      this.databaseService.user.findFirst({
+        where: { id: fromUserId },
+        select: {
+          fullName: true,
+          email: true,
+        },
+      }),
       this.tokenStorageService.create({
         type: TokenTypes.InviteUser,
         expiresIn: '5h',

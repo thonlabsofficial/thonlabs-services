@@ -48,7 +48,7 @@ interface SendEmailParams {
       }
     >;
     user?: Partial<User> & { firstName?: string };
-    inviter?: User;
+    inviter?: Partial<User>;
     publicKey?: string;
   };
   scheduledAt?: Date;
@@ -95,14 +95,16 @@ export class EmailService {
       };
     }
 
+    let fromName;
     let subject;
     let html;
 
     try {
+      fromName = ejs.render(emailTemplate.fromName, emailData);
       subject = ejs.render(emailTemplate.subject, emailData);
       html = ejs.render(emailTemplate.content, {
         ...emailData,
-        preview: emailTemplate.preview,
+        preview: ejs.render(emailTemplate.preview, emailData),
       });
     } catch (e) {
       this.logger.error(
@@ -113,7 +115,7 @@ export class EmailService {
 
     try {
       await this.resend.emails.send({
-        from: `${emailTemplate.fromName} <${emailTemplate.fromEmail}>`,
+        from: `${fromName} <${emailTemplate.fromEmail}>`,
         to,
         subject,
         html,
