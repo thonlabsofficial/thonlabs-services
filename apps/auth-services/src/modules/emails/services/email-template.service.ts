@@ -247,6 +247,8 @@ export class EmailTemplateService {
         select: {
           id: true,
           enabled: true,
+          name: true,
+          type: true,
         },
       });
 
