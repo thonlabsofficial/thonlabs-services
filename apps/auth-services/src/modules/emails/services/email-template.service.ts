@@ -1,7 +1,6 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { DatabaseService } from '../../shared/database/database.service';
 import { EmailTemplate, EmailTemplates } from '@prisma/client';
-import { render } from '@react-email/render';
 import emailTemplatesMapper from '@/auth/modules/emails/constants/email-templates';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
@@ -72,12 +71,14 @@ export class EmailTemplateService {
       const emailDomain = getRootDomain(new URL(environment.appURL).hostname);
 
       for (const [type, data] of Object.entries(emailTemplatesMapper)) {
-        const content = unescape(render(data.content, { pretty: true }));
+        const content = unescape(data.content);
 
         await this.databaseService.emailTemplate.create({
           data: {
             type: type as EmailTemplates,
             content,
+            contentJSON: data.contentJSON,
+            bodyStyles: data.bodyStyles,
             name: data.name,
             subject: data.subject,
             fromEmail: `${data.fromEmail}@${emailDomain}`,

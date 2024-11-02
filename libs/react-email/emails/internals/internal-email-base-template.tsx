@@ -97,7 +97,7 @@ export function InternalEmailBaseTemplate({
         </div>
         <Head />
         <Body
-          className="bg-zinc-100 m-0 p-2.5"
+          className="bg-zinc-100 m-0 pt-2.5 px-2.5 pb-8"
           style={{
             fontFamily: 'sans-serif',
           }}
@@ -116,16 +116,16 @@ export function InternalEmailBaseTemplate({
             </Row>
           </Section>
 
-          <Container className="max-w-[600px] mx-auto bg-white rounded shadow-lg pt-6">
-            <Section className="px-7">
+          <Container className="max-w-[600px] mx-auto bg-white rounded-[8px] pt-2.5">
+            <Section className="px-2.5 mt-2">
               <Heading as="h1" className="mt-0 mb-2 text-2xl text-zinc-800">
                 {title}
               </Heading>
             </Section>
 
-            <Section className="px-7">{children}</Section>
+            <Section className="px-2.5">{children}</Section>
 
-            <Section className="px-7 mb-6">
+            <Section className="px-2.5 mb-4">
               <Text className="mb-0 font-bold text-zinc-800">
                 {farewell && (
                   <>
