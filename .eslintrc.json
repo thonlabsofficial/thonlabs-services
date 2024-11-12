@@ -10,7 +10,8 @@
       "files": ["*.ts", "*.tsx"],
       "extends": ["plugin:@nx/typescript"],
       "rules": {
-        "no-console": "warn"
+        "no-console": "warn",
+        "@typescript-eslint/no-explicit-any": "off"
       }
     },
     {

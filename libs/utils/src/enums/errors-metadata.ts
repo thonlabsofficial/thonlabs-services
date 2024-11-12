@@ -58,6 +58,10 @@ export enum ErrorMessages {
   UserAlreadyInWaitlist = 'You are already in our waitlist',
   EmailTemplateRequiredEnabled = 'This email template is required to be enabled',
   InvalidEmailTemplateEJS = 'The template has invalid EJS, please check the syntax',
+  DomainAlreadyRegistered = 'Domain already registered',
+  DomainAlreadyVerified = 'Domain already verified',
+  NoDomainRegistered = 'No domain registered',
+  DomainAlreadyRegisteredAccount = 'Your account already has a domain registered',
 }
 
 export const exceptionsMapper = {

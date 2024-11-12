@@ -20,6 +20,8 @@ import Crypt from '@/utils/services/crypt';
 import ms from 'ms';
 import { EmailTemplateService } from '../../emails/services/email-template.service';
 import { EnvironmentDataService } from './environment-data.service';
+import { EnvironmentDataKeys } from '../constants/environment-data';
+import { EmailDomainService } from '../../emails/services/email-domain.service';
 
 @Injectable()
 export class EnvironmentService {
@@ -31,6 +33,7 @@ export class EnvironmentService {
     private projectService: ProjectService,
     private emailTemplateService: EmailTemplateService,
     private environmentDataService: EnvironmentDataService,
+    private emailDomainService: EmailDomainService,
   ) {}
 
   async getById(id: string): Promise<DataReturn<Environment>> {
@@ -385,6 +388,17 @@ export class EnvironmentService {
         appURL: payload.appURL,
       },
     });
+
+    await Promise.all([
+      this.environmentDataService.upsert(environment.id, {
+        id: EnvironmentDataKeys.EnableSignUp,
+        value: true,
+      }),
+      this.emailDomainService.setDomain(
+        environment.id,
+        new URL(environment.appURL).hostname,
+      ),
+    ]);
 
     this.logger.warn(
       `"${environment.name}" environment created (${environment.id})`,

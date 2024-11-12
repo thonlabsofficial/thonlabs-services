@@ -4,6 +4,8 @@ import { SchedulerRegistry } from '@nestjs/schedule';
 export enum CronJobs {
   VerifyNewCustomDomains = 'verify-new-custom-domains',
   VerifyCurrentCustomDomains = 'verify-current-custom-domains',
+  VerifyNewEmailDomains = 'verify-new-email-domains',
+  VerifyCurrentEmailDomains = 'verify-current-email-domains',
 }
 
 @Injectable()

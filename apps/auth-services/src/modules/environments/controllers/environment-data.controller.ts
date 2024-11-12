@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   Res,
 } from '@nestjs/common';
 import { exceptionsMapper, StatusCodes } from '@/utils/enums/errors-metadata';
@@ -14,8 +15,9 @@ import { EnvironmentDataService } from '@/auth/modules/environments/services/env
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
 import { setEnvironmentDataValidator } from '@/auth/modules/environments/validators/environment-data-validators';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
-import { NeedsPublicKey } from '../../shared/decorators/needs-public-key.decorator';
-import { PublicRoute } from '../../auth/decorators/auth.decorator';
+import { NeedsPublicKey } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
+import { PublicRoute } from '@/auth/modules/auth/decorators/auth.decorator';
+import { NeedsInternalKey } from '@/auth/modules/shared/decorators/needs-internal-key.decorator';
 
 @Controller('environments/:envId/data')
 export class EnvironmentDataController {
@@ -30,7 +32,22 @@ export class EnvironmentDataController {
   async fetch(@Param('envId') environmentId: string) {
     const [envLegacyData, envData] = await Promise.all([
       this.environmentService.getData(environmentId),
-      this.environmentDataService.fetch(environmentId),
+      this.environmentDataService.fetch(environmentId, ['enableSignUp']),
+    ]);
+
+    return { ...envLegacyData, ...envData };
+  }
+
+  @Get('/app')
+  @PublicRoute()
+  @NeedsInternalKey()
+  async fetchAppData(
+    @Param('envId') environmentId: string,
+    @Query() query: { ids: string[] },
+  ) {
+    const [envLegacyData, envData] = await Promise.all([
+      this.environmentService.getData(environmentId),
+      this.environmentDataService.fetch(environmentId, query.ids),
     ]);
 
     return { ...envLegacyData, ...envData };

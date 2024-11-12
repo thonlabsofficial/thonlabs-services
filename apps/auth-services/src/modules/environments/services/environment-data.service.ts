@@ -99,10 +99,16 @@ export class EnvironmentDataService {
    * @param {string} environmentId - The ID of the environment.
    * @returns {Promise<Record<string, any>>} - The fetched environment data.
    */
-  async fetch(environmentId: string): Promise<Record<string, any>> {
+  async fetch(
+    environmentId: string,
+    ids: string[] = [],
+  ): Promise<Record<string, any>> {
     const environmentData = await this.databaseService.environmentData.findMany(
       {
-        where: { environmentId },
+        where: {
+          environmentId,
+          ...(ids.length > 0 && { id: { in: ids } }),
+        },
         select: {
           id: true,
           value: true,
@@ -126,10 +132,10 @@ export class EnvironmentDataService {
    * @param {string} id - The ID of the data.
    * @returns {Promise<DataReturn<EnvironmentData>>} - The fetched environment data.
    */
-  async get(
+  async get<T = null>(
     environmentId: string,
     id: string,
-  ): Promise<DataReturn<EnvironmentData['value']>> {
+  ): Promise<DataReturn<T>> {
     const environmentData =
       await this.databaseService.environmentData.findUnique({
         where: { id: camelCase(id), environmentId },
@@ -148,7 +154,7 @@ export class EnvironmentDataService {
       };
     }
 
-    return { data: environmentData?.value };
+    return { data: environmentData?.value as T };
   }
 
   /**

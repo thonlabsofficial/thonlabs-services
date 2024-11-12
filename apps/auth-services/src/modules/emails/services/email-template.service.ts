@@ -6,9 +6,9 @@ import { DataReturn } from '@/utils/interfaces/data-return';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { unescape } from 'lodash';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
-import { getRootDomain } from '@/utils/services/domain';
 import { JsonValue } from '@prisma/client/runtime/library';
 import * as ejs from 'ejs';
+import { EmailDomainService } from './email-domain.service';
 
 @Injectable()
 export class EmailTemplateService {
@@ -18,6 +18,7 @@ export class EmailTemplateService {
     private databaseService: DatabaseService,
     @Inject(forwardRef(() => EnvironmentService))
     private environmentService: EnvironmentService,
+    private emailDomainService: EmailDomainService,
   ) {}
 
   async getByType(type: EmailTemplates, environmentId: string) {
@@ -68,7 +69,8 @@ export class EmailTemplateService {
       const environment =
         await this.environmentService.getDetailedById(environmentId);
 
-      const emailDomain = getRootDomain(new URL(environment.appURL).hostname);
+      const { data: emailDomain } =
+        await this.emailDomainService.getDomain(environmentId);
 
       for (const [type, data] of Object.entries(emailTemplatesMapper)) {
         const content = unescape(data.content);
@@ -81,7 +83,7 @@ export class EmailTemplateService {
             bodyStyles: data.bodyStyles,
             name: data.name,
             subject: data.subject,
-            fromEmail: `${data.fromEmail}@${emailDomain}`,
+            fromEmail: `${data.fromEmail}@${emailDomain.domain}`,
             fromName: `${environment.project.appName} Team`,
             preview: data.preview,
             replyTo: data.replyTo,

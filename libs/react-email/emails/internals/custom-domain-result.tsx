@@ -34,7 +34,7 @@ export function CustomDomainResult({
           className: 'mb-4',
         })}
       >
-        {`Hey${userFirstName ? ` ${userFirstName}` : ' there!'}${validationSuccess ? ' 👋' : ','}`}
+        {`Hey${userFirstName ? ` ${userFirstName}` : ''}${validationSuccess ? ' there! 👋' : ','}`}
       </Text>
 
       {validationSuccess && (
@@ -130,8 +130,19 @@ export function CustomDomainResult({
           >
             We were unable to verify your custom domain{' '}
             <strong>"{environment.customDomain}"</strong>. This is often caused
-            by an issue with your DNS configuration, particularly the CNAME
-            record.
+            by an issue with your DNS configuration, Please check the list of
+            records described in ThonLabs{' '}
+            <Link
+              className={textVariants({
+                variant: 'link',
+              })}
+              href={`${tlAppURL}/${environment.id}/domains`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              domains page
+            </Link>{' '}
+            and update your DNS provider settings.
           </Text>
 
           <Text
@@ -177,7 +188,7 @@ export function CustomDomainResult({
               className={textVariants({
                 variant: 'link',
               })}
-              href={`${tlAppURL}/settings`}
+              href={`${tlAppURL}/${environment.id}/domains`}
               target="_blank"
               rel="noopener noreferrer"
             >
