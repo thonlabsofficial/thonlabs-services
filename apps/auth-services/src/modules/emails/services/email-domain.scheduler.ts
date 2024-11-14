@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { CronJobs, CronService } from '@/auth/modules/shared/cron.service';
+import { CronJobs } from '@/auth/modules/shared/cron.service';
 import { EmailDomainService } from './email-domain.service';
 import { EmailDomain, EmailDomainStatus } from '../interfaces/email-domain';
 import {
@@ -18,7 +18,6 @@ export class EmailDomainScheduler {
 
   constructor(
     private emailDomainService: EmailDomainService,
-    private cronService: CronService,
     private emailService: EmailService,
     private databaseService: DatabaseService,
   ) {}
@@ -32,8 +31,7 @@ export class EmailDomainScheduler {
     );
 
     if (domainsToVerify.length === 0) {
-      this.logger.log('No new email domains to verify, stopping job...');
-      this.cronService.stopJob(CronJobs.VerifyNewEmailDomains);
+      this.logger.log('No new email domains to verify');
       return;
     }
 
@@ -51,9 +49,11 @@ export class EmailDomainScheduler {
     );
 
     for (const domain of partnerDomainsToVerify) {
-      const domainData = await this.emailDomainService.getPartnerDomain(
-        domain.value.refId,
-      );
+      const [domainData] = await Promise.all([
+        this.emailDomainService.getPartnerDomain(domain.value.refId),
+        /* This is used to update the records status from the partner domain */
+        this.emailDomainService.updateRecordsFromPartner(domain.environmentId),
+      ]);
 
       let status: EmailDomainStatus = null;
 
@@ -96,8 +96,7 @@ export class EmailDomainScheduler {
     );
 
     if (domainsToVerify.length === 0) {
-      this.logger.log('No current email domains to verify, stopping job...');
-      this.cronService.stopJob(CronJobs.VerifyCurrentEmailDomains);
+      this.logger.log('No current email domains to verify');
       return;
     }
 
@@ -135,10 +134,13 @@ export class EmailDomainScheduler {
           domain.environmentId,
           status,
         );
-        await this._sendEmailNotification(domain.environmentId, {
-          ...domain.value,
-          status,
-        });
+
+        if (status === EmailDomainStatus.Failed) {
+          await this._sendEmailNotification(domain.environmentId, {
+            ...domain.value,
+            status,
+          });
+        }
 
         this.logger.log(
           `Status changed to ${status} for email domain ${domain.value.domain} (RefID: ${domain.value.refId})`,

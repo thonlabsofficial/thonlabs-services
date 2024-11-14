@@ -8,6 +8,7 @@ import {
   SetEmailTemplateDomainPayload,
 } from '../validators/email-domain-validators';
 import { exceptionsMapper } from '@/utils/enums/errors-metadata';
+import { NeedsInternalKey } from '../../shared/decorators/needs-internal-key.decorator';
 
 @Controller('emails/domains')
 export class EmailDomainController {
@@ -19,6 +20,8 @@ export class EmailDomainController {
   @SchemaValidator(setEmailTemplateDomainValidator)
   async setDomain(@Req() req, @Body() payload: SetEmailTemplateDomainPayload) {
     const environmentId = req.headers['tl-env-id'];
+
+    await this.emailDomainService.deleteDomain(environmentId);
 
     const data = await this.emailDomainService.setDomain(
       environmentId,
@@ -47,6 +50,7 @@ export class EmailDomainController {
 
   @Delete('/')
   @ThonLabsOnly()
+  @NeedsInternalKey()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   async deleteDomain(@Req() req) {
     const environmentId = req.headers['tl-env-id'];

@@ -200,7 +200,31 @@ export class EmailDomainService {
       id: EnvironmentDataKeys.EmailTemplateDomain,
       value: {
         ...data,
+        records: partnerDomain.records,
         status,
+      },
+    });
+  }
+
+  async updateRecordsFromPartner(environmentId: string) {
+    const { data } = await this.environmentDataService.get<EmailDomain>(
+      environmentId,
+      EnvironmentDataKeys.EmailTemplateDomain,
+    );
+    const partnerDomain = await this.getPartnerDomain(data.refId);
+
+    if (!partnerDomain) {
+      return {
+        statusCode: StatusCodes.Internal,
+        error: ErrorMessages.InternalError,
+      };
+    }
+
+    await this.environmentDataService.upsert(environmentId, {
+      id: EnvironmentDataKeys.EmailTemplateDomain,
+      value: {
+        ...data,
+        records: partnerDomain.records,
       },
     });
   }

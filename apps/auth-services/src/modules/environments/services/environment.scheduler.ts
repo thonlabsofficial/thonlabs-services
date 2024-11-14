@@ -1,17 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { EnvironmentDomainService } from '@/auth/modules/environments/services/environment-domain.service';
-import { CronJobs, CronService } from '@/auth/modules/shared/cron.service';
+import { CronJobs } from '@/auth/modules/shared/cron.service';
 import { CustomDomainStatus } from '@prisma/client';
 
 @Injectable()
 export class EnvironmentScheduler {
   private readonly logger = new Logger(EnvironmentScheduler.name);
 
-  constructor(
-    private environmentDomainService: EnvironmentDomainService,
-    private cronService: CronService,
-  ) {}
+  constructor(private environmentDomainService: EnvironmentDomainService) {}
 
   @Cron(CronExpression.EVERY_5_MINUTES, {
     name: CronJobs.VerifyNewCustomDomains,
@@ -22,8 +19,7 @@ export class EnvironmentScheduler {
     });
 
     if (domainsToVerify.length === 0) {
-      this.logger.log('No new custom domains to verify, stopping job...');
-      this.cronService.stopJob(CronJobs.VerifyNewCustomDomains);
+      this.logger.log('No new custom domains to verify');
       return;
     }
 
@@ -39,8 +35,7 @@ export class EnvironmentScheduler {
     });
 
     if (domainsToVerify.length === 0) {
-      this.logger.log('No current custom domains to verify, stopping job...');
-      this.cronService.stopJob(CronJobs.VerifyCurrentCustomDomains);
+      this.logger.log('No current custom domains to verify');
       return;
     }
 

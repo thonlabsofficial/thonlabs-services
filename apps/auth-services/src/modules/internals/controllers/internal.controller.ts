@@ -23,7 +23,6 @@ import { ProjectService } from '@/auth/modules/projects/services/project.service
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 
 @Controller('internals')
-@NeedsInternalKey()
 export class InternalController {
   constructor(
     private environmentDataService: EnvironmentDataService,
@@ -35,6 +34,7 @@ export class InternalController {
 
   @Post('/init-owner')
   @PublicRoute()
+  @NeedsInternalKey()
   public async signUpOwner(
     @Body() payload: { password: string; environmentId: string },
   ) {
@@ -87,6 +87,7 @@ export class InternalController {
    */
   @Post('/waitlist/:environmentId')
   @PublicRoute()
+  @NeedsInternalKey()
   @SchemaValidator(joinWaitlistFormSchema)
   public async addToWaitlist(
     @Body() payload: JoinWaitlistForm,
