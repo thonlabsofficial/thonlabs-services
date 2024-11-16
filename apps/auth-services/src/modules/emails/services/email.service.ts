@@ -7,6 +7,7 @@ import { render } from '@react-email/render';
 import { ReactElement } from 'react';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { getFirstName } from '@/utils/services/names-helpers';
+import { EmailDomainService } from './email-domain.service';
 
 export enum EmailInternalFromTypes {
   SUPPORT = 'support',
@@ -40,6 +41,7 @@ interface SendEmailParams {
   projectId?: string;
   data?: {
     token?: string;
+    emailDomain?: string;
     environment?: Partial<
       Environment & {
         authURL: string;
@@ -63,6 +65,7 @@ export class EmailService {
   constructor(
     private databaseService: DatabaseService,
     private emailTemplatesService: EmailTemplateService,
+    private emailDomainService: EmailDomainService,
   ) {
     this.resend = new Resend(process.env.EMAIL_PROVIDER_API_KEY);
   }
@@ -98,9 +101,11 @@ export class EmailService {
     let fromName;
     let subject;
     let html;
+    let fromEmail;
 
     try {
       fromName = ejs.render(emailTemplate.fromName, emailData);
+      fromEmail = ejs.render(emailTemplate.fromEmail, emailData);
       subject = ejs.render(emailTemplate.subject, emailData);
       html = ejs.render(emailTemplate.content, {
         ...emailData,
@@ -114,8 +119,8 @@ export class EmailService {
     }
 
     try {
-      await this.resend.emails.send({
-        from: `${fromName} <${emailTemplate.fromEmail}>`,
+      const { error } = await this.resend.emails.send({
+        from: `${fromName} <${fromEmail}>`,
         to,
         subject,
         html,
@@ -123,9 +128,16 @@ export class EmailService {
         scheduledAt: scheduledAt?.toISOString(),
       });
 
-      this.logger.log(
-        `Email ${emailTemplateType} ${scheduledAt ? 'scheduled' : 'sent'}`,
-      );
+      if (error) {
+        this.logger.error(
+          `Error from partner on sending email ${emailTemplateType} - Env: ${environmentId}`,
+          JSON.stringify(error),
+        );
+      } else {
+        this.logger.log(
+          `Email ${emailTemplateType} ${scheduledAt ? 'scheduled' : 'sent'}`,
+        );
+      }
     } catch (e) {
       this.logger.error(
         `Error on sending email ${emailTemplateType} - Env: ${environmentId}`,
@@ -149,7 +161,7 @@ export class EmailService {
         return;
       }
 
-      await this.resend.emails.send({
+      const { error } = await this.resend.emails.send({
         from: internalEmail.from,
         to,
         subject,
@@ -157,29 +169,43 @@ export class EmailService {
         scheduledAt: scheduledAt?.toISOString(),
       });
 
-      this.logger.log(`Email "${subject}" sent (internal)`);
+      if (error) {
+        this.logger.error(
+          `Error from partner on sending email`,
+          JSON.stringify(error),
+        );
+      } else {
+        this.logger.log(`Email "${subject}" sent (internal)`);
+      }
     } catch (e) {
       this.logger.error(`Error on sending email ${subject}`, e);
     }
   }
 
   private async getEnvironmentData(environmentId: string) {
-    const environment = await this.databaseService.environment.findUnique({
-      where: { id: environmentId },
-      select: {
-        id: true,
-        name: true,
-        appURL: true,
-        project: {
-          select: {
-            id: true,
-            appName: true,
+    const [environment, emailDomain] = await Promise.all([
+      this.databaseService.environment.findUnique({
+        where: { id: environmentId },
+        select: {
+          id: true,
+          name: true,
+          appURL: true,
+          project: {
+            select: {
+              id: true,
+              appName: true,
+            },
           },
         },
-      },
-    });
+      }),
+      this.emailDomainService.getDomain(environmentId),
+    ]);
 
-    return environment;
+    return {
+      ...environment,
+      emailDomain:
+        emailDomain?.data?.domain || new URL(environment.appURL).hostname,
+    };
   }
 
   private async getUserData(userId: string) {

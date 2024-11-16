@@ -28,7 +28,7 @@ export class EmailDomainService {
   async setDomain(
     environmentId: string,
     domain: string,
-  ): Promise<DataReturn<Pick<EmailDomain, 'status' | 'records'>>> {
+  ): Promise<DataReturn<Pick<EmailDomain, 'domain' | 'status' | 'records'>>> {
     const tlDomainsCount = await this.databaseService.environmentData.count({
       where: {
         key: EnvironmentDataKeys.EmailTemplateDomain,
@@ -43,7 +43,7 @@ export class EmailDomainService {
       this.logger.error(`Domain ${domain} already registered at thonlabs`);
       return {
         statusCode: StatusCodes.Conflict,
-        error: ErrorMessages.DomainAlreadyRegisteredAccount,
+        error: ErrorMessages.DomainAlreadyRegistered,
       };
     }
 
@@ -99,6 +99,7 @@ export class EmailDomainService {
 
     return {
       data: {
+        domain: value.domain,
         status: value.status,
         records: value.records,
       },
@@ -189,23 +190,24 @@ export class EmailDomainService {
       status = EmailDomainStatus.Failed;
     }
 
-    await this.updateStatus(environmentId, status);
+    const { data: updatedData } = await this.updateStatus(
+      environmentId,
+      status,
+    );
 
     this.logger.log(
       `Domain ${data.domain} status updated to ${status} (ENV: ${environmentId})`,
     );
 
     return {
-      data: {
-        status,
-      },
+      data: updatedData,
     };
   }
 
   async updateStatus(
     environmentId: string,
     status: EmailDomainStatus,
-  ): Promise<DataReturn> {
+  ): Promise<DataReturn<Pick<EmailDomain, 'status' | 'records'>>> {
     const { data } = await this.environmentDataService.get<EmailDomain>(
       environmentId,
       EnvironmentDataKeys.EmailTemplateDomain,
@@ -228,6 +230,13 @@ export class EmailDomainService {
         status,
       },
     });
+
+    return {
+      data: {
+        status,
+        records: partnerDomain.records as unknown as EmailDomain['records'],
+      },
+    };
   }
 
   async updateRecordsFromPartner(environmentId: string) {

@@ -164,6 +164,7 @@ export class EmailTemplateService {
 
       ejs.render(payload.fromName, emailData);
       ejs.render(payload.subject, emailData);
+      ejs.render(payload.fromEmail, emailData);
       ejs.render(content, {
         ...emailData,
         preview: ejs.render(payload.preview, emailData),

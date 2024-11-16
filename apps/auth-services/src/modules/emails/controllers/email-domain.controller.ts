@@ -29,6 +29,8 @@ export class EmailDomainController {
     if (data?.error) {
       throw new exceptionsMapper[data.statusCode](data.error);
     }
+
+    return data?.data;
   }
 
   @Get('/')
