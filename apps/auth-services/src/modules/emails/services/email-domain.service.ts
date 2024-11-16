@@ -251,6 +251,10 @@ export class EmailDomainService {
         records: partnerDomain.records,
       },
     });
+
+    this.logger.log(
+      `Domain ${data.domain} records updated from partner (ENV: ${environmentId})`,
+    );
   }
 
   async fetchByStatus(
