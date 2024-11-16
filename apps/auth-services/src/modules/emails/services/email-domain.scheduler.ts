@@ -26,9 +26,8 @@ export class EmailDomainScheduler {
     name: CronJobs.VerifyNewEmailDomains,
   })
   async verifyNewCustomDomainsCron() {
-    const { data: domainsToVerify } = await this.emailDomainService.fetch(
-      EmailDomainStatus.Verifying,
-    );
+    const { data: domainsToVerify } =
+      await this.emailDomainService.fetchByStatus(EmailDomainStatus.Verifying);
 
     if (domainsToVerify.length === 0) {
       this.logger.log('No new email domains to verify');
@@ -91,9 +90,8 @@ export class EmailDomainScheduler {
     name: CronJobs.VerifyCurrentEmailDomains,
   })
   async verifyCurrentCustomDomainsCron() {
-    const { data: domainsToVerify } = await this.emailDomainService.fetch(
-      EmailDomainStatus.Verified,
-    );
+    const { data: domainsToVerify } =
+      await this.emailDomainService.fetchByStatus(EmailDomainStatus.Verified);
 
     if (domainsToVerify.length === 0) {
       this.logger.log('No current email domains to verify');

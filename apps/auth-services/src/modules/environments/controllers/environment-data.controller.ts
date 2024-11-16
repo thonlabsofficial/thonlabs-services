@@ -80,7 +80,7 @@ export class EnvironmentDataController {
   ) {
     const { data: exists } = await this.environmentDataService.get(
       environmentId,
-      payload.id,
+      payload.key,
     );
 
     const data = await this.environmentDataService.upsert(
@@ -99,11 +99,14 @@ export class EnvironmentDataController {
     return res.status(StatusCodes.Created).send(data.data);
   }
 
-  @Delete('/:id')
+  @Delete('/:key')
   @ThonLabsOnly()
   @HasEnvAccess({ param: 'envId' })
-  async delete(@Param('envId') environmentId: string, @Param('id') id: string) {
-    const data = await this.environmentDataService.delete(environmentId, id);
+  async delete(
+    @Param('envId') environmentId: string,
+    @Param('key') key: string,
+  ) {
+    const data = await this.environmentDataService.delete(environmentId, key);
 
     if (data?.statusCode) {
       throw new exceptionsMapper[data.statusCode](data.error);

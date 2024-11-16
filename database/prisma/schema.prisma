@@ -155,7 +155,8 @@ model Environment {
 }
 
 model EnvironmentData {
-  id            String   @id
+  id            Int      @id @default(autoincrement())
+  key           String
   value         Json
   environmentId String
   createdAt     DateTime @default(now())

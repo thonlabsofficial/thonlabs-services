@@ -29,9 +29,18 @@ export class EmailDomainService {
     environmentId: string,
     domain: string,
   ): Promise<DataReturn<Pick<EmailDomain, 'status' | 'records'>>> {
-    const { data: currentDomain } = await this.getDomain(environmentId);
+    const tlDomainsCount = await this.databaseService.environmentData.count({
+      where: {
+        key: EnvironmentDataKeys.EmailTemplateDomain,
+        value: {
+          path: ['domain'],
+          equals: domain,
+        },
+      },
+    });
 
-    if (currentDomain) {
+    if (tlDomainsCount > 0) {
+      this.logger.error(`Domain ${domain} already registered at thonlabs`);
       return {
         statusCode: StatusCodes.Conflict,
         error: ErrorMessages.DomainAlreadyRegisteredAccount,
@@ -39,8 +48,8 @@ export class EmailDomainService {
     }
 
     const registeredDomains = await this.listPartnerDomains();
-
     if (registeredDomains.some((d) => d.name === domain)) {
+      this.logger.error(`Domain ${domain} already registered at partner`);
       return {
         statusCode: StatusCodes.Conflict,
         error: ErrorMessages.DomainAlreadyRegistered,
@@ -69,8 +78,11 @@ export class EmailDomainService {
       };
     }
 
+    // Delete the old domain
+    await this.deleteDomain(environmentId);
+
     const data = await this.environmentDataService.upsert(environmentId, {
-      id: EnvironmentDataKeys.EmailTemplateDomain,
+      key: EnvironmentDataKeys.EmailTemplateDomain,
       value: {
         refId: resendData.id,
         domain,
@@ -126,6 +138,10 @@ export class EmailDomainService {
       EnvironmentDataKeys.EmailTemplateDomain,
     );
 
+    if (!data) {
+      return;
+    }
+
     await Promise.all([
       this.resend.domains.remove(data.refId),
       this.environmentDataService.delete(
@@ -133,6 +149,8 @@ export class EmailDomainService {
         EnvironmentDataKeys.EmailTemplateDomain,
       ),
     ]);
+
+    this.logger.log(`Domain ${data.domain} deleted from ThonLabs and partner`);
   }
 
   async verifyDomain(
@@ -159,6 +177,10 @@ export class EmailDomainService {
 
     const { data: resendData } = await this.resend.domains.get(data.refId);
 
+    this.logger.log(
+      `Domain ${data.domain} verification started in partner (ENV: ${environmentId})`,
+    );
+
     let status: EmailDomainStatus = EmailDomainStatus.Verifying;
 
     if (resendData.status === 'verified') {
@@ -167,9 +189,11 @@ export class EmailDomainService {
       status = EmailDomainStatus.Failed;
     }
 
-    if (status !== EmailDomainStatus.Verifying) {
-      await this.updateStatus(environmentId, status);
-    }
+    await this.updateStatus(environmentId, status);
+
+    this.logger.log(
+      `Domain ${data.domain} status updated to ${status} (ENV: ${environmentId})`,
+    );
 
     return {
       data: {
@@ -197,7 +221,7 @@ export class EmailDomainService {
     }
 
     await this.environmentDataService.upsert(environmentId, {
-      id: EnvironmentDataKeys.EmailTemplateDomain,
+      key: EnvironmentDataKeys.EmailTemplateDomain,
       value: {
         ...data,
         records: partnerDomain.records,
@@ -221,7 +245,7 @@ export class EmailDomainService {
     }
 
     await this.environmentDataService.upsert(environmentId, {
-      id: EnvironmentDataKeys.EmailTemplateDomain,
+      key: EnvironmentDataKeys.EmailTemplateDomain,
       value: {
         ...data,
         records: partnerDomain.records,
@@ -229,10 +253,12 @@ export class EmailDomainService {
     });
   }
 
-  async fetch(status: EmailDomainStatus): Promise<DataReturn<FetchReturn[]>> {
+  async fetchByStatus(
+    status: EmailDomainStatus,
+  ): Promise<DataReturn<FetchReturn[]>> {
     const domains = await this.databaseService.environmentData.findMany({
       where: {
-        id: EnvironmentDataKeys.EmailTemplateDomain,
+        key: EnvironmentDataKeys.EmailTemplateDomain,
         value: {
           path: ['status'],
           equals: status,

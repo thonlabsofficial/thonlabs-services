@@ -123,7 +123,7 @@ export class InternalController {
     }
 
     await this.environmentDataService.upsert(environmentId, {
-      id: EnvironmentDataKeys.Waitlist,
+      key: EnvironmentDataKeys.Waitlist,
       value: [
         ...waitlistArray,
         {

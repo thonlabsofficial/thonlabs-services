@@ -21,8 +21,6 @@ export class EmailDomainController {
   async setDomain(@Req() req, @Body() payload: SetEmailTemplateDomainPayload) {
     const environmentId = req.headers['tl-env-id'];
 
-    await this.emailDomainService.deleteDomain(environmentId);
-
     const data = await this.emailDomainService.setDomain(
       environmentId,
       payload.domain,

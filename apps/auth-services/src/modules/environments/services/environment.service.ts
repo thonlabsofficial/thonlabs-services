@@ -391,7 +391,7 @@ export class EnvironmentService {
 
     await Promise.all([
       this.environmentDataService.upsert(environment.id, {
-        id: EnvironmentDataKeys.EnableSignUp,
+        key: EnvironmentDataKeys.EnableSignUp,
         value: true,
       }),
       this.emailDomainService.setDomain(
@@ -510,7 +510,7 @@ export class EnvironmentService {
         },
       }),
       this.environmentDataService.upsert(environmentId, {
-        id: 'enableSignUp',
+        key: 'enableSignUp',
         value: payload.enableSignUp,
       }),
     ]);
@@ -578,28 +578,5 @@ export class EnvironmentService {
     });
 
     return environment;
-  }
-
-  async setEnvironmentData(
-    environmentId: string,
-    payload: { id: string; value: any },
-  ): Promise<DataReturn<EnvironmentData>> {
-    const environmentData = await this.databaseService.environmentData.upsert({
-      where: { id: payload.id, environmentId },
-      create: {
-        id: payload.id,
-        value: payload.value,
-        environmentId,
-      },
-      update: {
-        value: payload.value,
-      },
-    });
-
-    this.logger.log(
-      `Updated environment data ${payload.id} (ENV: ${environmentId})`,
-    );
-
-    return { data: environmentData };
   }
 }
