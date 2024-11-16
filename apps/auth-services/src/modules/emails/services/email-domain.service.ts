@@ -95,13 +95,15 @@ export class EmailDomainService {
     const value = data?.data?.value as unknown as EmailDomain;
 
     // Start verification process on Resend and activate cron job to validate the DNS records
-    await this.verifyDomain(environmentId);
+    const {
+      data: { status, records },
+    } = await this.verifyDomain(environmentId);
 
     return {
       data: {
         domain: value.domain,
-        status: value.status,
-        records: value.records,
+        status,
+        records,
       },
     };
   }
@@ -156,7 +158,7 @@ export class EmailDomainService {
 
   async verifyDomain(
     environmentId: string,
-  ): Promise<DataReturn<Pick<EmailDomain, 'status'>>> {
+  ): Promise<DataReturn<Pick<EmailDomain, 'status' | 'records'>>> {
     const { data, ...rest } =
       await this.environmentDataService.get<EmailDomain>(
         environmentId,
