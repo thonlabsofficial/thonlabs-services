@@ -1,12 +1,7 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { DataReturn } from '@/utils/interfaces/data-return';
-import {
-  AuthProviders,
-  Environment,
-  EnvironmentData,
-  Project,
-} from '@prisma/client';
+import { AuthProviders, Environment, Project } from '@prisma/client';
 import { ProjectService } from '@/auth/modules/projects/services/project.service';
 import {
   StatusCodes,
@@ -536,11 +531,14 @@ export class EnvironmentService {
   }
 
   async delete(environmentId: string) {
-    await this.databaseService.environment.delete({
-      where: {
-        id: environmentId,
-      },
-    });
+    await Promise.all([
+      this.emailDomainService.deleteDomain(environmentId),
+      this.databaseService.environment.delete({
+        where: {
+          id: environmentId,
+        },
+      }),
+    ]);
 
     this.logger.log(`Environment ${environmentId} deleted`);
   }

@@ -69,9 +69,6 @@ export class EmailTemplateService {
       const environment =
         await this.environmentService.getDetailedById(environmentId);
 
-      const { data: emailDomain } =
-        await this.emailDomainService.getDomain(environmentId);
-
       for (const [type, data] of Object.entries(emailTemplatesMapper)) {
         const content = unescape(data.content);
 
@@ -83,7 +80,7 @@ export class EmailTemplateService {
             bodyStyles: data.bodyStyles,
             name: data.name,
             subject: data.subject,
-            fromEmail: `${data.fromEmail}@${emailDomain.domain}`,
+            fromEmail: `${data.fromEmail}@<%= environment.emailDomain %>`,
             fromName: `${environment.project.appName} Team`,
             preview: data.preview,
             replyTo: data.replyTo,

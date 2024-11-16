@@ -147,16 +147,27 @@ export class ProjectService {
 
   async delete(id: string, userOwnerId: string): Promise<DataReturn> {
     try {
-      const project = await this.getById(id);
+      const project = await this.databaseService.project.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          main: true,
+          environments: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      });
 
-      if (!project?.data) {
+      if (!project) {
         return {
           statusCode: StatusCodes.NotFound,
           error: ErrorMessages.ProjectNotFound,
         };
       }
 
-      if (project.data.main) {
+      if (project.main) {
         return {
           statusCode: StatusCodes.Forbidden,
           error: 'The ThonLabs is the main project and cannot be deleted',
@@ -173,6 +184,10 @@ export class ProjectService {
           statusCode: StatusCodes.Forbidden,
           error: 'Only the owner user can delete this project',
         };
+      }
+
+      for (const environment of project.environments) {
+        await this.environmentsService.delete(environment.id);
       }
 
       await this.databaseService.project.delete({
