@@ -169,13 +169,6 @@ export class EmailDomainService {
       return rest;
     }
 
-    if (data?.status === EmailDomainStatus.Verified) {
-      return {
-        statusCode: StatusCodes.Forbidden,
-        error: ErrorMessages.DomainAlreadyVerified,
-      };
-    }
-
     await this.resend.domains.verify(data.refId);
 
     const { data: resendData } = await this.resend.domains.get(data.refId);
