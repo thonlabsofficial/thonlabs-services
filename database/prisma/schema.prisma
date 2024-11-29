@@ -54,26 +54,30 @@ enum CustomDomainStatus {
 }
 
 model User {
-  id                String             @id @default(uuid())
-  fullName          String?
-  email             String
-  profilePicture    String?
-  password          String?
-  lastSignIn        DateTime?
+  id             String    @id @default(uuid())
+  fullName       String?
+  email          String
+  profilePicture String?
+  password       String?
+  lastSignIn     DateTime?
   // This key is used to compose the JWT token
-  authKey           String?
-  thonLabsUser      Boolean            @default(false)
-  active            Boolean            @default(true)
-  emailConfirmed    Boolean            @default(false)
-  invitedAt         DateTime?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  authKey        String?
+  thonLabsUser   Boolean   @default(false)
+  active         Boolean   @default(true)
+  emailConfirmed Boolean   @default(false)
+  invitedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
   environment       Environment?       @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   environmentId     String?
   role              Role?              @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   roleId            String?
   projects          Project[]
   userSubscriptions UserSubscription[]
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@map("users")
 }
@@ -146,12 +150,27 @@ model Environment {
   projectId       String
   users           User[]
   projectConfigs  ProjectConfigOnEnvironment[]
-  emailsDomains   EmailDomain[]
   emailsTemplates EmailTemplate[]
-  TokenStorage    TokenStorage[]
-  EnvironmentData EnvironmentData[]
+  tokens          TokenStorage[]
+  environmentData EnvironmentData[]
+  organizations   Organization[]
 
   @@map("environments")
+}
+
+model Organization {
+  id            String   @id @default(uuid())
+  name          String
+  domains       String[] @default([])
+  hasLogo       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  environmentId String
+
+  environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  users       User[]
+
+  @@map("organizations")
 }
 
 model EnvironmentData {
@@ -203,19 +222,6 @@ model EmailTemplate {
   environmentId String
 
   @@map("emails_templates")
-}
-
-model EmailDomain {
-  id            String      @id @default(uuid())
-  externalId    String      @unique // Domain ID from Resend
-  domain        String      @unique
-  region        String
-  status        String
-  createdAt     DateTime
-  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  environmentId String
-
-  @@map("emails_domains")
 }
 
 model TokenStorage {
