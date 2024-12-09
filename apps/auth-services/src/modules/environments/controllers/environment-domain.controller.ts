@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
 import { EnvironmentDomainService } from '@/auth/modules/environments/services/environment-domain.service';
 import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
 import { ThonLabsOnly } from '@/auth/modules/shared/decorators/thon-labs-only.decorator';

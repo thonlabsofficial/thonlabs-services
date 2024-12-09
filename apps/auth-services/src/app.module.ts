@@ -1,3 +1,5 @@
+import 'multer';
+
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule, seconds } from '@nestjs/throttler';
@@ -19,8 +21,10 @@ import { HasEnvAccessGuard } from '@/auth/modules/shared/decorators/has-env-acce
 import { UserOwnsProjectGuard } from '@/auth/modules/shared/decorators/user-owns-project.decorator';
 import { PublicKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
 import { VerifyDomainGuard } from '@/auth/modules/shared/decorators/verify-domain.decorator';
-import { NeedsInternalKeyGuard } from './modules/shared/decorators/needs-internal-key.decorator';
-import { InternalsModule } from './modules/internals/internals.module';
+import { NeedsInternalKeyGuard } from '@/auth/modules/shared/decorators/needs-internal-key.decorator';
+import { InternalsModule } from '@/auth/modules/internals/internals.module';
+import { OrganizationsModule } from '@/auth/modules/organizations/organizations.module';
+import { MulterModule } from '@nestjs/platform-express';
 
 @Module({
   imports: [
@@ -44,6 +48,7 @@ import { InternalsModule } from './modules/internals/internals.module';
     EmailModule,
     TokenStorageModule,
     InternalsModule,
+    OrganizationsModule,
   ],
   providers: [
     {

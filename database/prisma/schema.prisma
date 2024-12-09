@@ -161,8 +161,8 @@ model Environment {
 model Organization {
   id            String   @id @default(uuid())
   name          String
-  domains       String[] @default([])
-  hasLogo       Boolean  @default(false)
+  domains       Json     @default("[]")
+  logo          String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   environmentId String
