@@ -26,7 +26,7 @@ export class OrganizationsService {
     data: NewOrganizationFormData,
   ): Promise<DataReturn<Organization>> {
     if (data.domains?.length > 0) {
-      const { data: registeredDomains } = await this.validateDomains(
+      const { data: registeredDomains } = await this._validateDomains(
         environmentId,
         data.domains
           .filter((domain) => !!domain.domain)
@@ -35,7 +35,9 @@ export class OrganizationsService {
 
       if (registeredDomains.length > 0) {
         this.logger.error(
-          `Domain already registered: ${data.domains.map((domain) => domain.domain)}`,
+          `Domain already registered: ${JSON.stringify(
+            registeredDomains.map((domain) => domain.domain),
+          )}`,
         );
         return {
           statusCode: StatusCodes.BadRequest,
@@ -91,17 +93,30 @@ export class OrganizationsService {
     return {};
   }
 
-  async validateDomains(
+  private async _validateDomains(
     environmentId: string,
     domains: string[],
   ): Promise<DataReturn<{ domain: string }[]>> {
-    const organization = await this.databaseService.organization.findFirst({
+    const organizations = await this.databaseService.organization.findMany({
       where: {
-        domains: { array_contains: domains },
         environmentId,
+      },
+      select: {
+        domains: true,
       },
     });
 
-    return { data: (organization?.domains as { domain: string }[]) ?? [] };
+    if (organizations.length === 0) {
+      return { data: [] };
+    }
+
+    const organizationDomains = organizations.flatMap(
+      (organization) => organization.domains as { domain: string }[],
+    );
+    const existingDomains = organizationDomains.filter((domain) =>
+      domains.includes(domain.domain),
+    );
+
+    return { data: existingDomains };
   }
 }
