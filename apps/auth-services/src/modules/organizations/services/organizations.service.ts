@@ -119,4 +119,21 @@ export class OrganizationsService {
 
     return { data: existingDomains };
   }
+
+  async fetch(environmentId: string) {
+    const organizations = await this.databaseService.organization.findMany({
+      where: {
+        environmentId,
+      },
+      select: {
+        id: true,
+        name: true,
+        domains: true,
+        updatedAt: true,
+        createdAt: true,
+      },
+    });
+
+    return { data: { items: organizations } };
+  }
 }

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Param,
   Patch,
   Post,
@@ -56,5 +57,16 @@ export class OrganizationsController {
     }
 
     return this.organizationsService.updateLogo(id, file);
+  }
+
+  @Get('')
+  @ThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  async fetch(@Req() req) {
+    const environmentId = req.headers['tl-env-id'];
+
+    const data = await this.organizationsService.fetch(environmentId);
+
+    return data?.data;
   }
 }
