@@ -15,7 +15,12 @@ export const updateAuthSettingsValidator = z.object({
   refreshTokenExpiration: z.string().optional().nullable(),
   authProvider: z.nativeEnum(AuthProviders),
   enableSignUp: z.boolean(),
+  enableSignUpB2BOnly: z.boolean(),
 });
+
+export type UpdateAuthSettingsValidator = z.infer<
+  typeof updateAuthSettingsValidator
+>;
 
 export const updateGeneralSettingsValidator = z.object({
   name: z
@@ -23,3 +28,7 @@ export const updateGeneralSettingsValidator = z.object({
     .max(25, ErrorMessages.MaxLength),
   appURL: z.string({ required_error: ErrorMessages.RequiredField }).url(),
 });
+
+export type UpdateGeneralSettingsValidator = z.infer<
+  typeof updateGeneralSettingsValidator
+>;

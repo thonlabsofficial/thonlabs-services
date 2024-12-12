@@ -474,6 +474,7 @@ export class EnvironmentService {
       tokenExpiration: string;
       refreshTokenExpiration?: string;
       enableSignUp: boolean;
+      enableSignUpB2BOnly: boolean;
     },
   ): Promise<DataReturn> {
     if (ms(payload.tokenExpiration) < 300000) {
@@ -507,6 +508,10 @@ export class EnvironmentService {
       this.environmentDataService.upsert(environmentId, {
         key: 'enableSignUp',
         value: payload.enableSignUp,
+      }),
+      this.environmentDataService.upsert(environmentId, {
+        key: 'enableSignUpB2BOnly',
+        value: payload.enableSignUpB2BOnly,
       }),
     ]);
 

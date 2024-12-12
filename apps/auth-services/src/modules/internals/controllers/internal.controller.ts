@@ -57,6 +57,7 @@ export class InternalController {
         ...environment,
         authProvider: AuthProviders.EmailAndPassword,
         enableSignUp: true,
+        enableSignUpB2BOnly: false,
       }),
       await this.environmentService.getPublicKey(environment.id),
     ]);

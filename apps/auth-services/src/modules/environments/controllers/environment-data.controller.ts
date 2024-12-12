@@ -32,7 +32,10 @@ export class EnvironmentDataController {
   async fetch(@Param('envId') environmentId: string) {
     const [envLegacyData, envData] = await Promise.all([
       this.environmentService.getData(environmentId),
-      this.environmentDataService.fetch(environmentId, ['enableSignUp']),
+      this.environmentDataService.fetch(environmentId, [
+        'enableSignUp',
+        'enableSignUpB2BOnly',
+      ]),
     ]);
 
     return { ...envLegacyData, ...envData };
