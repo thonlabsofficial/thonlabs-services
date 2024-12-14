@@ -23,8 +23,7 @@ import { PublicKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/p
 import { VerifyDomainGuard } from '@/auth/modules/shared/decorators/verify-domain.decorator';
 import { NeedsInternalKeyGuard } from '@/auth/modules/shared/decorators/needs-internal-key.decorator';
 import { InternalsModule } from '@/auth/modules/internals/internals.module';
-import { OrganizationsModule } from '@/auth/modules/organizations/organizations.module';
-import { MulterModule } from '@nestjs/platform-express';
+import { OrganizationModule } from '@/auth/modules/organizations/organization.module';
 
 @Module({
   imports: [
@@ -48,7 +47,7 @@ import { MulterModule } from '@nestjs/platform-express';
     EmailModule,
     TokenStorageModule,
     InternalsModule,
-    OrganizationsModule,
+    OrganizationModule,
   ],
   providers: [
     {

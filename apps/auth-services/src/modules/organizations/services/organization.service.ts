@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
-import { NewOrganizationFormData } from '../validators/organizations-validators';
+import { NewOrganizationFormData } from '../validators/organization-validators';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { Organization } from '@prisma/client';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 @Injectable()
-export class OrganizationsService {
-  private readonly logger = new Logger(OrganizationsService.name);
+export class OrganizationService {
+  private readonly logger = new Logger(OrganizationService.name);
   private readonly cdn: S3Client;
 
   constructor(private databaseService: DatabaseService) {
@@ -93,6 +93,45 @@ export class OrganizationsService {
     return {};
   }
 
+  async fetch(environmentId: string) {
+    const organizations = await this.databaseService.organization.findMany({
+      where: {
+        environmentId,
+      },
+      select: {
+        id: true,
+        name: true,
+        domains: true,
+        updatedAt: true,
+        createdAt: true,
+      },
+    });
+
+    return { data: { items: organizations } };
+  }
+
+  async isValidUserOrganization(
+    environmentId: string,
+    email: string,
+  ): Promise<DataReturn<boolean>> {
+    const domains = (await this.databaseService.organization.findMany({
+      where: {
+        environmentId,
+      },
+      select: {
+        domains: true,
+      },
+    })) as { domains: { domain: string }[] }[];
+
+    const emailDomain = email.split('@')[1];
+
+    const isValid = domains.some(({ domains }) =>
+      domains.some((d) => d.domain === emailDomain),
+    );
+
+    return { data: isValid };
+  }
+
   private async _validateDomains(
     environmentId: string,
     domains: string[],
@@ -118,22 +157,5 @@ export class OrganizationsService {
     );
 
     return { data: existingDomains };
-  }
-
-  async fetch(environmentId: string) {
-    const organizations = await this.databaseService.organization.findMany({
-      where: {
-        environmentId,
-      },
-      select: {
-        id: true,
-        name: true,
-        domains: true,
-        updatedAt: true,
-        createdAt: true,
-      },
-    });
-
-    return { data: { items: organizations } };
   }
 }

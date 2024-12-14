@@ -4,7 +4,6 @@ import {
   Environment,
   TokenStorage,
   TokenTypes,
-  User,
 } from '@prisma/client';
 import { isBefore } from 'date-fns';
 import * as bcrypt from 'bcrypt';

@@ -7,6 +7,7 @@ import { EmailModule } from '../emails/email.module';
 import { TokenStorageModule } from '../token-storage/token-storage.module';
 import { ProjectModule } from '../projects/project.module';
 import { EnvironmentModule } from '../environments/environment.module';
+import { OrganizationModule } from '../organizations/organization.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { EnvironmentModule } from '../environments/environment.module';
     UserModule,
     EmailModule,
     TokenStorageModule,
+    OrganizationModule,
   ],
   controllers: [AuthController],
   providers: [AuthService],

@@ -48,6 +48,7 @@ import { add } from 'date-fns';
 import { PublicKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
+import { OrganizationService } from '../../organizations/services/organization.service';
 @Controller('auth')
 export class AuthController {
   private logger = new Logger(AuthController.name);
@@ -60,6 +61,7 @@ export class AuthController {
     private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
     private emailTemplateService: EmailTemplateService,
+    private organizationService: OrganizationService,
   ) {}
 
   @PublicRoute()
@@ -83,6 +85,27 @@ export class AuthController {
       throw new exceptionsMapper[StatusCodes.Forbidden](
         ErrorMessages.Forbidden,
       );
+    }
+
+    const { data: enableSignUpB2BOnly } = await this.environmentDataService.get(
+      environment.id,
+      'enableSignUpB2BOnly',
+    );
+    if (enableSignUpB2BOnly) {
+      const { data: isValidUserOrganization } =
+        await this.organizationService.isValidUserOrganization(
+          environment.id,
+          payload.email,
+        );
+
+      if (!isValidUserOrganization) {
+        this.logger.error(
+          `No organization domain found for email ${payload.email} in environment ${environment.id}`,
+        );
+        throw new exceptionsMapper[StatusCodes.NotAcceptable](
+          ErrorMessages.InvalidEmail,
+        );
+      }
     }
 
     const { data: user, ...userError } = await this.userService.create({
@@ -183,6 +206,21 @@ export class AuthController {
 
     if (envError.statusCode === StatusCodes.Unauthorized) {
       throw new UnauthorizedException(envError.error);
+    }
+
+    const { data: isValidUserOrganization } =
+      await this.organizationService.isValidUserOrganization(
+        environment.id,
+        payload.email,
+      );
+
+    if (!isValidUserOrganization) {
+      this.logger.error(
+        `No organization domain found for email ${payload.email} in environment ${environment.id}`,
+      );
+      throw new exceptionsMapper[StatusCodes.NotAcceptable](
+        ErrorMessages.InvalidEmail,
+      );
     }
 
     if (

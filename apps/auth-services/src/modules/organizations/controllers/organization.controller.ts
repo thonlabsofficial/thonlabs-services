@@ -9,12 +9,12 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { OrganizationsService } from '../services/organizations.service';
+import { OrganizationService } from '../services/organization.service';
 import {
   NewOrganizationFormData,
   newOrganizationSchema,
   updateOrganizationLogoSchema,
-} from '../validators/organizations-validators';
+} from '../validators/organization-validators';
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 import { exceptionsMapper, StatusCodes } from '@/utils/enums/errors-metadata';
@@ -22,8 +22,8 @@ import { SchemaValidator } from '../../shared/decorators/schema-validator.decora
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('organizations')
-export class OrganizationsController {
-  constructor(private organizationsService: OrganizationsService) {}
+export class OrganizationController {
+  constructor(private organizationService: OrganizationService) {}
 
   @Post('')
   @ThonLabsOnly()
@@ -31,7 +31,7 @@ export class OrganizationsController {
   @SchemaValidator(newOrganizationSchema)
   async createOrganization(@Body() data: NewOrganizationFormData, @Req() req) {
     const environmentId = req.headers['tl-env-id'];
-    const result = await this.organizationsService.create(environmentId, data);
+    const result = await this.organizationService.create(environmentId, data);
 
     if (result?.statusCode) {
       throw new exceptionsMapper[result.statusCode](result.error);
@@ -56,7 +56,7 @@ export class OrganizationsController {
       );
     }
 
-    return this.organizationsService.updateLogo(id, file);
+    return this.organizationService.updateLogo(id, file);
   }
 
   @Get('')
@@ -65,7 +65,7 @@ export class OrganizationsController {
   async fetch(@Req() req) {
     const environmentId = req.headers['tl-env-id'];
 
-    const data = await this.organizationsService.fetch(environmentId);
+    const data = await this.organizationService.fetch(environmentId);
 
     return data?.data;
   }
