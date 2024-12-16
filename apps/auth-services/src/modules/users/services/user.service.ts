@@ -11,8 +11,10 @@ import { EnvironmentService } from '@/auth/modules/environments/services/environ
 import Crypt from '@/utils/services/crypt';
 import rand from '@/utils/services/rand';
 import prepareString from '@/utils/services/prepare-string';
-import { EmailService } from '../../emails/services/email.service';
-import { TokenStorageService } from '../../token-storage/services/token-storage.service';
+import { EmailService } from '@/auth/modules/emails/services/email.service';
+import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
+import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
+import { OrganizationService } from '@/auth/modules/organizations/services/organization.service';
 
 @Injectable()
 export class UserService {
@@ -23,6 +25,8 @@ export class UserService {
     private environmentService: EnvironmentService,
     private tokenStorageService: TokenStorageService,
     private emailService: EmailService,
+    private environmentDataService: EnvironmentDataService,
+    private organizationService: OrganizationService,
   ) {}
 
   async getOurByEmail(email: string) {
@@ -154,6 +158,28 @@ export class UserService {
         error: ErrorMessages.EmailInUse,
         code: ErrorCodes.EmailInUse,
       };
+    }
+
+    const { data: enableSignUpB2BOnly } = await this.environmentDataService.get(
+      payload.environmentId,
+      'enableSignUpB2BOnly',
+    );
+    if (enableSignUpB2BOnly) {
+      const { data: isValidUserOrganization } =
+        await this.organizationService.isValidUserOrganization(
+          payload.environmentId,
+          payload.email,
+        );
+
+      if (!isValidUserOrganization) {
+        this.logger.error(
+          `No organization domain found for email ${payload.email} in environment ${payload.environmentId}`,
+        );
+        return {
+          statusCode: StatusCodes.NotAcceptable,
+          error: ErrorMessages.InvalidEmail,
+        };
+      }
     }
 
     let password = null;

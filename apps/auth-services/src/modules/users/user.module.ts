@@ -5,6 +5,7 @@ import { UserController } from './controllers/user.controller';
 import { EnvironmentModule } from '../environments/environment.module';
 import { EmailModule } from '../emails/email.module';
 import { TokenStorageModule } from '../token-storage/token-storage.module';
+import { OrganizationModule } from '../organizations/organization.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { TokenStorageModule } from '../token-storage/token-storage.module';
     forwardRef(() => EnvironmentModule),
     EmailModule,
     TokenStorageModule,
+    OrganizationModule,
   ],
   exports: [UserService],
   providers: [UserService],
