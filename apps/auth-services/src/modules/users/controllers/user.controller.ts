@@ -49,6 +49,7 @@ export class UserController {
       email: payload.email,
       environmentId,
       invitedAt: sendInvite === 'true' ? new Date() : null,
+      organizationId: payload.organizationId,
     });
 
     if (data.error) {

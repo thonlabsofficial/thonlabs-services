@@ -113,23 +113,32 @@ export class OrganizationService {
   async isValidUserOrganization(
     environmentId: string,
     email: string,
-  ): Promise<DataReturn<boolean>> {
+  ): Promise<DataReturn<string | null>> {
     const domains = (await this.databaseService.organization.findMany({
       where: {
         environmentId,
       },
       select: {
+        id: true,
         domains: true,
       },
-    })) as { domains: { domain: string }[] }[];
+    })) as { id: string; domains: { domain: string }[] }[];
 
     const emailDomain = email.split('@')[1];
 
-    const isValid = domains.some(({ domains }) =>
+    const organization = domains.find(({ domains }) =>
       domains.some((d) => d.domain === emailDomain),
     );
 
-    return { data: isValid };
+    return { data: organization?.id ? organization.id : null };
+  }
+
+  async getById(id: string): Promise<DataReturn<Organization>> {
+    const organization = await this.databaseService.organization.findFirst({
+      where: { id },
+    });
+
+    return { data: organization };
   }
 
   private async _validateDomains(

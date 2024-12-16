@@ -133,6 +133,7 @@ export class UserService {
     password?: string;
     environmentId: string;
     invitedAt?: Date;
+    organizationId?: string;
   }): Promise<DataReturn<User>> {
     const environmentExists = await this.environmentService.getById(
       payload.environmentId,
@@ -160,18 +161,31 @@ export class UserService {
       };
     }
 
+    if (payload.organizationId) {
+      const { data: organization } = await this.organizationService.getById(
+        payload.organizationId,
+      );
+
+      if (!organization) {
+        return {
+          statusCode: StatusCodes.NotFound,
+          error: ErrorMessages.OrganizationNotFound,
+        };
+      }
+    }
+
     const { data: enableSignUpB2BOnly } = await this.environmentDataService.get(
       payload.environmentId,
       'enableSignUpB2BOnly',
     );
     if (enableSignUpB2BOnly) {
-      const { data: isValidUserOrganization } =
+      const { data: organizationId } =
         await this.organizationService.isValidUserOrganization(
           payload.environmentId,
           payload.email,
         );
 
-      if (!isValidUserOrganization) {
+      if (!organizationId) {
         this.logger.error(
           `No organization domain found for email ${payload.email} in environment ${payload.environmentId}`,
         );
@@ -180,6 +194,8 @@ export class UserService {
           error: ErrorMessages.InvalidEmail,
         };
       }
+
+      payload.organizationId = organizationId;
     }
 
     let password = null;
@@ -197,6 +213,15 @@ export class UserService {
           thonLabsUser: false,
           environmentId: payload.environmentId,
           invitedAt: payload.invitedAt,
+          organizationId: payload.organizationId,
+        },
+        include: {
+          organization: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       });
 
@@ -227,7 +252,7 @@ export class UserService {
         user.thonLabsUser = true;
       }
 
-      return { data: user };
+      return { data: user as unknown as User };
     } catch (e) {
       this.logger.error('Error when creating user', e);
 
@@ -324,7 +349,7 @@ export class UserService {
   async updateGeneralData(
     userId: string,
     environmentId: string,
-    payload: { fullName: string },
+    payload: { fullName: string; organizationId?: string },
   ) {
     const user = await this.getByIdAndEnv(userId, environmentId);
 
@@ -335,6 +360,19 @@ export class UserService {
       };
     }
 
+    if (payload.organizationId) {
+      const { data: organization } = await this.organizationService.getById(
+        payload.organizationId,
+      );
+
+      if (!organization) {
+        return {
+          statusCode: StatusCodes.NotFound,
+          error: ErrorMessages.OrganizationNotFound,
+        };
+      }
+    }
+
     const updatedUser = await this.databaseService.user.update({
       where: {
         id: userId,
@@ -342,6 +380,26 @@ export class UserService {
       },
       data: {
         fullName: prepareString(payload.fullName),
+        organizationId: payload.organizationId || null,
+      },
+      select: {
+        active: true,
+        createdAt: true,
+        email: true,
+        fullName: true,
+        id: true,
+        lastSignIn: true,
+        profilePicture: true,
+        updatedAt: true,
+        environmentId: true,
+        emailConfirmed: true,
+        invitedAt: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -413,6 +471,12 @@ export class UserService {
         environmentId: true,
         emailConfirmed: true,
         invitedAt: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
       where: {
         environmentId: params.environmentId,
@@ -595,7 +659,7 @@ export class UserService {
     };
   }
 
-  private deletePrivateData(user: User, includeInternalData = false) {
+  private deletePrivateData(user, includeInternalData = false) {
     delete user.password;
     delete user.thonLabsUser;
     delete user.roleId;

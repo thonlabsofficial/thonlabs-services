@@ -9,6 +9,7 @@ export const createUserValidator = z.object({
   email: z
     .string({ required_error: 'User email is required' })
     .email({ message: 'Email is invalid' }),
+  organizationId: z.string().optional(),
 });
 
 export const updateUserGeneralDataValidator = z.object({
@@ -17,6 +18,7 @@ export const updateUserGeneralDataValidator = z.object({
     .refine((value) => value.trim().split(' ').length >= 2, {
       message: 'Please enter the full name',
     }),
+  organizationId: z.string().optional(),
 });
 
 export const updateStatusValidator = z.object({
