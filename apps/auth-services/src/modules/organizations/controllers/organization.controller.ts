@@ -20,10 +20,14 @@ import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 import { exceptionsMapper, StatusCodes } from '@/utils/enums/errors-metadata';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { DatabaseService } from '../../shared/database/database.service';
 
 @Controller('organizations')
 export class OrganizationController {
-  constructor(private organizationService: OrganizationService) {}
+  constructor(
+    private organizationService: OrganizationService,
+    private databaseService: DatabaseService,
+  ) {}
 
   @Post('')
   @ThonLabsOnly()
@@ -68,5 +72,44 @@ export class OrganizationController {
     const data = await this.organizationService.fetch(environmentId);
 
     return data?.data;
+  }
+
+  @Get('/:id')
+  @ThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  async getById(@Param('id') id: string) {
+    return this.databaseService.organization.findFirst({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        logo: true,
+        domains: true,
+        createdAt: true,
+        updatedAt: true,
+        environmentId: true,
+        users: {
+          select: {
+            active: true,
+            createdAt: true,
+            email: true,
+            fullName: true,
+            id: true,
+            lastSignIn: true,
+            profilePicture: true,
+            updatedAt: true,
+            environmentId: true,
+            emailConfirmed: true,
+            invitedAt: true,
+            organization: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
   }
 }
