@@ -69,9 +69,21 @@ export class OrganizationController {
   async fetch(@Req() req) {
     const environmentId = req.headers['tl-env-id'];
 
-    const data = await this.organizationService.fetch(environmentId);
+    const items = await this.databaseService.organization.findMany({
+      where: {
+        environmentId,
+      },
+      select: {
+        id: true,
+        name: true,
+        domains: true,
+        updatedAt: true,
+        createdAt: true,
+        environmentId: true,
+      },
+    });
 
-    return data?.data;
+    return { items };
   }
 
   @Get('/:id')

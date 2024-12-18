@@ -187,19 +187,25 @@ export class AuthController {
       throw new UnauthorizedException(envError.error);
     }
 
-    const { data: isValidUserOrganization } =
-      await this.organizationService.isValidUserOrganization(
-        environment.id,
-        payload.email,
-      );
+    const { data: enableSignUpB2BOnly } = await this.environmentDataService.get(
+      environment.id,
+      'enableSignUpB2BOnly',
+    );
+    if (enableSignUpB2BOnly) {
+      const { data: isValidUserOrganization } =
+        await this.organizationService.isValidUserOrganization(
+          environment.id,
+          payload.email,
+        );
 
-    if (!isValidUserOrganization) {
-      this.logger.error(
-        `No organization domain found for email ${payload.email} in environment ${environment.id}`,
-      );
-      throw new exceptionsMapper[StatusCodes.NotAcceptable](
-        ErrorMessages.InvalidEmail,
-      );
+      if (!isValidUserOrganization) {
+        this.logger.error(
+          `No organization domain found for email ${payload.email} in environment ${environment.id}`,
+        );
+        throw new exceptionsMapper[StatusCodes.NotAcceptable](
+          ErrorMessages.InvalidEmail,
+        );
+      }
     }
 
     if (
