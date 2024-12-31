@@ -8,7 +8,6 @@ import { unescape } from 'lodash';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import { JsonValue } from '@prisma/client/runtime/library';
 import * as ejs from 'ejs';
-import { EmailDomainService } from './email-domain.service';
 
 @Injectable()
 export class EmailTemplateService {
@@ -18,7 +17,6 @@ export class EmailTemplateService {
     private databaseService: DatabaseService,
     @Inject(forwardRef(() => EnvironmentService))
     private environmentService: EnvironmentService,
-    private emailDomainService: EmailDomainService,
   ) {}
 
   async getByType(type: EmailTemplates, environmentId: string) {

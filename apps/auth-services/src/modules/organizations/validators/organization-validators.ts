@@ -29,6 +29,32 @@ export const updateOrganizationLogoSchema = z.object({
       ];
       const maxSize = 50 * 1024 * 1024; // 50MB
 
+      if (file.mimetype === 'image/svg+xml') {
+        const content = file.buffer.toString();
+
+        const dangerous = [
+          /script/i,
+          /onclick/i,
+          /onload/i,
+          /onmouseover/i,
+          /onerror/i,
+          /fetch/i,
+          /import/i,
+          /eval/i,
+          /javascript/i,
+          /<!\[CDATA\[/i,
+          /xlink:href/i,
+          /data:/i,
+          /foreignObject/i,
+          /embed/i,
+          /base64/i,
+        ];
+
+        if (dangerous.some((regex) => regex.test(content))) {
+          return false;
+        }
+      }
+
       return allowedTypes.includes(file.mimetype) && file.size <= maxSize;
     },
     {
@@ -39,4 +65,18 @@ export const updateOrganizationLogoSchema = z.object({
 });
 export type UpdateOrganizationLogoData = z.infer<
   typeof updateOrganizationLogoSchema
+>;
+
+export const updateOrganizationSchema = z.object({
+  name: z
+    .string({ required_error: 'This field is required' })
+    .min(1, { message: 'This field is required' }),
+  domains: z
+    .object({
+      domain: domain(),
+    })
+    .array(),
+});
+export type UpdateOrganizationFormData = z.infer<
+  typeof updateOrganizationSchema
 >;

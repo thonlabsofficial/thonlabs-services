@@ -155,8 +155,15 @@ export class HasEnvAccessGuard implements CanActivate {
         return true;
       }
 
+      const userBelongsToEnvironment =
+        await this.environmentService.userBelongsTo(user.sub, environmentId);
+
+      if (userBelongsToEnvironment) {
+        return true;
+      }
+
       this.logger.warn(
-        `User ${user.sub} not owns the Environment ${environmentId}`,
+        `User ${user.sub} not owns or belongs to the Environment ${environmentId}`,
       );
     }
 

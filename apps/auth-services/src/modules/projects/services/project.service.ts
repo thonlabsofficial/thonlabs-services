@@ -137,7 +137,7 @@ export class ProjectService {
 
     // Create a default environment
     const { data: environment } = await this.environmentsService.create({
-      name: 'Production',
+      name: 'Development',
       projectId: project.id,
       appURL: payload.appURL,
     });

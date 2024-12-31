@@ -1,25 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
-import { NewOrganizationFormData } from '../validators/organization-validators';
+import {
+  NewOrganizationFormData,
+  UpdateOrganizationFormData,
+} from '../validators/organization-validators';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { Organization } from '@prisma/client';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CDNService } from '../../shared/services/cdn.service';
 
 @Injectable()
 export class OrganizationService {
   private readonly logger = new Logger(OrganizationService.name);
-  private readonly cdn: S3Client;
-
-  constructor(private databaseService: DatabaseService) {
-    this.cdn = new S3Client({
-      region: process.env.AWS_REGION,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      },
-    });
-  }
+  constructor(
+    private databaseService: DatabaseService,
+    private cdnService: CDNService,
+  ) {}
 
   async create(
     environmentId: string,
@@ -59,35 +55,83 @@ export class OrganizationService {
     return { data: organization };
   }
 
+  async update(
+    id: string,
+    environmentId: string,
+    data: UpdateOrganizationFormData,
+  ): Promise<DataReturn<Organization>> {
+    if (data.domains?.length > 0) {
+      const currentDomains =
+        (
+          (await this.databaseService.organization.findFirst({
+            where: { id },
+            select: {
+              domains: true,
+            },
+          })) as { domains: { domain: string }[] }
+        )?.domains || [];
+
+      const { data: registeredDomains } = await this._validateDomains(
+        environmentId,
+        data.domains
+          .filter((domain) => !!domain.domain)
+          .filter(
+            (domain) => !currentDomains.some((d) => d.domain === domain.domain),
+          )
+          .map((domain) => domain.domain),
+      );
+
+      if (registeredDomains.length > 0) {
+        this.logger.error(
+          `Domain already registered: ${JSON.stringify(
+            registeredDomains.map((domain) => domain.domain),
+          )}`,
+        );
+        return {
+          statusCode: StatusCodes.BadRequest,
+          error: ErrorMessages.DomainAlreadyRegistered,
+        };
+      }
+    }
+
+    const organization = await this.databaseService.organization.update({
+      where: { id },
+      data: {
+        name: data.name,
+        domains: data.domains,
+      },
+    });
+
+    return { data: organization };
+  }
+
   async updateLogo(
     organizationId: string,
     file: Express.Multer.File,
   ): Promise<DataReturn> {
-    const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
-    const fileName = `logo.${fileExtension}`;
+    const { data: organization } = await this.getById(organizationId);
 
-    try {
-      await this.cdn.send(
-        new PutObjectCommand({
-          Bucket: process.env.EXT_FILES_BUCKET_NAME,
-          Key: `organizations/${organizationId}/images/${fileName}`,
-          Body: Buffer.from(file.buffer),
-          ContentType: file.mimetype,
-        }),
+    if (organization.logo) {
+      await this.cdnService.deleteFile(
+        `organizations/${organizationId}/images/${organization.logo}`,
       );
+    }
 
-      this.logger.log(`Logo uploaded for organization: ${organizationId}`);
-    } catch (error) {
-      this.logger.error('Error uploading logo to S3', error);
+    const { data, statusCode, error } = await this.cdnService.uploadFile(
+      `organizations/${organizationId}/images`,
+      file,
+    );
+
+    if (error) {
       return {
-        statusCode: StatusCodes.Internal,
-        error: ErrorMessages.InternalError,
+        statusCode,
+        error,
       };
     }
 
     await this.databaseService.organization.update({
       where: { id: organizationId },
-      data: { logo: fileName },
+      data: { logo: data.fileName },
     });
 
     return {};
@@ -122,6 +166,65 @@ export class OrganizationService {
     });
 
     return { data: organization };
+  }
+
+  async delete(organizationId: string): Promise<DataReturn> {
+    const organization = await this.databaseService.organization.findFirst({
+      where: { id: organizationId },
+      select: {
+        logo: true,
+      },
+    });
+
+    if (!organization) {
+      return {
+        statusCode: StatusCodes.NotFound,
+        error: ErrorMessages.OrganizationNotFound,
+      };
+    }
+
+    if (organization?.logo) {
+      await this.cdnService.deleteFile(
+        `organizations/${organizationId}/images/${organization.logo}`,
+      );
+    }
+
+    await this.databaseService.organization.delete({
+      where: { id: organizationId },
+    });
+
+    return {};
+  }
+
+  async deleteLogo(organizationId: string): Promise<DataReturn> {
+    const organization = await this.databaseService.organization.findFirst({
+      where: { id: organizationId },
+      select: {
+        logo: true,
+      },
+    });
+
+    if (!organization?.logo) {
+      return {
+        statusCode: StatusCodes.NotFound,
+        error: ErrorMessages.OrganizationNotFound,
+      };
+    }
+
+    await this.cdnService.deleteFile(
+      `organizations/${organizationId}/images/${organization.logo}`,
+    );
+
+    await this.databaseService.organization.update({
+      where: { id: organizationId },
+      data: { logo: null },
+    });
+
+    return {};
+  }
+
+  getLogoUrl(organization: Organization): string {
+    return `https://${process.env.EXT_FILES_BUCKET_NAME}/organizations/${organization.id}/images/${organization.logo}`;
   }
 
   private async _validateDomains(

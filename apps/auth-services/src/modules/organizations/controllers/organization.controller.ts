@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -13,11 +14,17 @@ import { OrganizationService } from '../services/organization.service';
 import {
   NewOrganizationFormData,
   newOrganizationSchema,
+  UpdateOrganizationFormData,
   updateOrganizationLogoSchema,
+  updateOrganizationSchema,
 } from '../validators/organization-validators';
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
-import { exceptionsMapper, StatusCodes } from '@/utils/enums/errors-metadata';
+import {
+  ErrorMessages,
+  exceptionsMapper,
+  StatusCodes,
+} from '@/utils/enums/errors-metadata';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DatabaseService } from '../../shared/database/database.service';
@@ -36,6 +43,29 @@ export class OrganizationController {
   async createOrganization(@Body() data: NewOrganizationFormData, @Req() req) {
     const environmentId = req.headers['tl-env-id'];
     const result = await this.organizationService.create(environmentId, data);
+
+    if (result?.statusCode) {
+      throw new exceptionsMapper[result.statusCode](result.error);
+    }
+
+    return result?.data;
+  }
+
+  @Patch('/:id')
+  @ThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  @SchemaValidator(updateOrganizationSchema)
+  async updateOrganization(
+    @Param('id') id: string,
+    @Body() data: UpdateOrganizationFormData,
+    @Req() req,
+  ) {
+    const environmentId = req.headers['tl-env-id'];
+    const result = await this.organizationService.update(
+      id,
+      environmentId,
+      data,
+    );
 
     if (result?.statusCode) {
       throw new exceptionsMapper[result.statusCode](result.error);
@@ -77,20 +107,26 @@ export class OrganizationController {
         id: true,
         name: true,
         domains: true,
+        logo: true,
         updatedAt: true,
         createdAt: true,
         environmentId: true,
       },
     });
 
-    return { items };
+    return {
+      items: items.map((item) => ({
+        ...item,
+        logo: item.logo ? this.organizationService.getLogoUrl(item) : null,
+      })),
+    };
   }
 
   @Get('/:id')
   @ThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   async getById(@Param('id') id: string) {
-    return this.databaseService.organization.findFirst({
+    const data = await this.databaseService.organization.findFirst({
       where: { id },
       select: {
         id: true,
@@ -123,5 +159,43 @@ export class OrganizationController {
         },
       },
     });
+
+    if (!data) {
+      throw new exceptionsMapper[StatusCodes.NotFound](
+        ErrorMessages.OrganizationNotFound,
+      );
+    }
+
+    if (data?.logo) {
+      data.logo = this.organizationService.getLogoUrl(data);
+    }
+
+    return data;
+  }
+
+  @Delete('/:id')
+  @ThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  async delete(@Param('id') id: string) {
+    const result = await this.organizationService.delete(id);
+
+    if (result?.statusCode) {
+      throw new exceptionsMapper[result.statusCode](result.error);
+    }
+
+    return result?.data;
+  }
+
+  @Delete('/:id/logo')
+  @ThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  async deleteLogo(@Param('id') id: string) {
+    const result = await this.organizationService.deleteLogo(id);
+
+    if (result?.statusCode) {
+      throw new exceptionsMapper[result.statusCode](result.error);
+    }
+
+    return result?.data;
   }
 }
