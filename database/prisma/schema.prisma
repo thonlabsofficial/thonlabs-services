@@ -165,6 +165,7 @@ model Organization {
   logo          String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  active        Boolean  @default(true)
   environmentId String
 
   environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)

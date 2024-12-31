@@ -42,6 +42,7 @@ export class UserService {
       where: { email, environmentId },
       include: {
         environment: true,
+        organization: true,
       },
     });
 
@@ -161,19 +162,6 @@ export class UserService {
       };
     }
 
-    if (payload.organizationId) {
-      const { data: organization } = await this.organizationService.getById(
-        payload.organizationId,
-      );
-
-      if (!organization) {
-        return {
-          statusCode: StatusCodes.NotFound,
-          error: ErrorMessages.OrganizationNotFound,
-        };
-      }
-    }
-
     const { data: enableSignUpB2BOnly } = await this.environmentDataService.get(
       payload.environmentId,
       'enableSignUpB2BOnly',
@@ -196,6 +184,28 @@ export class UserService {
       }
 
       payload.organizationId = organizationId;
+    }
+
+    if (payload.organizationId) {
+      const { data: organization } = await this.organizationService.getById(
+        payload.organizationId,
+      );
+
+      if (!organization) {
+        this.logger.error(`Organization ${payload.organizationId} not found`);
+        return {
+          statusCode: StatusCodes.NotFound,
+          error: ErrorMessages.OrganizationNotFound,
+        };
+      }
+
+      if (!organization.active) {
+        this.logger.error(`Organization ${organization.id} is not active`);
+        return {
+          statusCode: StatusCodes.NotAcceptable,
+          error: ErrorMessages.OrganizationNotFound,
+        };
+      }
     }
 
     let password = null;
@@ -311,9 +321,23 @@ export class UserService {
         active: true,
         environmentId,
       },
+      include: {
+        organization: true,
+      },
     });
 
     if (!isActiveUser) {
+      this.logger.error(`User ${userId} is not active`);
+      return {
+        statusCode: StatusCodes.NotAcceptable,
+        error: ErrorMessages.InvalidUser,
+      };
+    }
+
+    if (!isActiveUser?.organization?.active) {
+      this.logger.error(
+        `Organization ${isActiveUser?.organization?.id} is not active`,
+      );
       return {
         statusCode: StatusCodes.NotAcceptable,
         error: ErrorMessages.InvalidUser,
@@ -369,6 +393,14 @@ export class UserService {
         return {
           statusCode: StatusCodes.NotFound,
           error: ErrorMessages.OrganizationNotFound,
+        };
+      }
+
+      if (!organization.active) {
+        this.logger.error(`Organization ${organization.id} is not active`);
+        return {
+          statusCode: StatusCodes.NotAcceptable,
+          error: ErrorMessages.OrganizationInactive,
         };
       }
     }
@@ -615,16 +647,34 @@ export class UserService {
     userId: string,
     environmentId: string,
   ): Promise<DataReturn<User>> {
-    const user = await this.getByIdAndEnv(userId, environmentId);
+    const user = await this.databaseService.user.findFirst({
+      where: {
+        id: userId,
+        environmentId,
+      },
+      include: {
+        organization: true,
+      },
+    });
 
     if (!user?.active) {
+      this.logger.error(`User ${userId} is not active`);
       return {
         statusCode: StatusCodes.NotAcceptable,
         error: ErrorMessages.UserIsNotActive,
       };
     }
 
+    if (user?.organization?.id && !user?.organization?.active) {
+      this.logger.error(`Organization ${user?.organization?.id} is not active`);
+      return {
+        statusCode: StatusCodes.NotAcceptable,
+        error: ErrorMessages.InvalidUser,
+      };
+    }
+
     if (user?.emailConfirmed) {
+      this.logger.error(`User ${userId} already confirmed email`);
       return {
         statusCode: StatusCodes.NotAcceptable,
         error: ErrorMessages.UserAlreadyConfirmedEmail,

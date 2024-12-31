@@ -17,6 +17,8 @@ import {
   UpdateOrganizationFormData,
   updateOrganizationLogoSchema,
   updateOrganizationSchema,
+  UpdateOrganizationStatusData,
+  updateOrganizationStatusValidator,
 } from '../validators/organization-validators';
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
@@ -28,6 +30,7 @@ import {
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DatabaseService } from '../../shared/database/database.service';
+import { Organization } from '@prisma/client';
 
 @Controller('organizations')
 export class OrganizationController {
@@ -111,13 +114,16 @@ export class OrganizationController {
         updatedAt: true,
         createdAt: true,
         environmentId: true,
+        active: true,
       },
     });
 
     return {
       items: items.map((item) => ({
         ...item,
-        logo: item.logo ? this.organizationService.getLogoUrl(item) : null,
+        logo: item.logo
+          ? this.organizationService.getLogoUrl(item as Organization)
+          : null,
       })),
     };
   }
@@ -136,6 +142,7 @@ export class OrganizationController {
         createdAt: true,
         updatedAt: true,
         environmentId: true,
+        active: true,
         users: {
           select: {
             active: true,
@@ -167,7 +174,9 @@ export class OrganizationController {
     }
 
     if (data?.logo) {
-      data.logo = this.organizationService.getLogoUrl(data);
+      data.logo = this.organizationService.getLogoUrl(
+        data as unknown as Organization,
+      );
     }
 
     return data;
@@ -197,5 +206,28 @@ export class OrganizationController {
     }
 
     return result?.data;
+  }
+
+  @Patch('/:id/status')
+  @ThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  @SchemaValidator(updateOrganizationStatusValidator)
+  async toggleActive(
+    @Param('id') id: string,
+    @Body() payload: UpdateOrganizationStatusData,
+  ) {
+    const result = await this.organizationService.updateStatus(
+      id,
+      payload.active,
+    );
+
+    if (result?.statusCode) {
+      throw new exceptionsMapper[result.statusCode](result.error);
+    }
+
+    return {
+      id: result?.data?.id,
+      active: result?.data?.active,
+    };
   }
 }

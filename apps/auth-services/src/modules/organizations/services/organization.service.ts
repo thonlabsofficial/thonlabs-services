@@ -227,6 +227,22 @@ export class OrganizationService {
     return `https://${process.env.EXT_FILES_BUCKET_NAME}/organizations/${organization.id}/images/${organization.logo}`;
   }
 
+  async updateStatus(
+    organizationId: string,
+    active: boolean,
+  ): Promise<DataReturn<Organization>> {
+    const organization = await this.databaseService.organization.update({
+      where: { id: organizationId },
+      data: { active },
+    });
+
+    this.logger.log(
+      `Organization ${organizationId} has been ${active ? 'activated' : 'deactivated'}`,
+    );
+
+    return { data: organization };
+  }
+
   private async _validateDomains(
     environmentId: string,
     domains: string[],

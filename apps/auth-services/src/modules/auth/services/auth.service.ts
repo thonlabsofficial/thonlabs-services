@@ -64,6 +64,12 @@ export class AuthService {
             refreshTokenExpiration: true,
           },
         },
+        organization: {
+          select: {
+            id: true,
+            active: true,
+          },
+        },
       },
     });
 
@@ -73,6 +79,11 @@ export class AuthService {
 
     if (!user.active) {
       this.logger.error(`User ${user.id} is not active`);
+      return error;
+    }
+
+    if (user?.organization?.id && !user?.organization?.active) {
+      this.logger.error(`Organization ${user.organization.id} is not active`);
       return error;
     }
 
@@ -159,6 +170,15 @@ export class AuthService {
     const user = await this.userService.getByEmail(email, environment.id);
 
     if (!user) {
+      this.logger.error(`User ${email} not found`);
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.EmailNotFound,
+      };
+    }
+
+    if (user?.organization?.id && !user?.organization?.active) {
+      this.logger.error(`Organization ${user.organization.id} is not active`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.EmailNotFound,
@@ -321,6 +341,12 @@ export class AuthService {
             refreshTokenExpiration: true,
           },
         },
+        organization: {
+          select: {
+            id: true,
+            active: true,
+          },
+        },
       },
     });
 
@@ -334,6 +360,14 @@ export class AuthService {
 
     if (!user?.active) {
       this.logger.error(`User ${user.id} is not active`);
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.InvalidUser,
+      };
+    }
+
+    if (user?.organization?.id && !user?.organization?.active) {
+      this.logger.error(`Organization ${user.organization.id} is not active`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.InvalidUser,

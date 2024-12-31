@@ -80,3 +80,10 @@ export const updateOrganizationSchema = z.object({
 export type UpdateOrganizationFormData = z.infer<
   typeof updateOrganizationSchema
 >;
+
+export const updateOrganizationStatusValidator = z.object({
+  active: z.boolean({ required_error: 'This field is required' }),
+});
+export type UpdateOrganizationStatusData = z.infer<
+  typeof updateOrganizationStatusValidator
+>;

@@ -332,6 +332,13 @@ export class AuthController {
       environment.id,
     );
 
+    if (user?.organization?.id && !user?.organization?.active) {
+      this.logger.error(`Organization ${user?.organization?.id} is not active`);
+      throw new exceptionsMapper[StatusCodes.NotAcceptable](
+        ErrorMessages.OrganizationNotFound,
+      );
+    }
+
     if (user && user.active) {
       await this.tokenStorageService.deleteMany(
         TokenTypes.ResetPassword,
@@ -453,17 +460,18 @@ export class AuthController {
       );
     }
 
-    // If not found both types of token, then returns 404
+    /*
+      If not found both types of token above, then returns the status code.
+
+      If token is expired but has relationId, then resend the confirmation email.
+      The initial request is not valid, but it's like a retry to make sure the user will
+      validate his email.
+    */
     if (tokenValidation?.statusCode) {
       if (
         tokenValidation?.data?.type === TokenTypes.ConfirmEmail &&
         tokenValidation?.data?.relationId
       ) {
-        /*
-          If token is expired but has relationId, then resend the confirmation email
-          the request is not valid, but it's like a retry to make sure the user will
-          validate his email.
-        */
         const emailSent = await this.userService.sendConfirmationEmail(
           tokenValidation.data.relationId,
           tokenValidation.data.environmentId,
@@ -501,6 +509,9 @@ export class AuthController {
     /*
       In case of invitation, after confirm the email the user
       needs to set a password or login using magic link.
+
+      It's not necessary to check the email, the code is automatically forward to the
+      frontend app.
     */
     const user = await this.userService.getById(userId);
     const { data: environment } =
