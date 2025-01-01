@@ -18,10 +18,12 @@ import { EnvironmentService } from '@/auth/modules/environments/services/environ
 import { NeedsPublicKey } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
 import { PublicRoute } from '@/auth/modules/auth/decorators/auth.decorator';
 import { NeedsInternalKey } from '@/auth/modules/shared/decorators/needs-internal-key.decorator';
+import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 
 @Controller('environments/:envId/data')
 export class EnvironmentDataController {
   constructor(
+    private databaseService: DatabaseService,
     private environmentDataService: EnvironmentDataService,
     private environmentService: EnvironmentService,
   ) {}
@@ -30,7 +32,19 @@ export class EnvironmentDataController {
   @PublicRoute()
   @NeedsPublicKey()
   async fetch(@Param('envId') environmentId: string) {
-    const [envLegacyData, envData] = await Promise.all([
+    const [env, envLegacyData, envData] = await Promise.all([
+      this.databaseService.environment.findUnique({
+        where: { id: environmentId },
+        select: {
+          id: true,
+          projectId: true,
+          project: {
+            select: {
+              appName: true,
+            },
+          },
+        },
+      }),
       this.environmentService.getData(environmentId),
       this.environmentDataService.fetch(environmentId, [
         'enableSignUp',
@@ -38,7 +52,13 @@ export class EnvironmentDataController {
       ]),
     ]);
 
-    return { ...envLegacyData, ...envData };
+    return {
+      ...envLegacyData,
+      ...envData,
+      environmentId: env.id,
+      projectId: env.projectId,
+      appName: env.project.appName,
+    };
   }
 
   @Get('/app')
@@ -48,12 +68,30 @@ export class EnvironmentDataController {
     @Param('envId') environmentId: string,
     @Query() query: { ids: string[] },
   ) {
-    const [envLegacyData, envData] = await Promise.all([
+    const [env, envLegacyData, envData] = await Promise.all([
+      this.databaseService.environment.findUnique({
+        where: { id: environmentId },
+        select: {
+          id: true,
+          projectId: true,
+          project: {
+            select: {
+              appName: true,
+            },
+          },
+        },
+      }),
       this.environmentService.getData(environmentId),
       this.environmentDataService.fetch(environmentId, query.ids),
     ]);
 
-    return { ...envLegacyData, ...envData };
+    return {
+      ...envLegacyData,
+      ...envData,
+      environmentId: env.id,
+      projectId: env.projectId,
+      appName: env.project.appName,
+    };
   }
 
   @Get('/:id')
