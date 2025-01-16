@@ -334,7 +334,7 @@ export class UserService {
       };
     }
 
-    if (!isActiveUser?.organization?.active) {
+    if (isActiveUser?.organization && !isActiveUser?.organization?.active) {
       this.logger.error(
         `Organization ${isActiveUser?.organization?.id} is not active`,
       );
