@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { CronJobs } from '@/auth/modules/shared/cron.service';
+// import { Cron, CronExpression } from '@nestjs/schedule';
+// import { CronJobs } from '@/auth/modules/shared/cron.service';
 import { EmailDomainService } from './email-domain.service';
-import { EmailDomain, EmailDomainStatus } from '../interfaces/email-domain';
+import { EmailDomain } from '../interfaces/email-domain';
 import {
   EmailService,
   EmailInternalFromTypes,
@@ -22,130 +22,130 @@ export class EmailDomainScheduler {
     private databaseService: DatabaseService,
   ) {}
 
-  @Cron(CronExpression.EVERY_5_MINUTES, {
-    name: CronJobs.VerifyNewEmailDomains,
-  })
-  async verifyNewCustomDomainsCron() {
-    const { data: domainsToVerify } =
-      await this.emailDomainService.fetchByStatus(EmailDomainStatus.Verifying);
+  // @Cron(CronExpression.EVERY_5_MINUTES, {
+  //   name: CronJobs.VerifyNewEmailDomains,
+  // })
+  // async verifyNewCustomDomainsCron() {
+  //   const { data: domainsToVerify } =
+  //     await this.emailDomainService.fetchByStatus(EmailDomainStatus.Verifying);
 
-    if (domainsToVerify.length === 0) {
-      this.logger.log('No new email domains to verify');
-      return;
-    }
+  //   if (domainsToVerify.length === 0) {
+  //     this.logger.log('No new email domains to verify');
+  //     return;
+  //   }
 
-    const partnerDomains = await this.emailDomainService.listPartnerDomains();
-    const partnerDomainsToVerify = domainsToVerify.filter((domain) =>
-      partnerDomains.some(
-        (pd) =>
-          pd.id === domain.value.refId &&
-          domain.value.status === EmailDomainStatus.Verifying,
-      ),
-    );
+  //   const partnerDomains = await this.emailDomainService.listPartnerDomains();
+  //   const partnerDomainsToVerify = domainsToVerify.filter((domain) =>
+  //     partnerDomains.some(
+  //       (pd) =>
+  //         pd.id === domain.value.refId &&
+  //         domain.value.status === EmailDomainStatus.Verifying,
+  //     ),
+  //   );
 
-    this.logger.log(
-      `Found ${partnerDomainsToVerify.length} partner domains to verify`,
-    );
+  //   this.logger.log(
+  //     `Found ${partnerDomainsToVerify.length} partner domains to verify`,
+  //   );
 
-    for (const domain of partnerDomainsToVerify) {
-      const [domainData] = await Promise.all([
-        this.emailDomainService.getPartnerDomain(domain.value.refId),
-        /* This is used to update the records status from the partner domain */
-        this.emailDomainService.updateRecordsFromPartner(domain.environmentId),
-      ]);
+  //   for (const domain of partnerDomainsToVerify) {
+  //     const [domainData] = await Promise.all([
+  //       this.emailDomainService.getPartnerDomain(domain.value.refId),
+  //       /* This is used to update the records status from the partner domain */
+  //       this.emailDomainService.updateRecordsFromPartner(domain.environmentId),
+  //     ]);
 
-      let status: EmailDomainStatus = null;
+  //     let status: EmailDomainStatus = null;
 
-      if (
-        domainData.status === 'failed' ||
-        domainData.status === 'temporary_failure'
-      ) {
-        status = EmailDomainStatus.Failed;
-      } else if (domainData.status === 'verified') {
-        status = EmailDomainStatus.Verified;
-      }
+  //     if (
+  //       domainData.status === 'failed' ||
+  //       domainData.status === 'temporary_failure'
+  //     ) {
+  //       status = EmailDomainStatus.Failed;
+  //     } else if (domainData.status === 'verified') {
+  //       status = EmailDomainStatus.Verified;
+  //     }
 
-      if (status) {
-        await this.emailDomainService.updateStatus(
-          domain.environmentId,
-          status,
-        );
-        await this._sendEmailNotification(domain.environmentId, {
-          ...domain.value,
-          status,
-        });
+  //     if (status) {
+  //       await this.emailDomainService.updateStatus(
+  //         domain.environmentId,
+  //         status,
+  //       );
+  //       await this._sendEmailNotification(domain.environmentId, {
+  //         ...domain.value,
+  //         status,
+  //       });
 
-        this.logger.log(
-          `Status changed to ${status} for email domain ${domain.value.domain} (RefID: ${domain.value.refId})`,
-        );
-      } else {
-        this.logger.log(
-          `No status change for email domain ${domain.value.domain} (RefID: ${domain.value.refId})`,
-        );
-      }
-    }
-  }
+  //       this.logger.log(
+  //         `Status changed to ${status} for email domain ${domain.value.domain} (RefID: ${domain.value.refId})`,
+  //       );
+  //     } else {
+  //       this.logger.log(
+  //         `No status change for email domain ${domain.value.domain} (RefID: ${domain.value.refId})`,
+  //       );
+  //     }
+  //   }
+  // }
 
-  @Cron(CronExpression.EVERY_HOUR, {
-    name: CronJobs.VerifyCurrentEmailDomains,
-  })
-  async verifyCurrentCustomDomainsCron() {
-    const { data: domainsToVerify } =
-      await this.emailDomainService.fetchByStatus(EmailDomainStatus.Verified);
+  // @Cron(CronExpression.EVERY_HOUR, {
+  //   name: CronJobs.VerifyCurrentEmailDomains,
+  // })
+  // async verifyCurrentCustomDomainsCron() {
+  //   const { data: domainsToVerify } =
+  //     await this.emailDomainService.fetchByStatus(EmailDomainStatus.Verified);
 
-    if (domainsToVerify.length === 0) {
-      this.logger.log('No current email domains to verify');
-      return;
-    }
+  //   if (domainsToVerify.length === 0) {
+  //     this.logger.log('No current email domains to verify');
+  //     return;
+  //   }
 
-    const partnerDomains = await this.emailDomainService.listPartnerDomains();
-    const partnerDomainsToVerify = domainsToVerify.filter((domain) =>
-      partnerDomains.some(
-        (pd) =>
-          pd.id === domain.value.refId &&
-          domain.value.status === EmailDomainStatus.Verified,
-      ),
-    );
+  //   const partnerDomains = await this.emailDomainService.listPartnerDomains();
+  //   const partnerDomainsToVerify = domainsToVerify.filter((domain) =>
+  //     partnerDomains.some(
+  //       (pd) =>
+  //         pd.id === domain.value.refId &&
+  //         domain.value.status === EmailDomainStatus.Verified,
+  //     ),
+  //   );
 
-    this.logger.log(
-      `Found ${partnerDomainsToVerify.length} verified partner domains to double check`,
-    );
+  //   this.logger.log(
+  //     `Found ${partnerDomainsToVerify.length} verified partner domains to double check`,
+  //   );
 
-    for (const domain of partnerDomainsToVerify) {
-      const domainData = await this.emailDomainService.getPartnerDomain(
-        domain.value.refId,
-      );
+  //   for (const domain of partnerDomainsToVerify) {
+  //     const domainData = await this.emailDomainService.getPartnerDomain(
+  //       domain.value.refId,
+  //     );
 
-      let status: EmailDomainStatus = null;
+  //     let status: EmailDomainStatus = null;
 
-      if (
-        domainData.status === 'failed' ||
-        domainData.status === 'temporary_failure'
-      ) {
-        status = EmailDomainStatus.Failed;
-      } else if (domainData.status === 'pending') {
-        status = EmailDomainStatus.Verifying;
-      }
+  //     if (
+  //       domainData.status === 'failed' ||
+  //       domainData.status === 'temporary_failure'
+  //     ) {
+  //       status = EmailDomainStatus.Failed;
+  //     } else if (domainData.status === 'pending') {
+  //       status = EmailDomainStatus.Verifying;
+  //     }
 
-      if (status) {
-        await this.emailDomainService.updateStatus(
-          domain.environmentId,
-          status,
-        );
+  //     if (status) {
+  //       await this.emailDomainService.updateStatus(
+  //         domain.environmentId,
+  //         status,
+  //       );
 
-        if (status === EmailDomainStatus.Failed) {
-          await this._sendEmailNotification(domain.environmentId, {
-            ...domain.value,
-            status,
-          });
-        }
+  //       if (status === EmailDomainStatus.Failed) {
+  //         await this._sendEmailNotification(domain.environmentId, {
+  //           ...domain.value,
+  //           status,
+  //         });
+  //       }
 
-        this.logger.log(
-          `Status changed to ${status} for email domain ${domain.value.domain} (RefID: ${domain.value.refId})`,
-        );
-      }
-    }
-  }
+  //       this.logger.log(
+  //         `Status changed to ${status} for email domain ${domain.value.domain} (RefID: ${domain.value.refId})`,
+  //       );
+  //     }
+  //   }
+  // }
 
   private async _sendEmailNotification(
     environmentId: string,
