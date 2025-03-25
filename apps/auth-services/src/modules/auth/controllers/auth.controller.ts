@@ -110,6 +110,8 @@ export class AuthController {
       throw new exceptionsMapper[tokenError.statusCode](tokenError.error);
     }
 
+    await this.userService.updateLastLogin(user.id, environment.id);
+
     const emailData = {
       token,
       userFirstName: getFirstName(user.fullName),
