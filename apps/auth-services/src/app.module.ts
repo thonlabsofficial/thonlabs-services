@@ -24,6 +24,7 @@ import { VerifyDomainGuard } from '@/auth/modules/shared/decorators/verify-domai
 import { NeedsInternalKeyGuard } from '@/auth/modules/shared/decorators/needs-internal-key.decorator';
 import { InternalsModule } from '@/auth/modules/internals/internals.module';
 import { OrganizationModule } from '@/auth/modules/organizations/organization.module';
+import { DashboardModule } from '@/auth/modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { OrganizationModule } from '@/auth/modules/organizations/organization.mo
     TokenStorageModule,
     InternalsModule,
     OrganizationModule,
+    DashboardModule,
   ],
   providers: [
     {
