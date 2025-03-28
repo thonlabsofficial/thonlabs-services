@@ -24,7 +24,6 @@ export class DashboardController {
 
     const today = new Date();
 
-    console.log(subDays(toZonedTime(startOfDay(today), 'UTC'), 30));
     const monthlyActiveUsersQuery = this.databaseService.user.count({
       where: {
         environmentId,
