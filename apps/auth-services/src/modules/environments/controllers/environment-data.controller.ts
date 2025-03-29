@@ -19,6 +19,7 @@ import { NeedsPublicKey } from '@/auth/modules/shared/decorators/needs-public-ke
 import { PublicRoute } from '@/auth/modules/auth/decorators/auth.decorator';
 import { NeedsInternalKey } from '@/auth/modules/shared/decorators/needs-internal-key.decorator';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
+import { AuthService } from '@/auth/modules/auth/services/auth.service';
 
 @Controller('environments/:envId/data')
 export class EnvironmentDataController {
@@ -26,6 +27,7 @@ export class EnvironmentDataController {
     private databaseService: DatabaseService,
     private environmentDataService: EnvironmentDataService,
     private environmentService: EnvironmentService,
+    private authService: AuthService,
   ) {}
 
   @Get('/')
@@ -68,11 +70,13 @@ export class EnvironmentDataController {
     @Param('envId') environmentId: string,
     @Query() query: { ids: string[] },
   ) {
-    const [env, envLegacyData, envData] = await Promise.all([
+    const [env, envLegacyData, envData, publicKey] = await Promise.all([
       this.databaseService.environment.findUnique({
         where: { id: environmentId },
         select: {
           id: true,
+          name: true,
+          customDomain: true,
           projectId: true,
           project: {
             select: {
@@ -83,6 +87,7 @@ export class EnvironmentDataController {
       }),
       this.environmentService.getData(environmentId),
       this.environmentDataService.fetch(environmentId, query.ids),
+      this.environmentService.getPublicKey(environmentId),
     ]);
 
     return {
@@ -91,6 +96,11 @@ export class EnvironmentDataController {
       environmentId: env.id,
       projectId: env.projectId,
       appName: env.project.appName,
+      environmentName: env.name,
+      publicKey: publicKey,
+      authDomain:
+        env.customDomain ||
+        this.authService.getDefaultAuthDomain(environmentId),
     };
   }
 
