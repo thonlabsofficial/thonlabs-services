@@ -68,10 +68,8 @@ export class ProjectController {
   @Get('/:id')
   @ThonLabsOnly()
   @UserOwnsProject()
-  async get(@Param('id') id: string, @Request() req) {
-    const userId = req.session.id;
-
-    const result = await this.projectService.getByIdAndOwnerId(id, userId);
+  async get(@Param('id') id: string) {
+    const result = await this.projectService.getById(id);
 
     return result?.data;
   }
@@ -123,6 +121,15 @@ export class ProjectController {
     if (result.error) {
       throw new exceptionsMapper[result.statusCode](result.error);
     }
+
+    return result.data;
+  }
+
+  @Get('/:id/integration-status')
+  @ThonLabsOnly()
+  @UserOwnsProject()
+  async getIntegrationStatus(@Param('id') id: string) {
+    const result = await this.projectService.getIntegrationStatus(id);
 
     return result.data;
   }

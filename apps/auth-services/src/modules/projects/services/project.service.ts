@@ -5,13 +5,16 @@ import prepareString from '@/utils/services/prepare-string';
 import rand from '@/utils/services/rand';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { Environment, Project } from '@prisma/client';
-import { UserService } from '../../users/services/user.service';
+import { UserService } from '@/auth/modules/users/services/user.service';
 import {
   ErrorCodes,
   ErrorMessages,
   StatusCodes,
 } from '@/utils/enums/errors-metadata';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
+import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
+import { EnvironmentDataKeys } from '@/auth/modules/environments/constants/environment-data';
+import { ProjectIntegrationStatus } from '@/auth/modules/projects/constants/project-integration-status';
 
 @Injectable()
 export class ProjectService {
@@ -23,6 +26,7 @@ export class ProjectService {
     private userService: UserService,
     @Inject(forwardRef(() => EnvironmentService))
     private environmentsService: EnvironmentService,
+    private environmentDataService: EnvironmentDataService,
   ) {}
 
   async getById(id: string): Promise<DataReturn<Project>> {
@@ -244,5 +248,40 @@ export class ProjectService {
         error: ErrorMessages.InternalError,
       };
     }
+  }
+
+  async getIntegrationStatus(
+    id: string,
+  ): Promise<DataReturn<{ status: ProjectIntegrationStatus }>> {
+    const environmentsIds = await this.databaseService.environment.findMany({
+      where: {
+        projectId: id,
+      },
+    });
+
+    const integrations = await Promise.all(
+      environmentsIds.map(async (environment) => {
+        const { data: sdkIntegrated } =
+          await this.environmentDataService.get<boolean>(
+            environment.id,
+            EnvironmentDataKeys.SDKIntegrated,
+          );
+
+        return sdkIntegrated;
+      }),
+    );
+
+    let status = ProjectIntegrationStatus.NotInitialized;
+
+    if (integrations.some((integration) => integration === true)) {
+      status = ProjectIntegrationStatus.PartialCompleted;
+    } else if (integrations.every((integration) => integration === true)) {
+      status = ProjectIntegrationStatus.Completed;
+    }
+
+    return {
+      statusCode: StatusCodes.OK,
+      data: { status },
+    };
   }
 }
