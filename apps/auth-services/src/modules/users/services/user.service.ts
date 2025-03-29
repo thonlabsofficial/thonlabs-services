@@ -15,6 +15,7 @@ import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
 import { OrganizationService } from '@/auth/modules/organizations/services/organization.service';
+import { EnvironmentDataKeys } from '@/auth/modules/environments/constants/environment-data';
 
 @Injectable()
 export class UserService {
@@ -164,7 +165,7 @@ export class UserService {
 
     const { data: enableSignUpB2BOnly } = await this.environmentDataService.get(
       payload.environmentId,
-      'enableSignUpB2BOnly',
+      EnvironmentDataKeys.EnableSignUpB2BOnly,
     );
     if (enableSignUpB2BOnly) {
       const { data: organizationId } =

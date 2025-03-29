@@ -1,8 +1,4 @@
-import {
-  ErrorCodes,
-  ErrorMessages,
-  StatusCodes,
-} from '@/utils/enums/errors-metadata';
+import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import {
   CanActivate,
   ExecutionContext,
@@ -60,7 +56,6 @@ export class NeedsPublicKeyGuard implements CanActivate {
     );
 
     if (!environment) {
-      this.logger.error(`Invalid environment ${req.headers['tl-env-id']}`);
       res.status(StatusCodes.Unauthorized).json({
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
