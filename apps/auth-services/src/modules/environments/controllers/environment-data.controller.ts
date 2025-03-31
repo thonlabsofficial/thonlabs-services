@@ -19,6 +19,8 @@ import { NeedsPublicKey } from '@/auth/modules/shared/decorators/needs-public-ke
 import { PublicRoute } from '@/auth/modules/auth/decorators/auth.decorator';
 import { NeedsInternalKey } from '@/auth/modules/shared/decorators/needs-internal-key.decorator';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
+import { AuthService } from '@/auth/modules/auth/services/auth.service';
+import { EnvironmentDataKeys } from '@/auth/modules/environments/constants/environment-data';
 
 @Controller('environments/:envId/data')
 export class EnvironmentDataController {
@@ -26,17 +28,19 @@ export class EnvironmentDataController {
     private databaseService: DatabaseService,
     private environmentDataService: EnvironmentDataService,
     private environmentService: EnvironmentService,
+    private authService: AuthService,
   ) {}
 
   @Get('/')
   @PublicRoute()
   @NeedsPublicKey()
   async fetch(@Param('envId') environmentId: string) {
-    const [env, envLegacyData, envData] = await Promise.all([
+    const [env, envData] = await Promise.all([
       this.databaseService.environment.findUnique({
         where: { id: environmentId },
         select: {
           id: true,
+          authProvider: true,
           projectId: true,
           project: {
             select: {
@@ -45,19 +49,19 @@ export class EnvironmentDataController {
           },
         },
       }),
-      this.environmentService.getData(environmentId),
       this.environmentDataService.fetch(environmentId, [
-        'enableSignUp',
-        'enableSignUpB2BOnly',
+        EnvironmentDataKeys.EnableSignUp,
+        EnvironmentDataKeys.EnableSignUpB2BOnly,
+        EnvironmentDataKeys.SDKIntegrated,
       ]),
     ]);
 
     return {
-      ...envLegacyData,
       ...envData,
       environmentId: env.id,
       projectId: env.projectId,
       appName: env.project.appName,
+      authProvider: env.authProvider,
     };
   }
 
@@ -68,11 +72,14 @@ export class EnvironmentDataController {
     @Param('envId') environmentId: string,
     @Query() query: { ids: string[] },
   ) {
-    const [env, envLegacyData, envData] = await Promise.all([
+    const [env, envData, publicKey] = await Promise.all([
       this.databaseService.environment.findUnique({
         where: { id: environmentId },
         select: {
           id: true,
+          name: true,
+          customDomain: true,
+          authProvider: true,
           projectId: true,
           project: {
             select: {
@@ -81,16 +88,21 @@ export class EnvironmentDataController {
           },
         },
       }),
-      this.environmentService.getData(environmentId),
       this.environmentDataService.fetch(environmentId, query.ids),
+      this.environmentService.getPublicKey(environmentId),
     ]);
 
     return {
-      ...envLegacyData,
       ...envData,
       environmentId: env.id,
       projectId: env.projectId,
       appName: env.project.appName,
+      environmentName: env.name,
+      authProvider: env.authProvider,
+      publicKey: publicKey,
+      authDomain:
+        env.customDomain ||
+        this.authService.getDefaultAuthDomain(environmentId),
     };
   }
 
@@ -138,6 +150,23 @@ export class EnvironmentDataController {
     }
 
     return res.status(StatusCodes.Created).send(data.data);
+  }
+
+  @Post('/integrated')
+  @PublicRoute()
+  @NeedsPublicKey()
+  async sdkIntegration(@Param('envId') environmentId: string) {
+    const data = await this.environmentDataService.get(
+      environmentId,
+      EnvironmentDataKeys.SDKIntegrated,
+    );
+
+    if (data?.statusCode === StatusCodes.NotFound) {
+      await this.environmentDataService.upsert(environmentId, {
+        key: EnvironmentDataKeys.SDKIntegrated,
+        value: true,
+      });
+    }
   }
 
   @Delete('/:key')

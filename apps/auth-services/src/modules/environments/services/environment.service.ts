@@ -13,10 +13,10 @@ import rand from '@/utils/services/rand';
 import prepareString from '@/utils/services/prepare-string';
 import Crypt from '@/utils/services/crypt';
 import ms from 'ms';
-import { EmailTemplateService } from '../../emails/services/email-template.service';
-import { EnvironmentDataService } from './environment-data.service';
-import { EnvironmentDataKeys } from '../constants/environment-data';
-import { EmailDomainService } from '../../emails/services/email-domain.service';
+import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
+import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
+import { EnvironmentDataKeys } from '@/auth/modules/environments/constants/environment-data';
+import { EmailDomainService } from '@/auth/modules/emails/services/email-domain.service';
 
 @Injectable()
 export class EnvironmentService {
@@ -506,11 +506,11 @@ export class EnvironmentService {
         },
       }),
       this.environmentDataService.upsert(environmentId, {
-        key: 'enableSignUp',
+        key: EnvironmentDataKeys.EnableSignUp,
         value: payload.enableSignUp,
       }),
       this.environmentDataService.upsert(environmentId, {
-        key: 'enableSignUpB2BOnly',
+        key: EnvironmentDataKeys.EnableSignUpB2BOnly,
         value: payload.enableSignUpB2BOnly,
       }),
     ]);
@@ -570,16 +570,5 @@ export class EnvironmentService {
         error: `URL already exists in "${urlExists.project.appName}" project for "${urlExists.name}" environment`,
       };
     }
-  }
-
-  async getData(environmentId: string) {
-    const environment = await this.databaseService.environment.findUnique({
-      where: { id: environmentId },
-      select: {
-        authProvider: true,
-      },
-    });
-
-    return environment;
   }
 }

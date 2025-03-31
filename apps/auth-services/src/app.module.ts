@@ -7,14 +7,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SchemaValidatorGuard } from '@/auth/modules/shared/decorators/schema-validator.decorator';
-import { AuthModule } from '@/auth/modules/auth/auth.module';
 import { AuthGuard } from '@/auth/modules/auth/decorators/auth.decorator';
 import { SecretKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/secret-key-or-thon-labs-user.decorator';
-import { UserModule } from '@/auth/modules/users/user.module';
-import { ProjectModule } from '@/auth/modules/projects/project.module';
-import { EnvironmentModule } from '@/auth/modules/environments/environment.module';
-import { EmailModule } from '@/auth/modules/emails/email.module';
-import { TokenStorageModule } from '@/auth/modules/token-storage/token-storage.module';
 import { NeedsPublicKeyGuard } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
 import { ThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccessGuard } from '@/auth/modules/shared/decorators/has-env-access.decorator';
@@ -22,9 +16,36 @@ import { UserOwnsProjectGuard } from '@/auth/modules/shared/decorators/user-owns
 import { PublicKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
 import { VerifyDomainGuard } from '@/auth/modules/shared/decorators/verify-domain.decorator';
 import { NeedsInternalKeyGuard } from '@/auth/modules/shared/decorators/needs-internal-key.decorator';
-import { InternalsModule } from '@/auth/modules/internals/internals.module';
-import { OrganizationModule } from '@/auth/modules/organizations/organization.module';
-import { DashboardModule } from '@/auth/modules/dashboard/dashboard.module';
+import { AuthService } from './modules/auth/services/auth.service';
+import { AuthController } from './modules/auth/controllers/auth.controller';
+import { DashboardController } from './modules/dashboard/controllers/dashboard.controller';
+import { EmailTemplateController } from './modules/emails/controllers/email-template.controller';
+import { EmailDomainController } from './modules/emails/controllers/email-domain.controller';
+import { AudienceService } from './modules/emails/services/audience.service';
+import { EmailDomainScheduler } from './modules/emails/services/email-domain.scheduler';
+import { EmailDomainService } from './modules/emails/services/email-domain.service';
+import { EmailTemplateService } from './modules/emails/services/email-template.service';
+import { EmailService } from './modules/emails/services/email.service';
+import { EnvironmentDataController } from './modules/environments/controllers/environment-data.controller';
+import { EnvironmentDomainController } from './modules/environments/controllers/environment-domain.controller';
+import { EnvironmentController } from './modules/environments/controllers/environment.controller';
+import { EnvironmentDataService } from './modules/environments/services/environment-data.service';
+import { EnvironmentDomainService } from './modules/environments/services/environment-domain.service';
+import { EnvironmentHelper } from './modules/environments/services/environment.helper';
+import { EnvironmentScheduler } from './modules/environments/services/environment.scheduler';
+import { EnvironmentService } from './modules/environments/services/environment.service';
+import { InternalController } from './modules/internals/controllers/internal.controller';
+import { OrganizationService } from './modules/organizations/services/organization.service';
+import { OrganizationController } from './modules/organizations/controllers/organization.controller';
+import { ProjectController } from './modules/projects/controllers/project.controller';
+import { ProjectService } from './modules/projects/services/project.service';
+import { CronService } from './modules/shared/cron.service';
+import { DatabaseService } from './modules/shared/database/database.service';
+import { CDNService } from './modules/shared/services/cdn.service';
+import { HTTPService } from './modules/shared/services/http.service';
+import { TokenStorageService } from './modules/token-storage/services/token-storage.service';
+import { UserController } from './modules/users/controllers/user.controller';
+import { UserService } from './modules/users/services/user.service';
 
 @Module({
   imports: [
@@ -41,15 +62,6 @@ import { DashboardModule } from '@/auth/modules/dashboard/dashboard.module';
       global: true,
     }),
     ScheduleModule.forRoot(),
-    AuthModule,
-    UserModule,
-    ProjectModule,
-    EnvironmentModule,
-    EmailModule,
-    TokenStorageModule,
-    InternalsModule,
-    OrganizationModule,
-    DashboardModule,
   ],
   providers: [
     {
@@ -87,6 +99,40 @@ import { DashboardModule } from '@/auth/modules/dashboard/dashboard.module';
       provide: APP_GUARD,
       useClass: SchemaValidatorGuard,
     },
+
+    DatabaseService,
+    CronService,
+    CDNService,
+    HTTPService,
+
+    AuthService,
+    EmailTemplateService,
+    EmailService,
+    AudienceService,
+    EmailDomainService,
+    EmailDomainScheduler,
+    EnvironmentService,
+    EnvironmentDomainService,
+    EnvironmentScheduler,
+    EnvironmentHelper,
+    EnvironmentDataService,
+    OrganizationService,
+    ProjectService,
+    TokenStorageService,
+    UserService,
+  ],
+  controllers: [
+    AuthController,
+    DashboardController,
+    EmailTemplateController,
+    EmailDomainController,
+    EnvironmentController,
+    EnvironmentDomainController,
+    EnvironmentDataController,
+    InternalController,
+    OrganizationController,
+    ProjectController,
+    UserController,
   ],
 })
 export class AppModule {}

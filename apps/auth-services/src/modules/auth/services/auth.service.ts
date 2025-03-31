@@ -13,8 +13,7 @@ import { UserService } from '@/auth/modules/users/services/user.service';
 import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
-import { EnvironmentDataService } from '../../environments/services/environment-data.service';
-import { OrganizationService } from '../../organizations/services/organization.service';
+import getEnvIdHash from '@/utils/services/get-env-id-hash';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -32,8 +31,6 @@ export class AuthService {
     private userService: UserService,
     private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
-    private environmentDataService: EnvironmentDataService,
-    private organizationService: OrganizationService,
   ) {}
 
   async authenticateFromEmailAndPassword(
@@ -480,5 +477,10 @@ export class AuthService {
     }
 
     return { data: token?.data };
+  }
+
+  getDefaultAuthDomain(environmentId: string) {
+    const appDomain = new URL(process.env.APP_ROOT_URL).hostname;
+    return `${getEnvIdHash(environmentId)}.auth.${appDomain}`;
   }
 }

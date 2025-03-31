@@ -133,7 +133,7 @@ export class EnvironmentDataService {
       });
 
     if (!environmentData) {
-      const error = `Environment data key ${key} not found`;
+      const error = `Environment data key "${key}" not found`;
       this.logger.warn(`${error} (ENV: ${environmentId})`);
 
       return {
