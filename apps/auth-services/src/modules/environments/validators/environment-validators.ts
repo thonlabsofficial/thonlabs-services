@@ -1,6 +1,7 @@
 import { ErrorMessages } from '@/utils/enums/errors-metadata';
 import { AuthProviders } from '@prisma/client';
 import z from 'zod';
+import { colorPatterns } from '@/utils/validators/patterns';
 
 export const createEnvironmentValidator = z.object({
   name: z
@@ -16,6 +17,14 @@ export const updateAuthSettingsValidator = z.object({
   authProvider: z.nativeEnum(AuthProviders),
   enableSignUp: z.boolean(),
   enableSignUpB2BOnly: z.boolean(),
+  primaryColor: z
+    .string({ required_error: ErrorMessages.RequiredField })
+    .refine(
+      (color) =>
+        colorPatterns.hexColor.test(color) ||
+        colorPatterns.rgbColor.test(color),
+      { message: ErrorMessages.InvalidColorFormat },
+    ),
 });
 
 export type UpdateAuthSettingsValidator = z.infer<

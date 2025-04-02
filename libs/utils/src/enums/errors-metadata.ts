@@ -64,6 +64,7 @@ export enum ErrorMessages {
   DomainAlreadyRegisteredAccount = 'Your account already has a domain registered',
   OrganizationNotFound = 'Organization not found',
   OrganizationInactive = 'Organization is not active',
+  InvalidColorFormat = 'Invalid color format',
 }
 
 export const exceptionsMapper = {

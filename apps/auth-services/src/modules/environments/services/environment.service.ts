@@ -389,6 +389,10 @@ export class EnvironmentService {
         key: EnvironmentDataKeys.EnableSignUp,
         value: true,
       }),
+      this.environmentDataService.upsert(environment.id, {
+        key: EnvironmentDataKeys.PrimaryColor,
+        value: '#e11d48',
+      }),
       this.emailDomainService.setDomain(
         environment.id,
         new URL(environment.appURL).hostname,
@@ -475,6 +479,7 @@ export class EnvironmentService {
       refreshTokenExpiration?: string;
       enableSignUp: boolean;
       enableSignUpB2BOnly: boolean;
+      primaryColor: string;
     },
   ): Promise<DataReturn> {
     if (ms(payload.tokenExpiration) < 300000) {
@@ -512,6 +517,10 @@ export class EnvironmentService {
       this.environmentDataService.upsert(environmentId, {
         key: EnvironmentDataKeys.EnableSignUpB2BOnly,
         value: payload.enableSignUpB2BOnly,
+      }),
+      this.environmentDataService.upsert(environmentId, {
+        key: EnvironmentDataKeys.PrimaryColor,
+        value: payload.primaryColor,
       }),
     ]);
 
