@@ -53,7 +53,7 @@ export class EnvironmentDataController {
         EnvironmentDataKeys.EnableSignUp,
         EnvironmentDataKeys.EnableSignUpB2BOnly,
         EnvironmentDataKeys.SDKIntegrated,
-        EnvironmentDataKeys.PrimaryColor,
+        EnvironmentDataKeys.Styles,
       ]),
     ]);
 

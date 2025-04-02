@@ -58,7 +58,7 @@ export class InternalController {
         authProvider: AuthProviders.EmailAndPassword,
         enableSignUp: true,
         enableSignUpB2BOnly: false,
-        primaryColor: '#e11d48',
+        styles: { primaryColor: '#e11d48' },
       }),
       await this.environmentService.getPublicKey(environment.id),
     ]);

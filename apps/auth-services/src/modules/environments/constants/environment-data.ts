@@ -4,5 +4,9 @@ export enum EnvironmentDataKeys {
   EmailTemplateDomain = 'emailTemplateDomain',
   SDKIntegrated = 'sdkIntegrated',
   EnableSignUpB2BOnly = 'enableSignUpB2BOnly',
-  PrimaryColor = 'primaryColor',
+  Styles = 'styles',
+}
+
+export interface EnvironmentStyles {
+  primaryColor: string;
 }
