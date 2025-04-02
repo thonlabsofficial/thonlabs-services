@@ -1,5 +1,5 @@
 import z from 'zod';
-import { passwordPatterns } from '@/utils/validators/password-patterns';
+import { passwordPatterns } from '@/utils/validators/patterns';
 import { ErrorMessages } from '@/utils/enums/errors-metadata';
 
 export const requestResetPasswordValidator = z.object({

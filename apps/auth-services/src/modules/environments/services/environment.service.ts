@@ -15,7 +15,10 @@ import Crypt from '@/utils/services/crypt';
 import ms from 'ms';
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
-import { EnvironmentDataKeys } from '@/auth/modules/environments/constants/environment-data';
+import {
+  EnvironmentDataKeys,
+  EnvironmentStyles,
+} from '@/auth/modules/environments/constants/environment-data';
 import { EmailDomainService } from '@/auth/modules/emails/services/email-domain.service';
 
 @Injectable()
@@ -389,6 +392,10 @@ export class EnvironmentService {
         key: EnvironmentDataKeys.EnableSignUp,
         value: true,
       }),
+      this.environmentDataService.upsert(environment.id, {
+        key: EnvironmentDataKeys.Styles,
+        value: { primaryColor: '#e11d48' },
+      }),
       this.emailDomainService.setDomain(
         environment.id,
         new URL(environment.appURL).hostname,
@@ -475,6 +482,7 @@ export class EnvironmentService {
       refreshTokenExpiration?: string;
       enableSignUp: boolean;
       enableSignUpB2BOnly: boolean;
+      styles: EnvironmentStyles;
     },
   ): Promise<DataReturn> {
     if (ms(payload.tokenExpiration) < 300000) {
@@ -512,6 +520,10 @@ export class EnvironmentService {
       this.environmentDataService.upsert(environmentId, {
         key: EnvironmentDataKeys.EnableSignUpB2BOnly,
         value: payload.enableSignUpB2BOnly,
+      }),
+      this.environmentDataService.upsert(environmentId, {
+        key: EnvironmentDataKeys.Styles,
+        value: payload.styles,
       }),
     ]);
 
