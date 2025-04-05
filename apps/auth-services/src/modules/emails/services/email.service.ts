@@ -8,6 +8,7 @@ import { ReactElement } from 'react';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { getFirstName } from '@/utils/services/names-helpers';
 import { EmailDomainService } from './email-domain.service';
+import { add } from 'date-fns';
 
 export enum EmailInternalFromTypes {
   SUPPORT = 'support',
@@ -52,6 +53,7 @@ interface SendEmailParams {
     user?: Partial<User> & { firstName?: string };
     inviter?: Partial<User>;
     publicKey?: string;
+    userFirstName?: string;
   };
   scheduledAt?: Date;
 }
@@ -222,5 +224,25 @@ export class EmailService {
     });
 
     return user;
+  }
+
+  async sendWelcomeEmail(user: User, environmentId: string) {
+    const { data: welcomeEmailEnabled } =
+      await this.emailTemplatesService.isEnabled(
+        EmailTemplates.Welcome,
+        environmentId,
+      );
+
+    if (!welcomeEmailEnabled) {
+      return;
+    }
+
+    await this.send({
+      userId: user.id,
+      to: user.email,
+      emailTemplateType: EmailTemplates.Welcome,
+      environmentId,
+      scheduledAt: add(new Date(), { minutes: 5 }),
+    });
   }
 }

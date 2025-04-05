@@ -14,6 +14,8 @@ import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import getEnvIdHash from '@/utils/services/get-env-id-hash';
+import { SSOUser } from '../interfaces/sso-user';
+import { HTTPService } from '@/auth/modules/shared/services/http.service';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -31,6 +33,7 @@ export class AuthService {
     private userService: UserService,
     private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
+    private httpService: HTTPService,
   ) {}
 
   async authenticateFromEmailAndPassword(
@@ -482,5 +485,68 @@ export class AuthService {
   getDefaultAuthDomain(environmentId: string) {
     const appDomain = new URL(process.env.APP_ROOT_URL).hostname;
     return `${getEnvIdHash(environmentId)}.auth.${appDomain}`;
+  }
+
+  async getGoogleUser(code: string): Promise<DataReturn<SSOUser>> {
+    // TODO: consume from env data
+    const creds = {
+      clientId:
+        '948747697283-qmp185hcc15bq4dh5hjfc48io50fjbl0.apps.googleusercontent.com',
+      secretKey: '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',
+      redirectUri: 'http://localhost:3000/auth/sso/google/success',
+    };
+
+    try {
+      const { data: tokens } = await this.httpService.post({
+        url: 'https://oauth2.googleapis.com/token',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        data: new URLSearchParams({
+          code,
+          client_id: creds.clientId,
+          client_secret: creds.secretKey,
+          redirect_uri: creds.redirectUri,
+          grant_type: 'authorization_code',
+        }).toString(),
+      });
+
+      if (!tokens?.access_token) {
+        this.logger.error(`getGoogleUser: error fetching tokens`, tokens);
+        return {
+          statusCode: StatusCodes.Unauthorized,
+          error: ErrorMessages.InvalidToken,
+        };
+      }
+
+      const { data: userInfo } = await this.httpService.get({
+        url: 'https://www.googleapis.com/oauth2/v3/userinfo',
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+        },
+      });
+
+      if (!userInfo?.email) {
+        this.logger.error(`getGoogleUser: error fetching user info`, userInfo);
+        return {
+          statusCode: StatusCodes.Unauthorized,
+          error: ErrorMessages.InvalidToken,
+        };
+      }
+
+      return {
+        data: {
+          fullName: userInfo?.name,
+          email: userInfo.email,
+          profilePicture: userInfo?.picture,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`getGoogleUser: error authenticating`, error);
+      return {
+        statusCode: StatusCodes.Internal,
+        error: ErrorMessages.InternalError,
+      };
+    }
   }
 }

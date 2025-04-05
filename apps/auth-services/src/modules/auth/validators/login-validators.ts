@@ -15,3 +15,9 @@ export const authenticateFromMagicLinkValidator = z.object({
 export const reauthenticateFromRefreshTokenValidator = z.object({
   token: z.string({ required_error: ErrorMessages.RequiredField }),
 });
+
+export const loginSSOValidator = z.object({
+  token: z.string({ required_error: ErrorMessages.RequiredField }),
+});
+
+export type LoginSSOValidator = z.infer<typeof loginSSOValidator>;
