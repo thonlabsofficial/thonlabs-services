@@ -127,7 +127,6 @@ export class AuthService {
       this.logger.error(
         `Login/Pass - Error on creating tokens for user ${user.id}`,
       );
-      console.error(e);
 
       return {
         error: ErrorMessages.InternalError,
