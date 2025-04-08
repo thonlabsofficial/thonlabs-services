@@ -8,7 +8,11 @@ import {
   Query,
   Res,
 } from '@nestjs/common';
-import { exceptionsMapper, StatusCodes } from '@/utils/enums/errors-metadata';
+import {
+  ErrorMessages,
+  exceptionsMapper,
+  StatusCodes,
+} from '@/utils/enums/errors-metadata';
 import { ThonLabsOnly } from '@/auth/modules/shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
@@ -21,6 +25,10 @@ import { NeedsInternalKey } from '@/auth/modules/shared/decorators/needs-interna
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { AuthService } from '@/auth/modules/auth/services/auth.service';
 import { EnvironmentDataKeys } from '@/auth/modules/environments/constants/environment-data';
+import {
+  SSOCreds,
+  SSOSocialProvider,
+} from '@/auth/modules/auth/interfaces/sso-creds';
 
 @Controller('environments/:envId/data')
 export class EnvironmentDataController {
@@ -31,6 +39,14 @@ export class EnvironmentDataController {
     private authService: AuthService,
   ) {}
 
+  /**
+   * Get all environment data for a specific environment.
+   * This is used by the SDKs to generate the auth pages correctly.
+   *
+   * Requires public key and environment id as headers.
+   *
+   * @param environmentId - The ID of the environment
+   */
   @Get('/')
   @PublicRoute()
   @NeedsPublicKey()
@@ -66,6 +82,15 @@ export class EnvironmentDataController {
     };
   }
 
+  /**
+   * Get all app data for a specific environment.
+   * Can be only accessed by ThonLabs app.
+   *
+   * Requires internal key.
+   *
+   * @param environmentId - The ID of the environment
+   * @param query - The query of the data
+   */
   @Get('/app')
   @PublicRoute()
   @NeedsInternalKey()
@@ -93,6 +118,9 @@ export class EnvironmentDataController {
       this.environmentService.getPublicKey(environmentId),
     ]);
 
+    delete envData[EnvironmentDataKeys.Waitlist];
+    delete envData[EnvironmentDataKeys.Credentials];
+
     return {
       ...envData,
       environmentId: env.id,
@@ -107,6 +135,13 @@ export class EnvironmentDataController {
     };
   }
 
+  /**
+   * Get a specific environment data by id.
+   * Requires ThonLabs access and access token.
+   *
+   * @param environmentId - The ID of the environment
+   * @param id - The id of the data
+   */
   @Get('/:id')
   @ThonLabsOnly()
   @HasEnvAccess({ param: 'envId' })
@@ -114,6 +149,12 @@ export class EnvironmentDataController {
     @Param('envId') environmentId: string,
     @Param('id') id: string,
   ) {
+    if (id === 'credentials') {
+      throw new exceptionsMapper[StatusCodes.NotFound](
+        ErrorMessages.EnvironmentDataNotFound,
+      );
+    }
+
     const data = await this.environmentDataService.get(environmentId, id);
 
     if (data?.statusCode) {
@@ -123,6 +164,13 @@ export class EnvironmentDataController {
     return data.data;
   }
 
+  /**
+   * Upsert a specific environment data.
+   * Requires ThonLabs access and access token.
+   *
+   * @param environmentId - The ID of the environment
+   * @param payload - The payload of the data
+   */
   @Post('/')
   @ThonLabsOnly()
   @HasEnvAccess({ param: 'envId' })
@@ -130,6 +178,7 @@ export class EnvironmentDataController {
   async upsert(
     @Param('envId') environmentId: string,
     @Body() payload,
+    @Query() query: { encrypt: boolean },
     @Res() res,
   ) {
     const { data: exists } = await this.environmentDataService.get(
@@ -140,6 +189,7 @@ export class EnvironmentDataController {
     const data = await this.environmentDataService.upsert(
       environmentId,
       payload,
+      query.encrypt,
     );
 
     if (data?.statusCode) {
@@ -147,12 +197,18 @@ export class EnvironmentDataController {
     }
 
     if (exists) {
-      return res.status(StatusCodes.OK).send(data.data);
+      return res.status(StatusCodes.OK).send('');
     }
 
-    return res.status(StatusCodes.Created).send(data.data);
+    return res.status(StatusCodes.Created).send('');
   }
 
+  /**
+   * Set the SDK as integrated for the environment.
+   * Requires public key and environment id.
+   *
+   * @param environmentId - The ID of the environment
+   */
   @Post('/integrated')
   @PublicRoute()
   @NeedsPublicKey()
@@ -170,6 +226,13 @@ export class EnvironmentDataController {
     }
   }
 
+  /**
+   * Delete a specific environment data.
+   * Requires ThonLabs access and access token.
+   *
+   * @param environmentId - The ID of the environment
+   * @param key - The key of the data
+   */
   @Delete('/:key')
   @ThonLabsOnly()
   @HasEnvAccess({ param: 'envId' })
@@ -182,5 +245,72 @@ export class EnvironmentDataController {
     if (data?.statusCode) {
       throw new exceptionsMapper[data.statusCode](data.error);
     }
+  }
+
+  /**
+   * Get only PUBLIC credentials for SSO providers, like publicKey and redirectURI.
+   * Pay attention on the data returned before commit anything new.
+   * Requires environment id and public key.
+   *
+   * @param environmentId - The ID of the environment
+   * @returns The credentials for the provider
+   */
+  @Get('/credentials/sso/public')
+  @PublicRoute()
+  @NeedsPublicKey()
+  async getCredentialsPublic(@Param('envId') environmentId: string) {
+    const data = await this.environmentDataService.get(
+      environmentId,
+      EnvironmentDataKeys.Credentials,
+    );
+
+    const credentials = data?.data;
+
+    if (!credentials || data?.statusCode) {
+      throw new exceptionsMapper[data.statusCode](data.error);
+    }
+
+    const filteredCredentials = {};
+
+    Object.keys(credentials)
+      .filter((key) =>
+        Object.values(SSOSocialProvider).includes(key as SSOSocialProvider),
+      )
+      .forEach((key) => {
+        const credential = credentials[key] as SSOCreds;
+        filteredCredentials[key] = {
+          clientId: credential.clientId,
+          redirectURI: credential.redirectURI,
+        };
+      });
+
+    return filteredCredentials;
+  }
+
+  /**
+   * Get all credentials for a specific provider.
+   * Requires ThonLabs access and access token.
+   *
+   * @param environmentId - The ID of the environment
+   * @param key - The key of the provider
+   * @returns The credentials for the provider
+   */
+  @Get('/credentials/:key')
+  @ThonLabsOnly()
+  @HasEnvAccess({ param: 'envId' })
+  async getCredentials(
+    @Param('envId') environmentId: string,
+    @Param('key') key: string,
+  ) {
+    const data = await this.environmentDataService.get(
+      environmentId,
+      EnvironmentDataKeys.Credentials,
+    );
+
+    if (!data?.data || data?.statusCode) {
+      throw new exceptionsMapper[data.statusCode](data.error);
+    }
+
+    return data?.data?.[key] || null;
   }
 }

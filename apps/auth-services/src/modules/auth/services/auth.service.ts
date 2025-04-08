@@ -16,6 +16,11 @@ import { DatabaseService } from '@/auth/modules/shared/database/database.service
 import getEnvIdHash from '@/utils/services/get-env-id-hash';
 import { SSOUser } from '../interfaces/sso-user';
 import { HTTPService } from '@/auth/modules/shared/services/http.service';
+import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
+import {
+  EnvironmentDataKeys,
+  EnvironmentCredentials,
+} from '@/auth/modules/environments/constants/environment-data';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -34,6 +39,7 @@ export class AuthService {
     private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
     private httpService: HTTPService,
+    private environmentDataService: EnvironmentDataService,
   ) {}
 
   async authenticateFromEmailAndPassword(
@@ -487,14 +493,27 @@ export class AuthService {
     return `${getEnvIdHash(environmentId)}.auth.${appDomain}`;
   }
 
-  async getGoogleUser(code: string): Promise<DataReturn<SSOUser>> {
-    // TODO: consume from env data
-    const creds = {
-      clientId:
-        '948747697283-qmp185hcc15bq4dh5hjfc48io50fjbl0.apps.googleusercontent.com',
-      secretKey: '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',
-      redirectUri: 'http://localhost:3000/auth/sso/google/success',
-    };
+  async getGoogleUser(
+    token: string,
+    environmentId: string,
+  ): Promise<DataReturn<SSOUser>> {
+    const { data: credentials } =
+      await this.environmentDataService.get<EnvironmentCredentials>(
+        environmentId,
+        EnvironmentDataKeys.Credentials,
+      );
+
+    if (!credentials?.google) {
+      this.logger.error(
+        `Google SSO: invalid credentials found for env ${environmentId}`,
+      );
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.InvalidCredentials,
+      };
+    }
+
+    const { clientId, secretKey, redirectURI } = credentials.google;
 
     try {
       const { data: tokens } = await this.httpService.post({
@@ -503,10 +522,10 @@ export class AuthService {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         data: new URLSearchParams({
-          code,
-          client_id: creds.clientId,
-          client_secret: creds.secretKey,
-          redirect_uri: creds.redirectUri,
+          code: token,
+          client_id: clientId,
+          client_secret: secretKey,
+          redirect_uri: redirectURI,
           grant_type: 'authorization_code',
         }).toString(),
       });

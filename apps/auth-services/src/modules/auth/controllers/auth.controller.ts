@@ -242,6 +242,7 @@ export class AuthController {
     if (provider === 'google') {
       const { data, ...rest } = await this.authService.getGoogleUser(
         payload.token,
+        environmentId,
       );
 
       if (rest.error) {

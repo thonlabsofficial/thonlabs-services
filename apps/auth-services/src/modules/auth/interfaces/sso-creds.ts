@@ -1,5 +1,9 @@
+export enum SSOSocialProvider {
+  GOOGLE = 'google',
+}
+
 export interface SSOCreds {
   clientId: string;
   secretKey: string;
-  redirectUri: string;
+  redirectURI: string;
 }

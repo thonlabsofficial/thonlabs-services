@@ -4,6 +4,7 @@ import { DataReturn } from '@/utils/interfaces/data-return';
 import { EnvironmentData } from '@prisma/client';
 import { StatusCodes } from '@/utils/enums/errors-metadata';
 import prepareString from '@/utils/services/prepare-string';
+import Crypt from '@/utils/services/crypt';
 
 @Injectable()
 export class EnvironmentDataService {
@@ -23,6 +24,7 @@ export class EnvironmentDataService {
   async upsert(
     environmentId: string,
     payload: { key: string; value: any },
+    encrypt = false,
   ): Promise<DataReturn<EnvironmentData>> {
     const key = prepareString(payload.key);
     const currentRegister =
@@ -30,15 +32,27 @@ export class EnvironmentDataService {
         where: { key, environmentId },
       });
 
+    let value = payload.value;
+
+    if (encrypt) {
+      const encryptedValue = await Crypt.encrypt(
+        JSON.stringify(payload.value),
+        Crypt.generateIV(key),
+        process.env.ENCODE_SECRET,
+      );
+
+      value = `ev:${encryptedValue}`;
+    }
+
     const environmentData = await this.databaseService.environmentData.upsert({
       where: { id: currentRegister?.id ?? -1 },
       create: {
         key,
-        value: payload.value,
+        value,
         environmentId,
       },
       update: {
-        value: payload.value,
+        value,
       },
       select: {
         id: true,
@@ -80,8 +94,9 @@ export class EnvironmentDataService {
 
     const values = {};
 
-    environmentData.forEach((data) => {
-      values[data.key] = data.value;
+    environmentData.forEach(async (data) => {
+      const parsedValue = await this._parseValue(data.key, data.value);
+      values[data.key] = parsedValue;
     });
 
     return values;
@@ -106,8 +121,8 @@ export class EnvironmentDataService {
 
     const values = {};
 
-    environmentData.forEach((data) => {
-      values[data.key] = data.value;
+    environmentData.forEach(async (data) => {
+      values[data.key] = await this._parseValue(data.key, data.value);
     });
 
     return values;
@@ -142,7 +157,7 @@ export class EnvironmentDataService {
       };
     }
 
-    return { data: environmentData?.value as T };
+    return { data: (await this._parseValue(key, environmentData?.value)) as T };
   }
 
   /**
@@ -171,5 +186,26 @@ export class EnvironmentDataService {
     await this.databaseService.environmentData.delete({
       where: { id: environmentData.id, environmentId },
     });
+  }
+
+  /**
+   * Decrypts a value if it is encrypted.
+   *
+   * @param {string} key - The key of the data.
+   * @param {any} value - The value of the data.
+   * @returns {any} - The decrypted value or the original value if not encrypted.
+   */
+  private async _parseValue(key: string, value: any) {
+    if (typeof value === 'string' && value.startsWith('ev:')) {
+      const decryptedValue = await Crypt.decrypt(
+        value.replace('ev:', ''),
+        Crypt.generateIV(key),
+        process.env.ENCODE_SECRET,
+      );
+
+      return JSON.parse(decryptedValue);
+    }
+
+    return value;
   }
 }

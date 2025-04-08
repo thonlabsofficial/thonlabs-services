@@ -1,3 +1,5 @@
+import { SSOCreds } from '@/auth/modules/auth/interfaces/sso-creds';
+
 export enum EnvironmentDataKeys {
   EnableSignUp = 'enableSignUp',
   Waitlist = 'waitlist',
@@ -5,8 +7,13 @@ export enum EnvironmentDataKeys {
   SDKIntegrated = 'sdkIntegrated',
   EnableSignUpB2BOnly = 'enableSignUpB2BOnly',
   Styles = 'styles',
+  Credentials = 'credentials',
 }
 
 export interface EnvironmentStyles {
   primaryColor: string;
+}
+
+export interface EnvironmentCredentials {
+  google: SSOCreds;
 }
