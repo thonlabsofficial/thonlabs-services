@@ -46,6 +46,7 @@ import { HTTPService } from './modules/shared/services/http.service';
 import { TokenStorageService } from './modules/token-storage/services/token-storage.service';
 import { UserController } from './modules/users/controllers/user.controller';
 import { UserService } from './modules/users/services/user.service';
+import { EnvironmentCredentialController } from './modules/environments/controllers/environment-credential.controller';
 
 @Module({
   imports: [
@@ -129,6 +130,7 @@ import { UserService } from './modules/users/services/user.service';
     EnvironmentController,
     EnvironmentDomainController,
     EnvironmentDataController,
+    EnvironmentCredentialController,
     InternalController,
     OrganizationController,
     ProjectController,

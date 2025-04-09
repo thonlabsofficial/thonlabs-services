@@ -8,11 +8,7 @@ import {
   Query,
   Res,
 } from '@nestjs/common';
-import {
-  ErrorMessages,
-  exceptionsMapper,
-  StatusCodes,
-} from '@/utils/enums/errors-metadata';
+import { exceptionsMapper, StatusCodes } from '@/utils/enums/errors-metadata';
 import { ThonLabsOnly } from '@/auth/modules/shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
@@ -25,10 +21,6 @@ import { NeedsInternalKey } from '@/auth/modules/shared/decorators/needs-interna
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { AuthService } from '@/auth/modules/auth/services/auth.service';
 import { EnvironmentDataKeys } from '@/auth/modules/environments/constants/environment-data';
-import {
-  SSOCreds,
-  SSOSocialProvider,
-} from '@/auth/modules/auth/interfaces/sso-creds';
 
 @Controller('environments/:envId/data')
 export class EnvironmentDataController {
@@ -118,6 +110,14 @@ export class EnvironmentDataController {
       this.environmentService.getPublicKey(environmentId),
     ]);
 
+    const credentials = {
+      ...(envData[EnvironmentDataKeys.Credentials] || {}),
+    };
+    const activeSSOProviders = Object.keys(credentials).filter((key) => {
+      const credential = credentials[key];
+      return credential && credential.active;
+    });
+
     delete envData[EnvironmentDataKeys.Waitlist];
     delete envData[EnvironmentDataKeys.Credentials];
 
@@ -128,10 +128,11 @@ export class EnvironmentDataController {
       appName: env.project.appName,
       environmentName: env.name,
       authProvider: env.authProvider,
-      publicKey: publicKey,
+      publicKey,
       authDomain:
         env.customDomain ||
         this.authService.getDefaultAuthDomain(environmentId),
+      activeSSOProviders,
     };
   }
 
@@ -149,12 +150,6 @@ export class EnvironmentDataController {
     @Param('envId') environmentId: string,
     @Param('id') id: string,
   ) {
-    if (id === 'credentials') {
-      throw new exceptionsMapper[StatusCodes.NotFound](
-        ErrorMessages.EnvironmentDataNotFound,
-      );
-    }
-
     const data = await this.environmentDataService.get(environmentId, id);
 
     if (data?.statusCode) {
@@ -245,72 +240,5 @@ export class EnvironmentDataController {
     if (data?.statusCode) {
       throw new exceptionsMapper[data.statusCode](data.error);
     }
-  }
-
-  /**
-   * Get only PUBLIC credentials for SSO providers, like publicKey and redirectURI.
-   * Pay attention on the data returned before commit anything new.
-   * Requires environment id and public key.
-   *
-   * @param environmentId - The ID of the environment
-   * @returns The credentials for the provider
-   */
-  @Get('/credentials/sso/public')
-  @PublicRoute()
-  @NeedsPublicKey()
-  async getCredentialsPublic(@Param('envId') environmentId: string) {
-    const data = await this.environmentDataService.get(
-      environmentId,
-      EnvironmentDataKeys.Credentials,
-    );
-
-    const credentials = data?.data;
-
-    if (!credentials || data?.statusCode) {
-      throw new exceptionsMapper[data.statusCode](data.error);
-    }
-
-    const filteredCredentials = {};
-
-    Object.keys(credentials)
-      .filter((key) =>
-        Object.values(SSOSocialProvider).includes(key as SSOSocialProvider),
-      )
-      .forEach((key) => {
-        const credential = credentials[key] as SSOCreds;
-        filteredCredentials[key] = {
-          clientId: credential.clientId,
-          redirectURI: credential.redirectURI,
-        };
-      });
-
-    return filteredCredentials;
-  }
-
-  /**
-   * Get all credentials for a specific provider.
-   * Requires ThonLabs access and access token.
-   *
-   * @param environmentId - The ID of the environment
-   * @param key - The key of the provider
-   * @returns The credentials for the provider
-   */
-  @Get('/credentials/:key')
-  @ThonLabsOnly()
-  @HasEnvAccess({ param: 'envId' })
-  async getCredentials(
-    @Param('envId') environmentId: string,
-    @Param('key') key: string,
-  ) {
-    const data = await this.environmentDataService.get(
-      environmentId,
-      EnvironmentDataKeys.Credentials,
-    );
-
-    if (!data?.data || data?.statusCode) {
-      throw new exceptionsMapper[data.statusCode](data.error);
-    }
-
-    return data?.data?.[key] || null;
   }
 }
