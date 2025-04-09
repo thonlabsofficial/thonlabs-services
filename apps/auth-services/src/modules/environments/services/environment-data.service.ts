@@ -94,10 +94,10 @@ export class EnvironmentDataService {
 
     const values = {};
 
-    environmentData.forEach(async (data) => {
+    for (const data of environmentData) {
       const parsedValue = await this._parseValue(data.key, data.value);
       values[data.key] = parsedValue;
-    });
+    }
 
     return values;
   }
@@ -121,9 +121,9 @@ export class EnvironmentDataService {
 
     const values = {};
 
-    environmentData.forEach(async (data) => {
+    for (const data of environmentData) {
       values[data.key] = await this._parseValue(data.key, data.value);
-    });
+    }
 
     return values;
   }

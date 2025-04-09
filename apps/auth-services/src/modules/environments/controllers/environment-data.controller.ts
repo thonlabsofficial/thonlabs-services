@@ -62,8 +62,19 @@ export class EnvironmentDataController {
         EnvironmentDataKeys.EnableSignUpB2BOnly,
         EnvironmentDataKeys.SDKIntegrated,
         EnvironmentDataKeys.Styles,
+        EnvironmentDataKeys.Credentials,
       ]),
     ]);
+
+    const credentials = {
+      ...(envData[EnvironmentDataKeys.Credentials] || {}),
+    };
+    const activeSSOProviders = Object.keys(credentials).filter((key) => {
+      const credential = credentials[key];
+      return credential && credential.active;
+    });
+
+    delete envData[EnvironmentDataKeys.Credentials];
 
     return {
       ...envData,
@@ -71,6 +82,7 @@ export class EnvironmentDataController {
       projectId: env.projectId,
       appName: env.project.appName,
       authProvider: env.authProvider,
+      activeSSOProviders,
     };
   }
 
@@ -110,14 +122,6 @@ export class EnvironmentDataController {
       this.environmentService.getPublicKey(environmentId),
     ]);
 
-    const credentials = {
-      ...(envData[EnvironmentDataKeys.Credentials] || {}),
-    };
-    const activeSSOProviders = Object.keys(credentials).filter((key) => {
-      const credential = credentials[key];
-      return credential && credential.active;
-    });
-
     delete envData[EnvironmentDataKeys.Waitlist];
     delete envData[EnvironmentDataKeys.Credentials];
 
@@ -132,7 +136,6 @@ export class EnvironmentDataController {
       authDomain:
         env.customDomain ||
         this.authService.getDefaultAuthDomain(environmentId),
-      activeSSOProviders,
     };
   }
 
