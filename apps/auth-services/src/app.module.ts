@@ -47,7 +47,7 @@ import { TokenStorageService } from './modules/token-storage/services/token-stor
 import { UserController } from './modules/users/controllers/user.controller';
 import { UserService } from './modules/users/services/user.service';
 import { EnvironmentCredentialController } from './modules/environments/controllers/environment-credential.controller';
-
+import { EnvironmentCredentialService } from './modules/environments/services/environment-credential.service';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -121,6 +121,7 @@ import { EnvironmentCredentialController } from './modules/environments/controll
     ProjectService,
     TokenStorageService,
     UserService,
+    EnvironmentCredentialService,
   ],
   controllers: [
     AuthController,

@@ -8,6 +8,7 @@ export enum EnvironmentDataKeys {
   EnableSignUpB2BOnly = 'enableSignUpB2BOnly',
   Styles = 'styles',
   Credentials = 'credentials',
+  ActiveSSOProviders = 'activeSSOProviders',
 }
 
 export interface EnvironmentStyles {

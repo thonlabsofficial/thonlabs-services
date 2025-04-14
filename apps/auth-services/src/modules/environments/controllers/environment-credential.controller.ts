@@ -5,7 +5,6 @@ import {
   Get,
   Logger,
   Param,
-  Patch,
   Post,
 } from '@nestjs/common';
 import {
@@ -30,15 +29,17 @@ import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validat
 import {
   CreateCredentialPayload,
   createCredentialValidator,
-  UpdateCredentialStatusPayload,
-  updateCredentialStatusValidator,
 } from '@/auth/modules/environments/validators/environment-credential.validators';
+import { EnvironmentCredentialService } from '@/auth/modules/environments/services/environment-credential.service';
 
 @Controller('environments/:envId/credentials')
 export class EnvironmentCredentialController {
   private readonly logger = new Logger(EnvironmentCredentialController.name);
 
-  constructor(private environmentDataService: EnvironmentDataService) {}
+  constructor(
+    private environmentDataService: EnvironmentDataService,
+    private environmentCredentialService: EnvironmentCredentialService,
+  ) {}
 
   /**
    * Get only PUBLIC credentials for SSO providers, like publicKey and redirectURI.
@@ -123,77 +124,38 @@ export class EnvironmentCredentialController {
       EnvironmentDataKeys.Credentials,
     );
 
-    if (data?.data && data?.data?.[key]) {
-      throw new exceptionsMapper[StatusCodes.Conflict](
-        ErrorMessages.SSOProviderAlreadyExists,
-      );
-    }
-
     /*
       Keep the existing credentials and add the new one.
     */
-    await this.environmentDataService.upsert(environmentId, {
-      key: EnvironmentDataKeys.Credentials,
-      value: {
-        ...(data?.data || {}),
-        [key]: {
-          clientId: payload.clientId,
-          secretKey: payload.secretKey,
-          redirectURI: payload.redirectURI,
-          active: true,
-        },
-      },
-    });
-
-    this.logger.log(
-      `Created credential ${key} for environment ${environmentId}`,
-    );
-  }
-
-  @Patch('/:key/status')
-  @ThonLabsOnly()
-  @HasEnvAccess({ param: 'envId' })
-  @SchemaValidator(updateCredentialStatusValidator)
-  async updateCredentialStatus(
-    @Param('envId') environmentId: string,
-    @Param('key') key: string,
-    @Body() payload: UpdateCredentialStatusPayload,
-  ) {
-    const data = await this.environmentDataService.get<EnvironmentCredentials>(
-      environmentId,
-      EnvironmentDataKeys.Credentials,
-    );
-
-    if (!data?.data || data?.statusCode) {
-      throw new exceptionsMapper[data.statusCode](data.error);
-    }
-
-    const credential = data?.data?.[key] as SSOCreds;
-
-    if (!credential) {
-      throw new exceptionsMapper[StatusCodes.NotFound](
-        ErrorMessages.SSOProviderNotFound,
-      );
-    }
-
-    await this.environmentDataService.upsert(
-      environmentId,
-      {
+    await Promise.all([
+      this.environmentDataService.upsert(environmentId, {
         key: EnvironmentDataKeys.Credentials,
         value: {
           ...(data?.data || {}),
           [key]: {
-            ...credential,
-            active: payload.active,
+            clientId: payload.clientId,
+            secretKey: payload.secretKey,
+            redirectURI: payload.redirectURI,
+            active: true,
           },
         },
-      },
-      true,
-    );
+      }),
+      this.environmentDataService.upsert(environmentId, {
+        key: EnvironmentDataKeys.ActiveSSOProviders,
+        value: Array.from(new Set([...Object.keys(data?.data || {}), key])),
+      }),
+    ]);
 
     this.logger.log(
-      `Updated credential ${key} status to ${payload.active} for environment ${environmentId}`,
+      `Created credential ${key} for environment ${environmentId}`,
     );
+
+    return {
+      activeSSOProviders:
+        await this.environmentCredentialService.getActiveSSOProviders(
+          data?.data,
+        ),
+    };
   }
 
   @Delete('/:key')
@@ -222,13 +184,26 @@ export class EnvironmentCredentialController {
 
     delete data?.data?.[key];
 
-    await this.environmentDataService.upsert(environmentId, {
-      key: EnvironmentDataKeys.Credentials,
-      value: data?.data,
-    });
+    await Promise.all([
+      this.environmentDataService.upsert(environmentId, {
+        key: EnvironmentDataKeys.Credentials,
+        value: data?.data,
+      }),
+      this.environmentDataService.upsert(environmentId, {
+        key: EnvironmentDataKeys.ActiveSSOProviders,
+        value: Object.keys(data?.data || {}),
+      }),
+    ]);
 
     this.logger.log(
       `Deleted credential ${key} from environment ${environmentId}`,
     );
+
+    return {
+      activeSSOProviders:
+        await this.environmentCredentialService.getActiveSSOProviders(
+          data?.data,
+        ),
+    };
   }
 }

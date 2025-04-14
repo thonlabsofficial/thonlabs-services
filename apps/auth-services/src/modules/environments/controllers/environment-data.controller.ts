@@ -63,16 +63,9 @@ export class EnvironmentDataController {
         EnvironmentDataKeys.SDKIntegrated,
         EnvironmentDataKeys.Styles,
         EnvironmentDataKeys.Credentials,
+        EnvironmentDataKeys.ActiveSSOProviders,
       ]),
     ]);
-
-    const credentials = {
-      ...(envData[EnvironmentDataKeys.Credentials] || {}),
-    };
-    const activeSSOProviders = Object.keys(credentials).filter((key) => {
-      const credential = credentials[key];
-      return credential && credential.active;
-    });
 
     delete envData[EnvironmentDataKeys.Credentials];
 
@@ -82,7 +75,6 @@ export class EnvironmentDataController {
       projectId: env.projectId,
       appName: env.project.appName,
       authProvider: env.authProvider,
-      activeSSOProviders,
     };
   }
 
