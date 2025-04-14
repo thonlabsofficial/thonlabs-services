@@ -113,7 +113,7 @@ export class EnvironmentCredentialController {
   @ThonLabsOnly()
   @HasEnvAccess({ param: 'envId' })
   @SchemaValidator(createCredentialValidator)
-  async createCredential(
+  async upsertCredential(
     @Param('envId') environmentId: string,
     @Param('key') key: string,
     @Body() payload: CreateCredentialPayload,
