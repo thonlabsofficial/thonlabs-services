@@ -31,6 +31,7 @@ import { SchemaValidator } from '../../shared/decorators/schema-validator.decora
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DatabaseService } from '../../shared/database/database.service';
 import { Organization } from '@prisma/client';
+import { SafeParseError } from 'zod';
 
 @Controller('organizations')
 export class OrganizationController {
@@ -89,7 +90,9 @@ export class OrganizationController {
 
     if (!validator.success) {
       throw new exceptionsMapper[StatusCodes.BadRequest](
-        validator.error.errors[0].message,
+        (
+          validator as SafeParseError<{ file: Express.Multer.File }>
+        ).error.issues[0].message,
       );
     }
 
