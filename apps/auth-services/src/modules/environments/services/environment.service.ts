@@ -392,12 +392,16 @@ export class EnvironmentService {
 
     await Promise.all([
       this.environmentDataService.upsert(environment.id, {
-        key: EnvironmentDataKeys.EnableSignUp,
-        value: true,
+        key: EnvironmentDataKeys.Credentials,
+        value: {},
       }),
-      this.environmentDataService.upsert(environment.id, {
-        key: EnvironmentDataKeys.Styles,
-        value: { primaryColor: '#e11d48' },
+      this.updateAuthSettings(environment.id, {
+        ...environment,
+        authProvider: AuthProviders.EmailAndPassword,
+        enableSignUp: true,
+        enableSignUpB2BOnly: false,
+        styles: { primaryColor: '#e11d48' },
+        activeSSOProviders: [],
       }),
       this.emailDomainService.setDomain(
         environment.id,
