@@ -6,7 +6,7 @@ export const joinWaitlistFormSchema = z.object({
   fullName: z.string().min(1, { message: ErrorMessages.RequiredField }),
   email: z.string().email({ message: ErrorMessages.RequiredField }),
   currentProvider: z.nativeEnum(CompetitorsAuthProviders, {
-    message: ErrorMessages.RequiredField,
+    required_error: ErrorMessages.RequiredField,
   }),
 });
 

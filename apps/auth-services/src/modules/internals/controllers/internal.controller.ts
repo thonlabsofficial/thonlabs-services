@@ -59,6 +59,7 @@ export class InternalController {
         enableSignUp: true,
         enableSignUpB2BOnly: false,
         styles: { primaryColor: '#e11d48' },
+        activeSSOProviders: [],
       }),
       await this.environmentService.getPublicKey(environment.id),
     ]);
