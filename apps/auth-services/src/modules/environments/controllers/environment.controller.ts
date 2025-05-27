@@ -6,11 +6,15 @@ import {
   Param,
   Patch,
   Post,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { EnvironmentService } from '../services/environment.service';
 import { StatusCodes, exceptionsMapper } from '@/utils/enums/errors-metadata';
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
+
 import {
   createEnvironmentValidator,
   updateGeneralSettingsValidator,
@@ -20,7 +24,7 @@ import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 
 @Controller('environments')
 export class EnvironmentController {
-  constructor(private environmentService: EnvironmentService) {}
+  constructor(private environmentService: EnvironmentService) { }
 
   @Get('/:id')
   @ThonLabsOnly()
@@ -103,6 +107,20 @@ export class EnvironmentController {
   @SchemaValidator(updateGeneralSettingsValidator)
   async updateGeneralSettings(@Param('id') id: string, @Body() payload) {
     await this.environmentService.updateGeneralSettings(id, payload);
+  }
+
+  // @Patch('/:id/general-settings/logo')
+  // async helloWorld(@Param('id') id: string, @Body() payload) {
+  //   return 'Hello World';
+  // }
+
+  @Patch('/:id/general-settings/logo')
+  @UseInterceptors(FileInterceptor('file')) // VITOR > Extrai a img do FormData
+  async helloWorld(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return `Hello World`;
   }
 
   @Delete('/:id')
