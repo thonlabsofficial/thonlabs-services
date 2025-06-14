@@ -53,12 +53,17 @@ export class InternalController {
 
     const [, , publicKey] = await Promise.all([
       this.userService.setEnvironment(user.id, environment.id),
+      this.environmentDataService.upsert(environment.id, {
+        key: EnvironmentDataKeys.Credentials,
+        value: {},
+      }),
       this.environmentService.updateAuthSettings(environment.id, {
         ...environment,
         authProvider: AuthProviders.EmailAndPassword,
         enableSignUp: true,
         enableSignUpB2BOnly: false,
         styles: { primaryColor: '#e11d48' },
+        activeSSOProviders: [],
       }),
       await this.environmentService.getPublicKey(environment.id),
     ]);

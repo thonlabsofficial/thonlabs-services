@@ -20,6 +20,8 @@ import {
   EnvironmentStyles,
 } from '@/auth/modules/environments/constants/environment-data';
 import { EmailDomainService } from '@/auth/modules/emails/services/email-domain.service';
+import { SSOSocialProvider } from '../../auth/interfaces/sso-creds';
+import { EnvironmentCredentialService } from './environment-credential.service';
 
 @Injectable()
 export class EnvironmentService {
@@ -32,6 +34,7 @@ export class EnvironmentService {
     private emailTemplateService: EmailTemplateService,
     private environmentDataService: EnvironmentDataService,
     private emailDomainService: EmailDomainService,
+    private environmentCredentialService: EnvironmentCredentialService,
   ) {}
 
   async getById(id: string): Promise<DataReturn<Environment>> {
@@ -389,12 +392,16 @@ export class EnvironmentService {
 
     await Promise.all([
       this.environmentDataService.upsert(environment.id, {
-        key: EnvironmentDataKeys.EnableSignUp,
-        value: true,
+        key: EnvironmentDataKeys.Credentials,
+        value: {},
       }),
-      this.environmentDataService.upsert(environment.id, {
-        key: EnvironmentDataKeys.Styles,
-        value: { primaryColor: '#e11d48' },
+      this.updateAuthSettings(environment.id, {
+        ...environment,
+        authProvider: AuthProviders.EmailAndPassword,
+        enableSignUp: true,
+        enableSignUpB2BOnly: false,
+        styles: { primaryColor: '#e11d48' },
+        activeSSOProviders: [],
       }),
       this.emailDomainService.setDomain(
         environment.id,
@@ -483,8 +490,12 @@ export class EnvironmentService {
       enableSignUp: boolean;
       enableSignUpB2BOnly: boolean;
       styles: EnvironmentStyles;
+      activeSSOProviders: SSOSocialProvider[];
     },
   ): Promise<DataReturn> {
+    /*
+      Validates tokens expiration
+    */
     if (ms(payload.tokenExpiration) < 300000) {
       return {
         statusCode: StatusCodes.BadRequest,
@@ -502,6 +513,51 @@ export class EnvironmentService {
       };
     }
 
+    /*
+      Update SSO status
+    */
+    const { data: activeSSOProviders } = await this.environmentDataService.get(
+      environmentId,
+      EnvironmentDataKeys.ActiveSSOProviders,
+    );
+    const currentProviders: Set<SSOSocialProvider> = new Set(
+      activeSSOProviders || [],
+    );
+    const newProviders = new Set(payload.activeSSOProviders);
+
+    const removedProviders = [...currentProviders].filter(
+      (x) => !newProviders.has(x),
+    );
+    const addedProviders = [...newProviders].filter(
+      (x) => !currentProviders.has(x),
+    );
+
+    let removeProvidersPromises;
+    let addProvidersPromises;
+
+    if (removedProviders.length > 0) {
+      removeProvidersPromises = removedProviders.map((provider) =>
+        this.environmentCredentialService.updateCredentialStatus(
+          environmentId,
+          provider,
+          { active: false },
+        ),
+      );
+    }
+
+    if (addedProviders.length > 0) {
+      addProvidersPromises = addedProviders.map((provider) =>
+        this.environmentCredentialService.updateCredentialStatus(
+          environmentId,
+          provider,
+          { active: true },
+        ),
+      );
+    }
+
+    /*
+      Call all services in parallel
+    */
     await Promise.all([
       this.databaseService.environment.update({
         where: {
@@ -513,6 +569,8 @@ export class EnvironmentService {
           refreshTokenExpiration: payload.refreshTokenExpiration,
         },
       }),
+      ...(removeProvidersPromises || []),
+      ...(addProvidersPromises || []),
       this.environmentDataService.upsert(environmentId, {
         key: EnvironmentDataKeys.EnableSignUp,
         value: payload.enableSignUp,
@@ -524,6 +582,10 @@ export class EnvironmentService {
       this.environmentDataService.upsert(environmentId, {
         key: EnvironmentDataKeys.Styles,
         value: payload.styles,
+      }),
+      this.environmentDataService.upsert(environmentId, {
+        key: EnvironmentDataKeys.ActiveSSOProviders,
+        value: payload.activeSSOProviders,
       }),
     ]);
 

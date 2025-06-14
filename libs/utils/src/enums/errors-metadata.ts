@@ -65,6 +65,10 @@ export enum ErrorMessages {
   OrganizationNotFound = 'Organization not found',
   OrganizationInactive = 'Organization is not active',
   InvalidColorFormat = 'Invalid color format',
+  EnvironmentDataNotFound = 'Environment data not found',
+  InvalidURL = 'Invalid URL',
+  SSOProviderAlreadyExists = 'SSO provider already exists',
+  SSOProviderNotFound = 'SSO provider not found',
 }
 
 export const exceptionsMapper = {

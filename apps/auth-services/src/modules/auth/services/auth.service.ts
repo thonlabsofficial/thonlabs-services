@@ -14,6 +14,13 @@ import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import getEnvIdHash from '@/utils/services/get-env-id-hash';
+import { SSOUser } from '../interfaces/sso-user';
+import { HTTPService } from '@/auth/modules/shared/services/http.service';
+import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
+import {
+  EnvironmentDataKeys,
+  EnvironmentCredentials,
+} from '@/auth/modules/environments/constants/environment-data';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -31,6 +38,8 @@ export class AuthService {
     private userService: UserService,
     private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
+    private httpService: HTTPService,
+    private environmentDataService: EnvironmentDataService,
   ) {}
 
   async authenticateFromEmailAndPassword(
@@ -118,7 +127,6 @@ export class AuthService {
       this.logger.error(
         `Login/Pass - Error on creating tokens for user ${user.id}`,
       );
-      console.error(e);
 
       return {
         error: ErrorMessages.InternalError,
@@ -482,5 +490,81 @@ export class AuthService {
   getDefaultAuthDomain(environmentId: string) {
     const appDomain = new URL(process.env.APP_ROOT_URL).hostname;
     return `${getEnvIdHash(environmentId)}.auth.${appDomain}`;
+  }
+
+  async getGoogleUser(
+    token: string,
+    environmentId: string,
+  ): Promise<DataReturn<SSOUser>> {
+    const { data: credentials } =
+      await this.environmentDataService.get<EnvironmentCredentials>(
+        environmentId,
+        EnvironmentDataKeys.Credentials,
+      );
+
+    if (!credentials?.google) {
+      this.logger.error(
+        `Google SSO: invalid credentials found for env ${environmentId}`,
+      );
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.InvalidCredentials,
+      };
+    }
+
+    const { clientId, secretKey, redirectURI } = credentials.google;
+
+    try {
+      const { data: tokens } = await this.httpService.post({
+        url: 'https://oauth2.googleapis.com/token',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        data: new URLSearchParams({
+          code: token,
+          client_id: clientId,
+          client_secret: secretKey,
+          redirect_uri: redirectURI,
+          grant_type: 'authorization_code',
+        }).toString(),
+      });
+
+      if (!tokens?.access_token) {
+        this.logger.error(`getGoogleUser: error fetching tokens`, tokens);
+        return {
+          statusCode: StatusCodes.Unauthorized,
+          error: ErrorMessages.InvalidToken,
+        };
+      }
+
+      const { data: userInfo } = await this.httpService.get({
+        url: 'https://www.googleapis.com/oauth2/v3/userinfo',
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+        },
+      });
+
+      if (!userInfo?.email) {
+        this.logger.error(`getGoogleUser: error fetching user info`, userInfo);
+        return {
+          statusCode: StatusCodes.Unauthorized,
+          error: ErrorMessages.InvalidToken,
+        };
+      }
+
+      return {
+        data: {
+          fullName: userInfo?.name,
+          email: userInfo.email,
+          profilePicture: userInfo?.picture,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`getGoogleUser: error authenticating`, error);
+      return {
+        statusCode: StatusCodes.Internal,
+        error: ErrorMessages.InternalError,
+      };
+    }
   }
 }

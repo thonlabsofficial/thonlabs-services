@@ -24,6 +24,8 @@ import {
 } from '@/utils/enums/errors-metadata';
 import {
   authenticateFromMagicLinkValidator,
+  loginSSOValidator,
+  LoginSSOValidator,
   loginValidator,
   reauthenticateFromRefreshTokenValidator,
 } from '../validators/login-validators';
@@ -35,6 +37,7 @@ import {
   EmailTemplates,
   Environment,
   TokenTypes,
+  User,
 } from '@prisma/client';
 import { NeedsPublicKey } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
 import decodeSession from '@/utils/services/decode-session';
@@ -44,23 +47,22 @@ import {
 } from '../validators/reset-password-validators';
 import { getFirstName } from '@/utils/services/names-helpers';
 import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
-import { add } from 'date-fns';
 import { PublicKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
-import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
-import { OrganizationService } from '../../organizations/services/organization.service';
+import { OrganizationService } from '@/auth/modules/organizations/services/organization.service';
+import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 @Controller('auth')
 export class AuthController {
   private logger = new Logger(AuthController.name);
 
   constructor(
     private userService: UserService,
+    private databaseService: DatabaseService,
     private environmentService: EnvironmentService,
     private environmentDataService: EnvironmentDataService,
     private authService: AuthService,
     private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
-    private emailTemplateService: EmailTemplateService,
     private organizationService: OrganizationService,
   ) {}
 
@@ -110,18 +112,10 @@ export class AuthController {
       throw new exceptionsMapper[tokenError.statusCode](tokenError.error);
     }
 
-    await this.userService.updateLastLogin(user.id, environment.id);
-
     const emailData = {
       token,
       userFirstName: getFirstName(user.fullName),
     };
-
-    const { data: welcomeEmailEnabled } =
-      await this.emailTemplateService.isEnabled(
-        EmailTemplates.Welcome,
-        environment.id,
-      );
 
     if (payload.password) {
       const { data: tokens } = await this.tokenStorageService.createAuthTokens(
@@ -129,43 +123,30 @@ export class AuthController {
         environment as Environment,
       );
 
-      await this.emailService.send({
-        userId: user.id,
-        to: user.email,
-        emailTemplateType: EmailTemplates.ConfirmEmail,
-        environmentId: environment.id,
-        data: emailData,
-      });
-
-      if (welcomeEmailEnabled) {
-        await this.emailService.send({
+      await Promise.all([
+        this.emailService.send({
           userId: user.id,
           to: user.email,
-          emailTemplateType: EmailTemplates.Welcome,
+          emailTemplateType: EmailTemplates.ConfirmEmail,
           environmentId: environment.id,
-          scheduledAt: add(new Date(), { minutes: 5 }),
-        });
-      }
+          data: emailData,
+        }),
+        this.emailService.sendWelcomeEmail(user, environment.id),
+        this.userService.updateLastLogin(user.id, environment.id),
+      ]);
 
       return tokens;
     } else {
-      await this.emailService.send({
-        userId: user.id,
-        to: user.email,
-        emailTemplateType: EmailTemplates.MagicLink,
-        environmentId: environment.id,
-        data: emailData,
-      });
-
-      if (welcomeEmailEnabled) {
-        await this.emailService.send({
+      await Promise.all([
+        this.emailService.send({
           userId: user.id,
           to: user.email,
-          emailTemplateType: EmailTemplates.Welcome,
+          emailTemplateType: EmailTemplates.MagicLink,
           environmentId: environment.id,
-          scheduledAt: add(new Date(), { minutes: 5 }),
-        });
-      }
+          data: emailData,
+        }),
+        this.emailService.sendWelcomeEmail(user, environment.id),
+      ]);
 
       return {
         emailSent: true,
@@ -243,6 +224,99 @@ export class AuthController {
         ErrorMessages.InvalidCredentials,
       );
     }
+  }
+
+  @Post('/login/sso/:provider')
+  @PublicRoute()
+  @HttpCode(StatusCodes.OK)
+  @NeedsPublicKey()
+  @SchemaValidator(loginSSOValidator)
+  async loginSSO(
+    @Param('provider') provider: string,
+    @Body() payload: LoginSSOValidator,
+    @Req() req,
+  ) {
+    const environmentId = req.headers['tl-env-id'];
+    let ssoUser;
+
+    if (provider === 'google') {
+      const { data, ...rest } = await this.authService.getGoogleUser(
+        payload.token,
+        environmentId,
+      );
+
+      if (rest.error) {
+        throw new exceptionsMapper[rest.statusCode](rest.error);
+      }
+
+      ssoUser = data;
+    }
+
+    let user = (await this.userService.getByEmail(
+      ssoUser.email,
+      environmentId,
+    )) as User;
+
+    if (!user) {
+      const { data: newUser, ...userError } = await this.userService.create({
+        ...ssoUser,
+        environmentId,
+      });
+      user = newUser;
+
+      if (userError.error) {
+        throw new exceptionsMapper[userError.statusCode](userError.error);
+      }
+
+      const {
+        data: { token },
+        ...tokenError
+      } = await this.tokenStorageService.create({
+        relationId: user.id,
+        type: TokenTypes.ConfirmEmail,
+        expiresIn: '5h',
+        environmentId,
+      });
+
+      if (tokenError.error) {
+        throw new exceptionsMapper[tokenError.statusCode](tokenError.error);
+      }
+
+      await Promise.all([
+        this.emailService.send({
+          userId: user.id,
+          to: user.email,
+          emailTemplateType: EmailTemplates.ConfirmEmail,
+          environmentId,
+          data: {
+            token,
+            userFirstName: getFirstName(user.fullName),
+          },
+        }),
+        this.emailService.sendWelcomeEmail(user, environmentId),
+      ]);
+    } else {
+      if (!user.profilePicture) {
+        await this.databaseService.user.update({
+          where: { id: user.id },
+          data: {
+            profilePicture: ssoUser.profilePicture,
+          },
+        });
+      }
+    }
+
+    const { data: environment } =
+      await this.environmentService.getById(environmentId);
+    const [{ data: tokens }] = await Promise.all([
+      this.tokenStorageService.createAuthTokens(
+        user,
+        environment as Environment,
+      ),
+      this.userService.updateLastLogin(user.id, environmentId),
+    ]);
+
+    return tokens;
   }
 
   @PublicRoute()
