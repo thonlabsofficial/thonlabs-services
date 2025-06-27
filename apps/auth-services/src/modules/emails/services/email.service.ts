@@ -7,8 +7,9 @@ import { render } from '@react-email/render';
 import { ReactElement } from 'react';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { getFirstName } from '@/utils/services/names-helpers';
-import { EmailDomainService } from './email-domain.service';
 import { add } from 'date-fns';
+import { EmailProvider } from '../interfaces/email-provider';
+import EmailProviderResult from '@/emails/internals/email-domain-result';
 
 export enum EmailInternalFromTypes {
   SUPPORT = 'support',
@@ -67,7 +68,6 @@ export class EmailService {
   constructor(
     private databaseService: DatabaseService,
     private emailTemplatesService: EmailTemplateService,
-    private emailDomainService: EmailDomainService,
   ) {
     this.resend = new Resend(process.env.EMAIL_PROVIDER_API_KEY);
   }
@@ -185,29 +185,22 @@ export class EmailService {
   }
 
   private async getEnvironmentData(environmentId: string) {
-    const [environment, emailDomain] = await Promise.all([
-      this.databaseService.environment.findUnique({
-        where: { id: environmentId },
-        select: {
-          id: true,
-          name: true,
-          appURL: true,
-          project: {
-            select: {
-              id: true,
-              appName: true,
-            },
+    const environment = await this.databaseService.environment.findUnique({
+      where: { id: environmentId },
+      select: {
+        id: true,
+        name: true,
+        appURL: true,
+        project: {
+          select: {
+            id: true,
+            appName: true,
           },
         },
-      }),
-      this.emailDomainService.getDomain(environmentId),
-    ]);
+      },
+    });
 
-    return {
-      ...environment,
-      emailDomain:
-        emailDomain?.data?.domain || new URL(environment.appURL).hostname,
-    };
+    return environment;
   }
 
   private async getUserData(userId: string) {
@@ -243,6 +236,43 @@ export class EmailService {
       emailTemplateType: EmailTemplates.Welcome,
       environmentId,
       scheduledAt: add(new Date(), { minutes: 5 }),
+    });
+  }
+
+  async sendEmailProviderStatusEmail(
+    environmentId: string,
+    emailProvider: EmailProvider,
+  ) {
+    const environment = await this.databaseService.environment.findUnique({
+      where: { id: environmentId },
+      select: {
+        id: true,
+        name: true,
+        appURL: true,
+        projectId: true,
+        project: {
+          include: {
+            userOwner: true,
+          },
+        },
+      },
+    });
+
+    const data = {
+      environment,
+      user: environment.project.userOwner,
+    };
+
+    await this.sendInternal({
+      from: EmailInternalFromTypes.SUPPORT,
+      to: `${data.user.fullName} <${data.user.email}>`,
+      subject: 'Email Domain Verification Result',
+      content: EmailProviderResult({
+        userFirstName: getFirstName(data.user.fullName),
+        emailProvider,
+        tlAppURL: internalEmails[EmailInternalFromTypes.SUPPORT].url,
+        environment: data.environment,
+      }),
     });
   }
 }

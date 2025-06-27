@@ -1,13 +1,17 @@
-export enum EmailDomainStatus {
+export enum EmailProviderType {
+  Resend = 'resend',
+}
+
+export enum EmailProviderStatus {
   Verifying = 'Verifying',
   Verified = 'Verified',
   Failed = 'Failed',
 }
 
-export interface EmailDomain {
+export interface EmailProvider {
   refId: string;
   domain: string;
-  status: EmailDomainStatus;
+  status: EmailProviderStatus;
   records: {
     record: string;
     name: string;

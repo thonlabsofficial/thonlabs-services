@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
 import { EnvironmentDataKeys } from '../constants/environment-data';
 import { EnvironmentCredentials } from '@/auth/modules/environments/constants/environment-data';
-import { SSOCreds, SSOSocialProvider } from '../../auth/interfaces/sso-creds';
 import { ErrorMessages } from '@/utils/enums/errors-metadata';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { StatusCodes } from '@/utils/enums/errors-metadata';
@@ -26,7 +25,7 @@ export class EnvironmentCredentialService {
 
   async updateCredentialStatus(
     environmentId: string,
-    provider: SSOSocialProvider,
+    provider: string,
     { active }: UpdateCredentialStatusPayload,
   ): Promise<DataReturn> {
     const data = await this.environmentDataService.get<EnvironmentCredentials>(
@@ -44,7 +43,7 @@ export class EnvironmentCredentialService {
       };
     }
 
-    const credential = data?.data?.[provider] as SSOCreds;
+    const credential = data?.data?.[provider];
 
     if (!credential) {
       this.logger.warn(
@@ -52,7 +51,7 @@ export class EnvironmentCredentialService {
       );
       return {
         statusCode: StatusCodes.NotFound,
-        error: ErrorMessages.SSOProviderNotFound,
+        error: ErrorMessages.CredentialNotFound,
       };
     }
 
@@ -62,10 +61,7 @@ export class EnvironmentCredentialService {
         key: EnvironmentDataKeys.Credentials,
         value: {
           ...(data?.data || {}),
-          [provider]: {
-            ...credential,
-            active,
-          },
+          [provider]: { ...credential, active },
         },
       },
       true,

@@ -20,10 +20,7 @@ import { AuthService } from './modules/auth/services/auth.service';
 import { AuthController } from './modules/auth/controllers/auth.controller';
 import { DashboardController } from './modules/dashboard/controllers/dashboard.controller';
 import { EmailTemplateController } from './modules/emails/controllers/email-template.controller';
-import { EmailDomainController } from './modules/emails/controllers/email-domain.controller';
 import { AudienceService } from './modules/emails/services/audience.service';
-import { EmailDomainScheduler } from './modules/emails/services/email-domain.scheduler';
-import { EmailDomainService } from './modules/emails/services/email-domain.service';
 import { EmailTemplateService } from './modules/emails/services/email-template.service';
 import { EmailService } from './modules/emails/services/email.service';
 import { EnvironmentDataController } from './modules/environments/controllers/environment-data.controller';
@@ -110,8 +107,6 @@ import { EnvironmentCredentialService } from './modules/environments/services/en
     EmailTemplateService,
     EmailService,
     AudienceService,
-    EmailDomainService,
-    EmailDomainScheduler,
     EnvironmentService,
     EnvironmentDomainService,
     EnvironmentScheduler,
@@ -127,7 +122,6 @@ import { EnvironmentCredentialService } from './modules/environments/services/en
     AuthController,
     DashboardController,
     EmailTemplateController,
-    EmailDomainController,
     EnvironmentController,
     EnvironmentDomainController,
     EnvironmentDataController,
