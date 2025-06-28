@@ -18,6 +18,7 @@ export const createSSOCredentialValidator = z.object({
     .string({ required_error: ErrorMessages.RequiredField })
     .url({ message: ErrorMessages.InvalidURL })
     .max(255, { message: ErrorMessages.MaxLength }),
+  active: z.boolean(),
 });
 
 export type CreateSSOCredentialPayload = z.infer<
@@ -37,6 +38,7 @@ export const createEmailProviderCredentialValidator = z.object({
     .string({ required_error: ErrorMessages.RequiredField })
     .min(1, { message: ErrorMessages.RequiredField })
     .max(255, { message: ErrorMessages.MaxLength }),
+  active: z.boolean(),
 });
 
 export type CreateEmailProviderCredentialPayload = z.infer<

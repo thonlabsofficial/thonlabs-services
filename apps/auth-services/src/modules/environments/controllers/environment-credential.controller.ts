@@ -129,18 +129,15 @@ export class EnvironmentCredentialController {
       key as EmailProviderType,
     );
 
-    let isValidPayload = false;
+    let schemaResult = null;
     if (isSSOProvider) {
-      isValidPayload = createSSOCredentialValidator.safeParse(payload).success;
+      schemaResult = createSSOCredentialValidator.safeParse(payload);
     } else if (isEmailProvider) {
-      isValidPayload =
-        createEmailProviderCredentialValidator.safeParse(payload).success;
+      schemaResult = createEmailProviderCredentialValidator.safeParse(payload);
     }
 
-    if (!isValidPayload) {
-      throw new exceptionsMapper[StatusCodes.BadRequest](
-        ErrorMessages.InvalidProvider,
-      );
+    if (!schemaResult.success) {
+      throw new exceptionsMapper[StatusCodes.BadRequest](schemaResult.error);
     }
 
     const data = await this.environmentDataService.get(
@@ -151,13 +148,17 @@ export class EnvironmentCredentialController {
     /*
       Keep the existing credentials and add the new one.
     */
-    await this.environmentDataService.upsert(environmentId, {
-      key: EnvironmentDataKeys.Credentials,
-      value: {
-        ...(data?.data || {}),
-        [key]: { ...payload, active: true },
+    await this.environmentDataService.upsert(
+      environmentId,
+      {
+        key: EnvironmentDataKeys.Credentials,
+        value: {
+          ...(data?.data || {}),
+          [key]: payload,
+        },
       },
-    });
+      true,
+    );
 
     if (isSSOProvider) {
       await this.environmentDataService.upsert(environmentId, {
