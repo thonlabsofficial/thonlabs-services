@@ -33,8 +33,8 @@ import { EnvironmentCredentialService } from '@/auth/modules/environments/servic
 import {
   ENVIRONMENT_EMAIL_PROVIDER_TYPES,
   ENVIRONMENT_SSO_CREDENTIAL_TYPES,
-} from '@/auth/modules/environments/constants/environment-credential';
-import { EmailProviderType } from '@/auth/modules/emails/interfaces/email-provider';
+} from '@/auth/modules/environments/constants/environment-data';
+import { EmailProviderType } from '@/auth/modules/emails/interfaces/email-template';
 
 @Controller('environments/:envId/credentials')
 export class EnvironmentCredentialController {
@@ -100,18 +100,18 @@ export class EnvironmentCredentialController {
   @HasEnvAccess({ param: 'envId' })
   async getCredential(
     @Param('envId') environmentId: string,
-    @Param('key') key: string,
+    @Param('key') key: keyof EnvironmentCredentials,
   ) {
-    const data = await this.environmentDataService.get(
+    const data = await this.environmentCredentialService.get(
       environmentId,
-      EnvironmentDataKeys.Credentials,
+      key,
     );
 
-    if (!data?.data || data?.statusCode) {
+    if (data?.statusCode) {
       throw new exceptionsMapper[data.statusCode](data.error);
     }
 
-    return data?.data?.[key];
+    return data?.data;
   }
 
   @Post('/:key')
@@ -119,7 +119,7 @@ export class EnvironmentCredentialController {
   @HasEnvAccess({ param: 'envId' })
   async upsertCredential(
     @Param('envId') environmentId: string,
-    @Param('key') key: string,
+    @Param('key') key: keyof EnvironmentCredentials,
     @Body() payload: any,
   ) {
     const isSSOProvider = ENVIRONMENT_SSO_CREDENTIAL_TYPES.includes(

@@ -11,11 +11,11 @@ import { EnvironmentService } from '@/auth/modules/environments/services/environ
 import Crypt from '@/utils/services/crypt';
 import rand from '@/utils/services/rand';
 import prepareString from '@/utils/services/prepare-string';
-import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
 import { OrganizationService } from '@/auth/modules/organizations/services/organization.service';
 import { EnvironmentDataKeys } from '@/auth/modules/environments/constants/environment-data';
+import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
 
 @Injectable()
 export class UserService {
@@ -25,9 +25,9 @@ export class UserService {
     private databaseService: DatabaseService,
     private environmentService: EnvironmentService,
     private tokenStorageService: TokenStorageService,
-    private emailService: EmailService,
     private environmentDataService: EnvironmentDataService,
     private organizationService: OrganizationService,
+    private emailTemplateService: EmailTemplateService,
   ) {}
 
   async getOurByEmail(email: string) {
@@ -623,16 +623,23 @@ export class UserService {
       }),
     ]);
 
-    await this.emailService.send({
-      userId: user.id,
-      to: user.email,
-      emailTemplateType: EmailTemplates.Invite,
-      environmentId,
-      data: {
-        token: tokenData?.token,
-        inviter,
-      },
-    });
+    try {
+      await this.emailTemplateService.send({
+        userId: user.id,
+        to: user.email,
+        emailTemplateType: EmailTemplates.Invite,
+        environmentId,
+        data: {
+          token: tokenData?.token,
+          inviter,
+        },
+      });
+    } catch (e) {
+      return {
+        statusCode: StatusCodes.Internal,
+        error: ErrorMessages.InternalError,
+      };
+    }
 
     return {
       data: {
@@ -691,7 +698,7 @@ export class UserService {
       environmentId,
     });
 
-    await this.emailService.send({
+    await this.emailTemplateService.send({
       userId: user.id,
       to: user.email,
       emailTemplateType: EmailTemplates.ConfirmEmail,

@@ -1,4 +1,15 @@
-import { SSOCreds } from '@/auth/modules/auth/interfaces/sso-creds';
+import {
+  SSOCreds,
+  SSOSocialProvider,
+} from '@/auth/modules/auth/interfaces/sso-creds';
+import {
+  EmailProviderCredential,
+  EmailProviderType,
+} from '@/auth/modules/emails/interfaces/email-template';
+
+export const ENVIRONMENT_SSO_CREDENTIAL_TYPES = [SSOSocialProvider.Google];
+
+export const ENVIRONMENT_EMAIL_PROVIDER_TYPES = [EmailProviderType.Resend];
 
 export enum EnvironmentDataKeys {
   EnableSignUp = 'enableSignUp',
@@ -17,4 +28,5 @@ export interface EnvironmentStyles {
 
 export interface EnvironmentCredentials {
   google: SSOCreds;
+  resend: EmailProviderCredential;
 }

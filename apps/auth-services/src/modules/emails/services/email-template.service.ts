@@ -1,13 +1,23 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
-import { DatabaseService } from '../../shared/database/database.service';
-import { EmailTemplate, EmailTemplates } from '@prisma/client';
+import { unescape } from 'lodash';
+import * as ejs from 'ejs';
+import { add } from 'date-fns';
+import { JsonValue } from '@prisma/client/runtime/library';
+import { EmailTemplate, EmailTemplates, User } from '@prisma/client';
+import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import emailTemplatesMapper from '@/auth/modules/emails/constants/email-templates';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
-import { unescape } from 'lodash';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
-import { JsonValue } from '@prisma/client/runtime/library';
-import * as ejs from 'ejs';
+import { getFirstName } from '@/utils/services/names-helpers';
+import {
+  EmailPayload,
+  EmailProviderCredential,
+  EmailProviderType,
+  SendEmailTemplateParams,
+} from '@/auth/modules/emails/interfaces/email-template';
+import { EnvironmentCredentialService } from '@/auth/modules/environments/services/environment-credential.service';
+import { Resend } from 'resend';
 
 @Injectable()
 export class EmailTemplateService {
@@ -17,6 +27,7 @@ export class EmailTemplateService {
     private databaseService: DatabaseService,
     @Inject(forwardRef(() => EnvironmentService))
     private environmentService: EnvironmentService,
+    private environmentCredentialService: EnvironmentCredentialService,
   ) {}
 
   async getByType(type: EmailTemplates, environmentId: string) {
@@ -287,5 +298,187 @@ export class EmailTemplateService {
     return {
       data: emailTemplate?.enabled,
     };
+  }
+
+  async send({
+    to,
+    environmentId,
+    userId,
+    emailTemplateType,
+    data,
+    scheduledAt,
+  }: SendEmailTemplateParams) {
+    try {
+      const emailTemplate = await this.getByType(
+        emailTemplateType,
+        environmentId,
+      );
+      const activeEmailProvider =
+        await this.environmentCredentialService.getActiveEmailProvider(
+          environmentId,
+        );
+
+      const emailData = data || {};
+
+      if (environmentId) {
+        const environment = await this._getEnvironmentData(environmentId);
+        emailData.environment = {
+          ...environment,
+          emailDomain:
+            activeEmailProvider?.credentials?.domain ||
+            process.env.EMAIL_PROVIDER_DEFAULT_DOMAIN,
+        };
+      }
+
+      if (userId) {
+        const user = await this._getUserData(userId);
+        emailData.user = {
+          ...user,
+          firstName: getFirstName(user.fullName),
+        };
+      }
+
+      let fromName: string;
+      let subject: string;
+      let html: string;
+      let fromEmail: string;
+
+      try {
+        fromName = ejs.render(emailTemplate.fromName, emailData);
+        fromEmail = ejs.render(emailTemplate.fromEmail, emailData);
+        subject = ejs.render(emailTemplate.subject, emailData);
+        html = ejs.render(emailTemplate.content, {
+          ...emailData,
+          preview: ejs.render(emailTemplate.preview, emailData),
+        });
+      } catch (e) {
+        this.logger.error(
+          `Error on rendering email ${emailTemplateType} - Env: ${environmentId}`,
+          e,
+        );
+        throw e;
+      }
+
+      const emailPayload = {
+        environmentId,
+        emailTemplateType,
+        fromName,
+        fromEmail,
+        to,
+        subject,
+        html,
+        replyTo: emailTemplate.replyTo,
+        scheduledAt,
+      } as EmailPayload;
+
+      /*
+        No provider means the customer will use our default domain for testing.
+      */
+      if (
+        !activeEmailProvider ||
+        activeEmailProvider.provider === EmailProviderType.Resend
+      ) {
+        await this._sendWithResend(emailPayload);
+      }
+    } catch (e) {
+      this.logger.error(
+        `Error on sending email ${emailTemplateType} - Env: ${environmentId}`,
+        e,
+      );
+      throw e;
+    }
+  }
+
+  async sendWelcomeEmail(user: User, environmentId: string) {
+    const { data: welcomeEmailEnabled } = await this.isEnabled(
+      EmailTemplates.Welcome,
+      environmentId,
+    );
+
+    if (!welcomeEmailEnabled) {
+      return;
+    }
+
+    await this.send({
+      userId: user.id,
+      to: user.email,
+      emailTemplateType: EmailTemplates.Welcome,
+      environmentId,
+      scheduledAt: add(new Date(), { minutes: 5 }),
+    });
+  }
+
+  private async _getEnvironmentData(environmentId: string) {
+    const environment = await this.databaseService.environment.findUnique({
+      where: { id: environmentId },
+      select: {
+        id: true,
+        name: true,
+        appURL: true,
+        project: {
+          select: {
+            id: true,
+            appName: true,
+          },
+        },
+      },
+    });
+
+    return environment;
+  }
+
+  private async _getUserData(userId: string) {
+    const user = await this.databaseService.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        lastSignIn: true,
+        emailConfirmed: true,
+        profilePicture: true,
+      },
+    });
+
+    return user;
+  }
+
+  private async _sendWithResend({
+    environmentId,
+    emailTemplateType,
+    fromName,
+    fromEmail,
+    to,
+    subject,
+    html,
+    replyTo,
+    scheduledAt,
+  }: EmailPayload) {
+    const { data } =
+      await this.environmentCredentialService.get<EmailProviderCredential>(
+        environmentId,
+        'resend',
+      );
+
+    const resend = new Resend(
+      data?.secretKey || process.env.EMAIL_PROVIDER_API_KEY,
+    );
+
+    const { error } = await resend.emails.send({
+      from: `${fromName} <${fromEmail}>`,
+      to,
+      subject,
+      html,
+      replyTo,
+      scheduledAt: scheduledAt?.toISOString(),
+    });
+
+    if (error) {
+      throw new Error(`Resend error: ${JSON.stringify(error)}`);
+    }
+
+    this.logger.log(
+      `Email ${emailTemplateType} ${scheduledAt ? 'scheduled' : 'sent'}`,
+    );
   }
 }

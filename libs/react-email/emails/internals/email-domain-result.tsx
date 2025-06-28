@@ -5,8 +5,8 @@ import { textVariants } from '@/ui/components/text';
 import { Environment, Project } from '@prisma/client';
 import {
   EmailProvider,
-  EmailProviderStatus,
-} from '@/auth/modules/emails/interfaces/email-provider';
+  EmailProviderDomainStatus,
+} from '@/auth/modules/emails/interfaces/email-template';
 
 interface Props {
   environment?: Partial<Environment>;
@@ -23,7 +23,7 @@ export function EmailProviderResult({
   tlAppURL = '',
 }: Props) {
   const validationSuccess =
-    emailProvider.status === EmailProviderStatus.Verified;
+    emailProvider.status === EmailProviderDomainStatus.Verified;
 
   return (
     <InternalEmailBaseTemplate
