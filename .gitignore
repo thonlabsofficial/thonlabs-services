@@ -37,6 +37,7 @@ testem.log
 .nx
 .env
 .env.*
+.env.local
 !.env.example
 /certs
 fly.toml
