@@ -51,7 +51,7 @@ export class InternalController {
       main: true,
     });
 
-    const [, , publicKey] = await Promise.all([
+    const [, , , publicKey] = await Promise.all([
       this.userService.setEnvironment(user.id, environment.id),
       this.environmentDataService.upsert(environment.id, {
         key: EnvironmentDataKeys.Credentials,
