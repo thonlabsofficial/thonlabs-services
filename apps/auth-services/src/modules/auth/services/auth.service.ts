@@ -4,6 +4,7 @@ import {
   Environment,
   TokenStorage,
   TokenTypes,
+  User,
 } from '@prisma/client';
 import { isBefore } from 'date-fns';
 import * as bcrypt from 'bcrypt';
@@ -64,6 +65,7 @@ export class AuthService {
         environmentId: true,
         active: true,
         password: true,
+        lastSignIn: true,
         environment: {
           select: {
             tokenExpiration: true,
@@ -117,6 +119,13 @@ export class AuthService {
       );
 
       this.logger.log('Created auth tokens');
+
+      if (!user.lastSignIn) {
+        await this.emailTemplateService.sendWelcomeEmail(
+          { id: user.id, email: user.email } as User,
+          user.environmentId,
+        );
+      }
 
       this.userService.updateLastLogin(user.id, user.environmentId);
 
@@ -250,6 +259,7 @@ export class AuthService {
         fullName: true,
         authKey: true,
         environmentId: true,
+        lastSignIn: true,
         environment: {
           select: {
             tokenExpiration: true,
@@ -294,6 +304,13 @@ export class AuthService {
       TokenTypes.MagicLogin,
       data.relationId,
     );
+
+    if (!user.lastSignIn) {
+      await this.emailTemplateService.sendWelcomeEmail(
+        { id: user.id, email: user.email } as User,
+        user.environmentId,
+      );
+    }
 
     await this.userService.updateLastLogin(user.id, user.environmentId);
 

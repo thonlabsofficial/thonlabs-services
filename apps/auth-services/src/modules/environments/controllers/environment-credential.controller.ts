@@ -127,10 +127,21 @@ export class EnvironmentCredentialController {
       throw new exceptionsMapper[data.statusCode](data.error);
     }
 
-    await this.environmentDataService.upsert(environmentId, {
-      key: EnvironmentDataKeys.ActiveSSOProviders,
-      value: Array.from(new Set(Object.keys(data?.data || {}))),
-    });
+    if (ENVIRONMENT_SSO_CREDENTIAL_TYPES.includes(key as SSOSocialProvider)) {
+      await this.environmentDataService.upsert(environmentId, {
+        key: EnvironmentDataKeys.ActiveSSOProviders,
+        value: Array.from(
+          new Set(
+            Object.keys(data?.data || {}).filter(
+              (key) =>
+                ENVIRONMENT_SSO_CREDENTIAL_TYPES.includes(
+                  key as SSOSocialProvider,
+                ) && data?.data[key].active,
+            ),
+          ),
+        ),
+      });
+    }
 
     return {
       activeSSOProviders:
