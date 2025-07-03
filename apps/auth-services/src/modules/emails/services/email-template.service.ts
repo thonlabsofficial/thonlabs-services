@@ -16,8 +16,9 @@ import {
   EmailProviderType,
   SendEmailTemplateParams,
 } from '@/auth/modules/emails/interfaces/email-template';
-import { EnvironmentCredentialService } from '@/auth/modules/environments/services/environment-credential.service';
 import { Resend } from 'resend';
+import { EmailProviderService } from './email-provider.service';
+import { EnvironmentCredentialService } from '../../environments/services/environment-credential.service';
 
 @Injectable()
 export class EmailTemplateService {
@@ -27,6 +28,7 @@ export class EmailTemplateService {
     private databaseService: DatabaseService,
     @Inject(forwardRef(() => EnvironmentService))
     private environmentService: EnvironmentService,
+    private emailProviderService: EmailProviderService,
     private environmentCredentialService: EnvironmentCredentialService,
   ) {}
 
@@ -314,9 +316,7 @@ export class EmailTemplateService {
         environmentId,
       );
       const activeEmailProvider =
-        await this.environmentCredentialService.getActiveEmailProvider(
-          environmentId,
-        );
+        await this.emailProviderService.getActiveEmailProvider(environmentId);
 
       const emailData = data || {};
 
@@ -360,7 +360,6 @@ export class EmailTemplateService {
       }
 
       const emailPayload = {
-        environmentId,
         emailTemplateType,
         fromName,
         fromEmail,
@@ -378,7 +377,10 @@ export class EmailTemplateService {
         !activeEmailProvider ||
         activeEmailProvider.provider === EmailProviderType.Resend
       ) {
-        await this._sendWithResend(emailPayload);
+        await this._sendWithResend(
+          emailPayload,
+          activeEmailProvider?.credentials,
+        );
       }
     } catch (e) {
       this.logger.error(
@@ -443,25 +445,21 @@ export class EmailTemplateService {
     return user;
   }
 
-  private async _sendWithResend({
-    environmentId,
-    emailTemplateType,
-    fromName,
-    fromEmail,
-    to,
-    subject,
-    html,
-    replyTo,
-    scheduledAt,
-  }: EmailPayload) {
-    const { data } =
-      await this.environmentCredentialService.get<EmailProviderCredential>(
-        environmentId,
-        'resend',
-      );
-
+  private async _sendWithResend(
+    {
+      emailTemplateType,
+      fromName,
+      fromEmail,
+      to,
+      subject,
+      html,
+      replyTo,
+      scheduledAt,
+    }: EmailPayload,
+    activeEmailProvider: EmailProviderCredential,
+  ) {
     const resend = new Resend(
-      data?.secretKey || process.env.EMAIL_PROVIDER_API_KEY,
+      activeEmailProvider?.secretKey || process.env.EMAIL_PROVIDER_API_KEY,
     );
 
     const { error } = await resend.emails.send({

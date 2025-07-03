@@ -2,14 +2,9 @@ import {
   SSOCreds,
   SSOSocialProvider,
 } from '@/auth/modules/auth/interfaces/sso-creds';
-import {
-  EmailProviderCredential,
-  EmailProviderType,
-} from '@/auth/modules/emails/interfaces/email-template';
+import { EmailProviderCredential } from '@/auth/modules/emails/interfaces/email-template';
 
 export const ENVIRONMENT_SSO_CREDENTIAL_TYPES = [SSOSocialProvider.Google];
-
-export const ENVIRONMENT_EMAIL_PROVIDER_TYPES = [EmailProviderType.Resend];
 
 export enum EnvironmentDataKeys {
   EnableSignUp = 'enableSignUp',

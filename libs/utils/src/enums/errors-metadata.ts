@@ -69,6 +69,7 @@ export enum ErrorMessages {
   InvalidURL = 'Invalid URL',
   SSOProviderAlreadyExists = 'SSO provider already exists',
   CredentialNotFound = 'Credential not found',
+  CredentialsNotFound = 'Credentials not found',
   InvalidProvider = 'Invalid provider',
 }
 

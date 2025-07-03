@@ -45,6 +45,8 @@ import { UserController } from './modules/users/controllers/user.controller';
 import { UserService } from './modules/users/services/user.service';
 import { EnvironmentCredentialController } from './modules/environments/controllers/environment-credential.controller';
 import { EnvironmentCredentialService } from './modules/environments/services/environment-credential.service';
+import { EmailProviderController } from './modules/emails/controllers/email-provider.controller';
+import { EmailProviderService } from './modules/emails/services/email-provider.service';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -117,11 +119,13 @@ import { EnvironmentCredentialService } from './modules/environments/services/en
     TokenStorageService,
     UserService,
     EnvironmentCredentialService,
+    EmailProviderService,
   ],
   controllers: [
     AuthController,
     DashboardController,
     EmailTemplateController,
+    EmailProviderController,
     EnvironmentController,
     EnvironmentDomainController,
     EnvironmentDataController,

@@ -25,16 +25,10 @@ import {
   SSOCreds,
   SSOSocialProvider,
 } from '@/auth/modules/auth/interfaces/sso-creds';
-import {
-  createEmailProviderCredentialValidator,
-  createSSOCredentialValidator,
-} from '@/auth/modules/environments/validators/environment-credential.validators';
+import { createSSOCredentialValidator } from '@/auth/modules/environments/validators/environment-credential.validators';
 import { EnvironmentCredentialService } from '@/auth/modules/environments/services/environment-credential.service';
-import {
-  ENVIRONMENT_EMAIL_PROVIDER_TYPES,
-  ENVIRONMENT_SSO_CREDENTIAL_TYPES,
-} from '@/auth/modules/environments/constants/environment-data';
-import { EmailProviderType } from '@/auth/modules/emails/interfaces/email-template';
+import { ENVIRONMENT_SSO_CREDENTIAL_TYPES } from '@/auth/modules/environments/constants/environment-data';
+import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
 
 @Controller('environments/:envId/credentials')
 export class EnvironmentCredentialController {
@@ -117,70 +111,33 @@ export class EnvironmentCredentialController {
   @Post('/:key')
   @ThonLabsOnly()
   @HasEnvAccess({ param: 'envId' })
+  @SchemaValidator(createSSOCredentialValidator)
   async upsertCredential(
     @Param('envId') environmentId: string,
     @Param('key') key: keyof EnvironmentCredentials,
     @Body() payload: any,
   ) {
-    const isSSOProvider = ENVIRONMENT_SSO_CREDENTIAL_TYPES.includes(
-      key as SSOSocialProvider,
-    );
-    const isEmailProvider = ENVIRONMENT_EMAIL_PROVIDER_TYPES.includes(
-      key as EmailProviderType,
-    );
-
-    let schemaResult = null;
-    if (isSSOProvider) {
-      schemaResult = createSSOCredentialValidator.safeParse(payload);
-    } else if (isEmailProvider) {
-      schemaResult = createEmailProviderCredentialValidator.safeParse(payload);
-    }
-
-    if (!schemaResult.success) {
-      throw new exceptionsMapper[StatusCodes.BadRequest](schemaResult.error);
-    }
-
-    const data = await this.environmentDataService.get(
+    const data = await this.environmentCredentialService.update(
       environmentId,
-      EnvironmentDataKeys.Credentials,
+      key,
+      payload,
     );
 
-    /*
-      Keep the existing credentials and add the new one.
-    */
-    await this.environmentDataService.upsert(
-      environmentId,
-      {
-        key: EnvironmentDataKeys.Credentials,
-        value: {
-          ...(data?.data || {}),
-          [key]: payload,
-        },
-      },
-      true,
-    );
-
-    if (isSSOProvider) {
-      await this.environmentDataService.upsert(environmentId, {
-        key: EnvironmentDataKeys.ActiveSSOProviders,
-        value: Array.from(new Set([...Object.keys(data?.data || {}), key])),
-      });
+    if (data?.statusCode) {
+      throw new exceptionsMapper[data.statusCode](data.error);
     }
 
-    this.logger.log(
-      `Created credential ${key} for environment ${environmentId}`,
-    );
+    await this.environmentDataService.upsert(environmentId, {
+      key: EnvironmentDataKeys.ActiveSSOProviders,
+      value: Array.from(new Set(Object.keys(data?.data || {}))),
+    });
 
-    if (isSSOProvider) {
-      return {
-        activeSSOProviders:
-          await this.environmentCredentialService.getActiveSSOProviders(
-            data?.data,
-          ),
-      };
-    }
-
-    return {};
+    return {
+      activeSSOProviders:
+        await this.environmentCredentialService.getActiveSSOProviders(
+          data?.data,
+        ),
+    };
   }
 
   @Delete('/:key')

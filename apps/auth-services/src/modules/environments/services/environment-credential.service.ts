@@ -6,7 +6,6 @@ import { ErrorMessages } from '@/utils/enums/errors-metadata';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { StatusCodes } from '@/utils/enums/errors-metadata';
 import { UpdateCredentialStatusPayload } from '../validators/environment-credential.validators';
-import { ENVIRONMENT_EMAIL_PROVIDER_TYPES } from '../constants/environment-data';
 
 @Injectable()
 export class EnvironmentCredentialService {
@@ -43,7 +42,16 @@ export class EnvironmentCredentialService {
       };
     }
 
-    return { data: data?.data?.[key] };
+    const credential = data?.data?.[key];
+
+    if (!credential) {
+      return {
+        statusCode: StatusCodes.NotFound,
+        error: ErrorMessages.CredentialNotFound,
+      };
+    }
+
+    return { data: credential };
   }
 
   async getActiveSSOProviders(credentials: EnvironmentCredentials) {
@@ -54,27 +62,6 @@ export class EnvironmentCredentialService {
     return Object.keys(credentials || {}).filter(
       (key) => credentials?.[key]?.active,
     );
-  }
-
-  async getActiveEmailProvider(environmentId: string) {
-    const credentials = await this.getAll(environmentId);
-
-    if (!credentials) {
-      return null;
-    }
-
-    const emailProviderKey = ENVIRONMENT_EMAIL_PROVIDER_TYPES.find(
-      (key) => credentials?.[key]?.active,
-    );
-
-    if (!emailProviderKey) {
-      return null;
-    }
-
-    return {
-      provider: emailProviderKey,
-      credentials: credentials?.[emailProviderKey],
-    };
   }
 
   async updateCredentialStatus(
@@ -124,5 +111,41 @@ export class EnvironmentCredentialService {
     this.logger.log(
       `Updated credential ${provider} status to ${active} for environment ${environmentId}`,
     );
+  }
+
+  async update(
+    environmentId: string,
+    provider: string,
+    payload: any,
+  ): Promise<DataReturn<EnvironmentCredentials>> {
+    const data = await this.environmentDataService.get(
+      environmentId,
+      EnvironmentDataKeys.Credentials,
+    );
+
+    /*
+      Keep the existing credentials and add the new one.
+    */
+    const value = {
+      ...(data?.data || {}),
+      [provider]: payload,
+    } as EnvironmentCredentials;
+
+    await this.environmentDataService.upsert(
+      environmentId,
+      {
+        key: EnvironmentDataKeys.Credentials,
+        value,
+      },
+      true,
+    );
+
+    this.logger.log(
+      `Created credential ${provider} for environment ${environmentId}`,
+    );
+
+    return {
+      data: value,
+    };
   }
 }
