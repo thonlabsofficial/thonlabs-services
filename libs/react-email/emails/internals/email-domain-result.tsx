@@ -4,30 +4,31 @@ import InternalEmailBaseTemplate from './internal-email-base-template';
 import { textVariants } from '@/ui/components/text';
 import { Environment, Project } from '@prisma/client';
 import {
-  EmailDomain,
-  EmailDomainStatus,
-} from '@/auth/modules/emails/interfaces/email-domain';
+  EmailProvider,
+  EmailProviderDomainStatus,
+} from '@/auth/modules/emails/interfaces/email-template';
 
 interface Props {
   environment?: Partial<Environment>;
   project?: Partial<Project>;
-  emailDomain?: EmailDomain;
+  emailProvider?: EmailProvider;
   userFirstName: string;
   tlAppURL?: string;
 }
 
-export function EmailDomainResult({
+export function EmailProviderResult({
   environment = {} as Environment,
-  emailDomain = {} as EmailDomain,
+  emailProvider = {} as EmailProvider,
   userFirstName = '',
   tlAppURL = '',
 }: Props) {
-  const validationSuccess = emailDomain.status === EmailDomainStatus.Verified;
+  const validationSuccess =
+    emailProvider.status === EmailProviderDomainStatus.Verified;
 
   return (
     <InternalEmailBaseTemplate
       title={`${validationSuccess ? 'Email Domain Successfully Verified' : 'Email Domain Verification Failed'}`}
-      preview={`We have an update about your email domain "${emailDomain.domain}".`}
+      preview={`We have an update about your email domain "${emailProvider.domain}".`}
       farewell="Best regards,"
       signature="ThonLabs Support Team"
     >
@@ -49,7 +50,7 @@ export function EmailDomainResult({
             })}
           >
             We are happy to inform you that your email domain{' '}
-            <strong>"{emailDomain.domain}"</strong> has been successfully
+            <strong>"{emailProvider.domain}"</strong> has been successfully
             verified. Your environment is able to send emails through this
             domain.
           </Text>
@@ -75,9 +76,9 @@ export function EmailDomainResult({
             })}
           >
             We were unable to verify your email domain{' '}
-            <strong>"{emailDomain.domain}"</strong>. This is often caused by an
-            issue with your DNS configuration. Please check the list of records
-            described in ThonLabs{' '}
+            <strong>"{emailProvider.domain}"</strong>. This is often caused by
+            an issue with your DNS configuration. Please check the list of
+            records described in ThonLabs{' '}
             <Link
               className={textVariants({
                 variant: 'link',
@@ -169,4 +170,4 @@ export function EmailDomainResult({
   );
 }
 
-export default EmailDomainResult;
+export default EmailProviderResult;

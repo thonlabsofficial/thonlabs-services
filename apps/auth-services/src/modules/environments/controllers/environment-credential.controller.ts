@@ -25,12 +25,10 @@ import {
   SSOCreds,
   SSOSocialProvider,
 } from '@/auth/modules/auth/interfaces/sso-creds';
-import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
-import {
-  CreateCredentialPayload,
-  createCredentialValidator,
-} from '@/auth/modules/environments/validators/environment-credential.validators';
+import { createSSOCredentialValidator } from '@/auth/modules/environments/validators/environment-credential.validators';
 import { EnvironmentCredentialService } from '@/auth/modules/environments/services/environment-credential.service';
+import { ENVIRONMENT_SSO_CREDENTIAL_TYPES } from '@/auth/modules/environments/constants/environment-data';
+import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
 
 @Controller('environments/:envId/credentials')
 export class EnvironmentCredentialController {
@@ -96,59 +94,54 @@ export class EnvironmentCredentialController {
   @HasEnvAccess({ param: 'envId' })
   async getCredential(
     @Param('envId') environmentId: string,
-    @Param('key') key: string,
+    @Param('key') key: keyof EnvironmentCredentials,
   ) {
-    const data = await this.environmentDataService.get(
+    const data = await this.environmentCredentialService.get(
       environmentId,
-      EnvironmentDataKeys.Credentials,
+      key,
     );
 
-    if (!data?.data || data?.statusCode) {
+    if (data?.statusCode) {
       throw new exceptionsMapper[data.statusCode](data.error);
     }
 
-    return data?.data?.[key] as SSOCreds;
+    return data?.data;
   }
 
   @Post('/:key')
   @ThonLabsOnly()
   @HasEnvAccess({ param: 'envId' })
-  @SchemaValidator(createCredentialValidator)
+  @SchemaValidator(createSSOCredentialValidator)
   async upsertCredential(
     @Param('envId') environmentId: string,
-    @Param('key') key: string,
-    @Body() payload: CreateCredentialPayload,
+    @Param('key') key: keyof EnvironmentCredentials,
+    @Body() payload: any,
   ) {
-    const data = await this.environmentDataService.get(
+    const data = await this.environmentCredentialService.update(
       environmentId,
-      EnvironmentDataKeys.Credentials,
+      key,
+      payload,
     );
 
-    /*
-      Keep the existing credentials and add the new one.
-    */
-    await Promise.all([
-      this.environmentDataService.upsert(environmentId, {
-        key: EnvironmentDataKeys.Credentials,
-        value: {
-          ...(data?.data || {}),
-          [key]: {
-            clientId: payload.clientId,
-            secretKey: payload.secretKey,
-            redirectURI: payload.redirectURI,
-            active: true,
-          },
-        },
-      }),
-      this.environmentDataService.upsert(environmentId, {
+    if (data?.statusCode) {
+      throw new exceptionsMapper[data.statusCode](data.error);
+    }
+
+    if (ENVIRONMENT_SSO_CREDENTIAL_TYPES.includes(key as SSOSocialProvider)) {
+      await this.environmentDataService.upsert(environmentId, {
         key: EnvironmentDataKeys.ActiveSSOProviders,
-        value: Array.from(new Set([...Object.keys(data?.data || {}), key])),
-      }),
-    ]);
-
-    this.logger.log(
-      `Created credential ${key} for environment ${environmentId}`,
-    );
+        value: Array.from(
+          new Set(
+            Object.keys(data?.data || {}).filter(
+              (key) =>
+                ENVIRONMENT_SSO_CREDENTIAL_TYPES.includes(
+                  key as SSOSocialProvider,
+                ) && data?.data[key].active,
+            ),
+          ),
+        ),
+      });
+    }
 
     return {
       activeSSOProviders:
@@ -174,36 +167,45 @@ export class EnvironmentCredentialController {
       throw new exceptionsMapper[data.statusCode](data.error);
     }
 
-    const credential = data?.data?.[key] as SSOCreds;
+    const credential = data?.data?.[key];
 
     if (!credential) {
       throw new exceptionsMapper[StatusCodes.NotFound](
-        ErrorMessages.SSOProviderNotFound,
+        ErrorMessages.CredentialNotFound,
       );
     }
 
     delete data?.data?.[key];
 
-    await Promise.all([
-      this.environmentDataService.upsert(environmentId, {
-        key: EnvironmentDataKeys.Credentials,
-        value: data?.data,
-      }),
-      this.environmentDataService.upsert(environmentId, {
+    await this.environmentDataService.upsert(environmentId, {
+      key: EnvironmentDataKeys.Credentials,
+      value: data?.data,
+    });
+
+    const isSSOProvider = ENVIRONMENT_SSO_CREDENTIAL_TYPES.includes(
+      key as SSOSocialProvider,
+    );
+
+    if (isSSOProvider) {
+      await this.environmentDataService.upsert(environmentId, {
         key: EnvironmentDataKeys.ActiveSSOProviders,
         value: Object.keys(data?.data || {}),
-      }),
-    ]);
+      });
+    }
 
     this.logger.log(
       `Deleted credential ${key} from environment ${environmentId}`,
     );
 
-    return {
-      activeSSOProviders:
-        await this.environmentCredentialService.getActiveSSOProviders(
-          data?.data,
-        ),
-    };
+    if (isSSOProvider) {
+      return {
+        activeSSOProviders:
+          await this.environmentCredentialService.getActiveSSOProviders(
+            data?.data,
+          ),
+      };
+    }
+
+    return {};
   }
 }
