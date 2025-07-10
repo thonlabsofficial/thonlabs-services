@@ -651,7 +651,7 @@ export class EnvironmentService {
   async updateGeneralSettingsLogo(
     environmentId: string,
     file: Express.Multer.File
-  ): Promise<DataReturn> {
+  ): Promise<DataReturn<{ fileId: string, fileName: string }>> {
     const { data, statusCode, error } = await this.cdnService.uploadFile(
       `organizations/${environmentId}/images`,
       file,
@@ -663,7 +663,7 @@ export class EnvironmentService {
         error,
       };
     }
-
+    return { data }
   }
 
 }

@@ -19,10 +19,10 @@ import {
   createEnvironmentValidator,
   updateGeneralSettingsValidator,
   updateAuthSettingsValidator,
-  updateGeneralSettingsLogoValidator,
 } from '../validators/environment-validators';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 import { SafeParseError } from 'zod';
+import { logoValidator } from '../../shared/validators/custom-validators';
 
 @Controller('environments')
 export class EnvironmentController {
@@ -119,19 +119,24 @@ export class EnvironmentController {
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    const validatorLogo = updateGeneralSettingsLogoValidator.safeParse({ file });
+    const validatorLogo = logoValidator.safeParse({ file });
 
     if (!validatorLogo.success) {
-      if (!validatorLogo.success) {
-        throw new exceptionsMapper[StatusCodes.BadRequest](
-          (
-            validatorLogo as SafeParseError<{ file: Express.Multer.File }>
-          ).error.issues[0].message,
-        );
-      }
+      throw new exceptionsMapper[StatusCodes.BadRequest](
+        (
+          validatorLogo as SafeParseError<{ file: Express.Multer.File }>
+        ).error.issues[0].message,
+      );
     }
 
-    return this.environmentService.updateGeneralSettingsLogo(id, file)
+    const newLogo = await this.environmentService.updateGeneralSettingsLogo(id, file)
+
+    if (newLogo.error) {
+      throw new exceptionsMapper[newLogo.statusCode](newLogo.error);
+
+    }
+
+    return newLogo.data
 
   }
 
