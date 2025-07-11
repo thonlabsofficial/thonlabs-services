@@ -15,7 +15,6 @@ import {
   NewOrganizationFormData,
   newOrganizationSchema,
   UpdateOrganizationFormData,
-  updateOrganizationLogoSchema,
   updateOrganizationSchema,
   UpdateOrganizationStatusData,
   updateOrganizationStatusValidator,
@@ -32,13 +31,14 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { DatabaseService } from '../../shared/database/database.service';
 import { Organization } from '@prisma/client';
 import { SafeParseError } from 'zod';
+import { logoValidator } from '../../shared/validators/custom-validators';
 
 @Controller('organizations')
 export class OrganizationController {
   constructor(
     private organizationService: OrganizationService,
     private databaseService: DatabaseService,
-  ) {}
+  ) { }
 
   @Post('')
   @ThonLabsOnly()
@@ -86,7 +86,7 @@ export class OrganizationController {
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    const validator = updateOrganizationLogoSchema.safeParse({ file });
+    const validator = logoValidator.safeParse({ file });
 
     if (!validator.success) {
       throw new exceptionsMapper[StatusCodes.BadRequest](

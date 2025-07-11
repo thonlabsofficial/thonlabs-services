@@ -6,21 +6,27 @@ import {
   Param,
   Patch,
   Post,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { EnvironmentService } from '../services/environment.service';
 import { StatusCodes, exceptionsMapper } from '@/utils/enums/errors-metadata';
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
+
 import {
   createEnvironmentValidator,
   updateGeneralSettingsValidator,
   updateAuthSettingsValidator,
 } from '../validators/environment-validators';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
+import { SafeParseError } from 'zod';
+import { logoValidator } from '../../shared/validators/custom-validators';
 
 @Controller('environments')
 export class EnvironmentController {
-  constructor(private environmentService: EnvironmentService) {}
+  constructor(private environmentService: EnvironmentService) { }
 
   @Get('/:id')
   @ThonLabsOnly()
@@ -103,6 +109,35 @@ export class EnvironmentController {
   @SchemaValidator(updateGeneralSettingsValidator)
   async updateGeneralSettings(@Param('id') id: string, @Body() payload) {
     await this.environmentService.updateGeneralSettings(id, payload);
+  }
+
+  @Patch('/:id/general-settings/logo')
+  @ThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadGeneralSettingsLogo(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const validatorLogo = logoValidator.safeParse({ file });
+
+    if (!validatorLogo.success) {
+      throw new exceptionsMapper[StatusCodes.BadRequest](
+        (
+          validatorLogo as SafeParseError<{ file: Express.Multer.File }>
+        ).error.issues[0].message,
+      );
+    }
+
+    const newLogo = await this.environmentService.updateGeneralSettingsLogo(id, file)
+
+    if (newLogo.error) {
+      throw new exceptionsMapper[newLogo.statusCode](newLogo.error);
+
+    }
+
+    return newLogo.data
+
   }
 
   @Delete('/:id')

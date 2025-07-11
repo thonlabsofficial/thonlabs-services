@@ -21,6 +21,7 @@ import {
 } from '@/auth/modules/environments/constants/environment-data';
 import { SSOSocialProvider } from '../../auth/interfaces/sso-creds';
 import { EnvironmentCredentialService } from './environment-credential.service';
+import { CDNService } from '../../shared/services/cdn.service';
 
 @Injectable()
 export class EnvironmentService {
@@ -33,7 +34,8 @@ export class EnvironmentService {
     private emailTemplateService: EmailTemplateService,
     private environmentDataService: EnvironmentDataService,
     private environmentCredentialService: EnvironmentCredentialService,
-  ) {}
+    private cdnService: CDNService,
+  ) { }
 
   async getById(id: string): Promise<DataReturn<Environment>> {
     const environment = await this.databaseService.environment.findUnique({
@@ -152,12 +154,12 @@ export class EnvironmentService {
         // If exists user id, then validates also by it
         ...(userId
           ? {
-              users: {
-                some: {
-                  id: userId,
-                },
+            users: {
+              some: {
+                id: userId,
               },
-            }
+            },
+          }
           : {}),
       },
       select: {
@@ -638,4 +640,23 @@ export class EnvironmentService {
       };
     }
   }
+
+  async updateGeneralSettingsLogo(
+    environmentId: string,
+    file: Express.Multer.File
+  ): Promise<DataReturn<{ fileId: string, fileName: string }>> {
+    const { data, statusCode, error } = await this.cdnService.uploadFile(
+      `organizations/${environmentId}/images`,
+      file,
+    );
+
+    if (error) {
+      return {
+        statusCode,
+        error,
+      };
+    }
+    return { data }
+  }
+
 }
