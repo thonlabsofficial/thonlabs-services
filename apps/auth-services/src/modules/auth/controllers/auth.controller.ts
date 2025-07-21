@@ -30,7 +30,6 @@ import {
   reauthenticateFromRefreshTokenValidator,
 } from '../validators/login-validators';
 import { AuthService } from '@/auth/modules/auth/services/auth.service';
-import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
 import {
   AuthProviders,
@@ -51,6 +50,7 @@ import { PublicKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/public
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
 import { OrganizationService } from '@/auth/modules/organizations/services/organization.service';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
+import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
 @Controller('auth')
 export class AuthController {
   private logger = new Logger(AuthController.name);
@@ -61,9 +61,9 @@ export class AuthController {
     private environmentService: EnvironmentService,
     private environmentDataService: EnvironmentDataService,
     private authService: AuthService,
-    private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
     private organizationService: OrganizationService,
+    private emailTemplateService: EmailTemplateService,
   ) {}
 
   @PublicRoute()
@@ -124,28 +124,28 @@ export class AuthController {
       );
 
       await Promise.all([
-        this.emailService.send({
+        this.emailTemplateService.send({
           userId: user.id,
           to: user.email,
           emailTemplateType: EmailTemplates.ConfirmEmail,
           environmentId: environment.id,
           data: emailData,
         }),
-        this.emailService.sendWelcomeEmail(user, environment.id),
+        this.emailTemplateService.sendWelcomeEmail(user, environment.id),
         this.userService.updateLastLogin(user.id, environment.id),
       ]);
 
       return tokens;
     } else {
       await Promise.all([
-        this.emailService.send({
+        this.emailTemplateService.send({
           userId: user.id,
           to: user.email,
           emailTemplateType: EmailTemplates.MagicLink,
           environmentId: environment.id,
           data: emailData,
         }),
-        this.emailService.sendWelcomeEmail(user, environment.id),
+        this.emailTemplateService.sendWelcomeEmail(user, environment.id),
       ]);
 
       return {
@@ -283,7 +283,7 @@ export class AuthController {
       }
 
       await Promise.all([
-        this.emailService.send({
+        this.emailTemplateService.send({
           userId: user.id,
           to: user.email,
           emailTemplateType: EmailTemplates.ConfirmEmail,
@@ -293,7 +293,7 @@ export class AuthController {
             userFirstName: getFirstName(user.fullName),
           },
         }),
-        this.emailService.sendWelcomeEmail(user, environmentId),
+        this.emailTemplateService.sendWelcomeEmail(user, environmentId),
       ]);
     } else {
       if (!user.profilePicture) {
@@ -432,7 +432,7 @@ export class AuthController {
         throw new exceptionsMapper[token.statusCode](token.error);
       }
 
-      await this.emailService.send({
+      await this.emailTemplateService.send({
         emailTemplateType: EmailTemplates.ForgotPassword,
         environmentId: environment.id,
         userId: user.id,

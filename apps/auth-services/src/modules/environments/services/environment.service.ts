@@ -19,7 +19,6 @@ import {
   EnvironmentDataKeys,
   EnvironmentStyles,
 } from '@/auth/modules/environments/constants/environment-data';
-import { EmailDomainService } from '@/auth/modules/emails/services/email-domain.service';
 import { SSOSocialProvider } from '../../auth/interfaces/sso-creds';
 import { EnvironmentCredentialService } from './environment-credential.service';
 import { CDNService } from '../../shared/services/cdn.service';
@@ -34,7 +33,6 @@ export class EnvironmentService {
     private projectService: ProjectService,
     private emailTemplateService: EmailTemplateService,
     private environmentDataService: EnvironmentDataService,
-    private emailDomainService: EmailDomainService,
     private environmentCredentialService: EnvironmentCredentialService,
     private cdnService: CDNService,
   ) { }
@@ -405,10 +403,6 @@ export class EnvironmentService {
         styles: { primaryColor: '#e11d48' },
         activeSSOProviders: [],
       }),
-      this.emailDomainService.setDomain(
-        environment.id,
-        new URL(environment.appURL).hostname,
-      ),
     ]);
 
     this.logger.warn(
@@ -613,7 +607,6 @@ export class EnvironmentService {
 
   async delete(environmentId: string) {
     await Promise.all([
-      this.emailDomainService.deleteDomain(environmentId),
       this.databaseService.environment.delete({
         where: {
           id: environmentId,

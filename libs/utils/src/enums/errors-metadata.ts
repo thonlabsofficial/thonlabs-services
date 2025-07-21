@@ -68,7 +68,9 @@ export enum ErrorMessages {
   EnvironmentDataNotFound = 'Environment data not found',
   InvalidURL = 'Invalid URL',
   SSOProviderAlreadyExists = 'SSO provider already exists',
-  SSOProviderNotFound = 'SSO provider not found',
+  CredentialNotFound = 'Credential not found',
+  CredentialsNotFound = 'Credentials not found',
+  InvalidProvider = 'Invalid provider',
 }
 
 export const exceptionsMapper = {

@@ -1,5 +1,5 @@
 export enum SSOSocialProvider {
-  GOOGLE = 'google',
+  Google = 'google',
 }
 
 export interface SSOCreds {

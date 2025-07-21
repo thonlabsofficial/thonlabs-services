@@ -95,9 +95,8 @@ export class TokenStorageService {
         where: { token },
       });
       foundTokenToUse = tokenCount === 0;
+      this.logger.log(`Found a token for ${type} token`);
     }
-
-    this.logger.log(`Found a token for ${type}`);
 
     const tokenData = await this.databaseService.tokenStorage.create({
       data: {
@@ -106,7 +105,7 @@ export class TokenStorageService {
         type,
         token,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        expires: new Date(new Date().getTime() + ms(expiresIn as any)),
+        expires: new Date(Date.now() + ms(expiresIn as any)),
       },
     });
 

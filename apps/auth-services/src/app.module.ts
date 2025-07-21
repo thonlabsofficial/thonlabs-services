@@ -20,10 +20,7 @@ import { AuthService } from './modules/auth/services/auth.service';
 import { AuthController } from './modules/auth/controllers/auth.controller';
 import { DashboardController } from './modules/dashboard/controllers/dashboard.controller';
 import { EmailTemplateController } from './modules/emails/controllers/email-template.controller';
-import { EmailDomainController } from './modules/emails/controllers/email-domain.controller';
 import { AudienceService } from './modules/emails/services/audience.service';
-import { EmailDomainScheduler } from './modules/emails/services/email-domain.scheduler';
-import { EmailDomainService } from './modules/emails/services/email-domain.service';
 import { EmailTemplateService } from './modules/emails/services/email-template.service';
 import { EmailService } from './modules/emails/services/email.service';
 import { EnvironmentDataController } from './modules/environments/controllers/environment-data.controller';
@@ -48,6 +45,8 @@ import { UserController } from './modules/users/controllers/user.controller';
 import { UserService } from './modules/users/services/user.service';
 import { EnvironmentCredentialController } from './modules/environments/controllers/environment-credential.controller';
 import { EnvironmentCredentialService } from './modules/environments/services/environment-credential.service';
+import { EmailProviderController } from './modules/emails/controllers/email-provider.controller';
+import { EmailProviderService } from './modules/emails/services/email-provider.service';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -110,8 +109,6 @@ import { EnvironmentCredentialService } from './modules/environments/services/en
     EmailTemplateService,
     EmailService,
     AudienceService,
-    EmailDomainService,
-    EmailDomainScheduler,
     EnvironmentService,
     EnvironmentDomainService,
     EnvironmentScheduler,
@@ -122,12 +119,13 @@ import { EnvironmentCredentialService } from './modules/environments/services/en
     TokenStorageService,
     UserService,
     EnvironmentCredentialService,
+    EmailProviderService,
   ],
   controllers: [
     AuthController,
     DashboardController,
     EmailTemplateController,
-    EmailDomainController,
+    EmailProviderController,
     EnvironmentController,
     EnvironmentDomainController,
     EnvironmentDataController,

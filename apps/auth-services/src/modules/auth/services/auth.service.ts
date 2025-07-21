@@ -4,13 +4,13 @@ import {
   Environment,
   TokenStorage,
   TokenTypes,
+  User,
 } from '@prisma/client';
 import { isBefore } from 'date-fns';
 import * as bcrypt from 'bcrypt';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { UserService } from '@/auth/modules/users/services/user.service';
-import { EmailService } from '@/auth/modules/emails/services/email.service';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import getEnvIdHash from '@/utils/services/get-env-id-hash';
@@ -21,6 +21,7 @@ import {
   EnvironmentDataKeys,
   EnvironmentCredentials,
 } from '@/auth/modules/environments/constants/environment-data';
+import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -36,10 +37,10 @@ export class AuthService {
   constructor(
     private databaseService: DatabaseService,
     private userService: UserService,
-    private emailService: EmailService,
     private tokenStorageService: TokenStorageService,
     private httpService: HTTPService,
     private environmentDataService: EnvironmentDataService,
+    private emailTemplateService: EmailTemplateService,
   ) {}
 
   async authenticateFromEmailAndPassword(
@@ -64,6 +65,7 @@ export class AuthService {
         environmentId: true,
         active: true,
         password: true,
+        lastSignIn: true,
         environment: {
           select: {
             tokenExpiration: true,
@@ -117,6 +119,13 @@ export class AuthService {
       );
 
       this.logger.log('Created auth tokens');
+
+      if (!user.lastSignIn) {
+        await this.emailTemplateService.sendWelcomeEmail(
+          { id: user.id, email: user.email } as User,
+          user.environmentId,
+        );
+      }
 
       this.userService.updateLastLogin(user.id, user.environmentId);
 
@@ -199,7 +208,7 @@ export class AuthService {
       };
     }
 
-    await this.emailService.send({
+    await this.emailTemplateService.send({
       to: email,
       userId: user.id,
       emailTemplateType: EmailTemplates.MagicLink,
@@ -250,6 +259,7 @@ export class AuthService {
         fullName: true,
         authKey: true,
         environmentId: true,
+        lastSignIn: true,
         environment: {
           select: {
             tokenExpiration: true,
@@ -294,6 +304,13 @@ export class AuthService {
       TokenTypes.MagicLogin,
       data.relationId,
     );
+
+    if (!user.lastSignIn) {
+      await this.emailTemplateService.sendWelcomeEmail(
+        { id: user.id, email: user.email } as User,
+        user.environmentId,
+      );
+    }
 
     await this.userService.updateLastLogin(user.id, user.environmentId);
 
