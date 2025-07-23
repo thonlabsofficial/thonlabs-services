@@ -645,6 +645,17 @@ export class EnvironmentService {
     environmentId: string,
     file: Express.Multer.File
   ): Promise<DataReturn<{ fileId: string, fileName: string }>> {
+
+
+    const isLogo = await this.environmentDataService.get(environmentId, EnvironmentDataKeys.EnvironmentLogo)
+
+    if (isLogo.data) {
+      await this.cdnService.deleteFile(
+        `organizations/${environmentId}/images/${isLogo.data}`
+      )
+    }
+
+
     const { data, statusCode, error } = await this.cdnService.uploadFile(
       `organizations/${environmentId}/images`,
       file,
@@ -656,6 +667,12 @@ export class EnvironmentService {
         error,
       };
     }
+
+    await this.environmentDataService.upsert(environmentId, {
+      key: EnvironmentDataKeys.EnvironmentLogo,
+      value: data?.fileName,
+    })
+
     return { data }
   }
 
