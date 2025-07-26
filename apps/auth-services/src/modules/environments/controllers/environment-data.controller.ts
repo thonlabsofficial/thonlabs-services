@@ -29,7 +29,7 @@ export class EnvironmentDataController {
     private environmentDataService: EnvironmentDataService,
     private environmentService: EnvironmentService,
     private authService: AuthService,
-  ) {}
+  ) { }
 
   /**
    * Get all environment data for a specific environment.
@@ -64,6 +64,7 @@ export class EnvironmentDataController {
         EnvironmentDataKeys.Styles,
         EnvironmentDataKeys.Credentials,
         EnvironmentDataKeys.ActiveSSOProviders,
+        EnvironmentDataKeys.EnvironmentLogo,
       ]),
     ]);
 

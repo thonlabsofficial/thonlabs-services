@@ -647,17 +647,17 @@ export class EnvironmentService {
   ): Promise<DataReturn<{ fileId: string, fileName: string }>> {
 
 
-    const isLogo = await this.environmentDataService.get(environmentId, EnvironmentDataKeys.EnvironmentLogo)
+    const { data: logo } = await this.environmentDataService.get(environmentId, EnvironmentDataKeys.EnvironmentLogo)
 
-    if (isLogo.data) {
+    if (logo) {
       await this.cdnService.deleteFile(
-        `organizations/${environmentId}/images/${isLogo.data}`
+        `environments/${environmentId}/images/${logo}`
       )
     }
 
 
     const { data, statusCode, error } = await this.cdnService.uploadFile(
-      `organizations/${environmentId}/images`,
+      `environments/${environmentId}/images`,
       file,
     );
 
