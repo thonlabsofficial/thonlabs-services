@@ -15,6 +15,7 @@ export enum EnvironmentDataKeys {
   Styles = 'styles',
   Credentials = 'credentials',
   ActiveSSOProviders = 'activeSSOProviders',
+  EnvironmentLogo = 'environmentLogo'
 }
 
 export interface EnvironmentStyles {
