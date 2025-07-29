@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "engines": {
-    "node": "20.x"
+    "node": "22.x"
   },
   "scripts": {
     "start:auth": "nx run auth-services:start",
@@ -35,6 +35,7 @@
     "@react-email/components": "^0.0.14",
     "@react-email/render": "^0.0.12",
     "@react-email/tailwind": "^0.0.14",
+    "@trigger.dev/sdk": "4.0.0-v4-beta.25",
     "axios": "^1.6.5",
     "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.0",
@@ -78,6 +79,7 @@
     "@swc/helpers": "~0.5.2",
     "@testing-library/react": "14.1.2",
     "@testing-library/react-hooks": "^8.0.1",
+    "@trigger.dev/build": "4.0.0-v4-beta.25",
     "@types/bcrypt": "^5.0.2",
     "@types/ejs": "^3.1.5",
     "@types/jest": "^29.5.11",
@@ -118,5 +120,6 @@
     "onlyBuiltDependencies": [
       "bcrypt"
     ]
-  }
+  },
+  "packageManager": "pnpm@10.13.1+sha512.37ebf1a5c7a30d5fabe0c5df44ee8da4c965ca0c5af3dbab28c3a1681b70a256218d05c81c9c0dcf767ef6b8551eb5b960042b9ed4300c59242336377e01cfad"
 }

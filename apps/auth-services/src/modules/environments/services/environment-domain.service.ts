@@ -4,7 +4,6 @@ import { CustomDomainStatus } from '@prisma/client';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { differenceInHours } from 'date-fns/differenceInHours';
-import { CronJobs, CronService } from '@/auth/modules/shared/cron.service';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import prepareString from '@/utils/services/prepare-string';
 import dns from 'dns/promises';
@@ -28,7 +27,6 @@ export class EnvironmentDomainService {
 
   constructor(
     private databaseService: DatabaseService,
-    private cronService: CronService,
     private environmentService: EnvironmentService,
     private emailService: EmailService,
   ) {}
@@ -170,7 +168,7 @@ export class EnvironmentDomainService {
     await this.validateCustomDomains([
       { id: environmentId, customDomain, customDomainTXT },
     ]);
-    this.cronService.startJob(CronJobs.VerifyNewCustomDomains);
+    // Start job to verify custom domains
 
     const data = await this.getCustomDomain(environmentId);
     return { data };
@@ -232,7 +230,7 @@ export class EnvironmentDomainService {
         customDomainTXT,
       },
     ]);
-    this.cronService.startJob(CronJobs.VerifyNewCustomDomains);
+    // Start job to verify custom domains
 
     const data = await this.getCustomDomain(environmentId);
     return { data };
