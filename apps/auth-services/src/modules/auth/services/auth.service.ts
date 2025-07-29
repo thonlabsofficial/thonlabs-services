@@ -577,11 +577,32 @@ export class AuthService {
         },
       };
     } catch (error) {
-      this.logger.error(`getGoogleUser: error authenticating`, error);
+      if (error.response) {
+        this.logger.error(`getGoogleUser: Google OAuth error`, {
+          status: error.response.status,
+          data: error.response.data,
+        });
+      }
+      this.logger.error(`getGoogleUser: error authenticating - ${error}`);
       return {
         statusCode: StatusCodes.Internal,
         error: ErrorMessages.InternalError,
       };
     }
+  }
+
+  async isAnySignUpMethodEnabled(
+    environmentId: string,
+  ): Promise<DataReturn<boolean>> {
+    const [{ data: enableSignUp }, { data: enableSignUpB2BOnly }] =
+      await Promise.all([
+        this.environmentDataService.get(environmentId, 'enableSignUp'),
+        this.environmentDataService.get(environmentId, 'enableSignUpB2BOnly'),
+      ]);
+
+    /* 
+      If sign up is enabled for B2B only the "user.create" method will validate the domain
+    */
+    return { data: enableSignUpB2BOnly || enableSignUp };
   }
 }

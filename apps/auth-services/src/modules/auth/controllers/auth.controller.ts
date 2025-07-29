@@ -258,6 +258,15 @@ export class AuthController {
     )) as User;
 
     if (!user) {
+      const { data: isAnySignUpMethodEnabled } =
+        await this.authService.isAnySignUpMethodEnabled(environmentId);
+
+      if (!isAnySignUpMethodEnabled) {
+        throw new exceptionsMapper[StatusCodes.Forbidden](
+          ErrorMessages.Forbidden,
+        );
+      }
+
       const { data: newUser, ...userError } = await this.userService.create({
         ...ssoUser,
         environmentId,

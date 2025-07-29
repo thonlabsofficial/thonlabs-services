@@ -22,18 +22,14 @@ export class HTTPService {
   }
 
   private async request(options: AxiosRequestConfig): Promise<AxiosResponse> {
-    const payload = this.sanitize(options.data);
-
     this.logger.log(
-      `Req ${options.method} ${options.url} ${JSON.stringify(payload)}`,
+      `Req ${options.method} ${options.url} ${JSON.stringify(this.sanitize(options.data))}`,
     );
 
     const response = await this.http.request(options);
 
-    const responseData = this.sanitize(response.data);
-
     this.logger.log(
-      `Res ${options.method} ${options.url} ${JSON.stringify(responseData)}`,
+      `Res ${options.method} ${options.url} ${JSON.stringify(this.sanitize(response.data))}`,
     );
 
     return response;
