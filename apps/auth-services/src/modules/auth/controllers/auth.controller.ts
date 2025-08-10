@@ -51,6 +51,8 @@ import { EnvironmentDataService } from '@/auth/modules/environments/services/env
 import { OrganizationService } from '@/auth/modules/organizations/services/organization.service';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
+import { NeedsSecretKey } from '../../shared/decorators/needs-secret-key.decorator';
+
 @Controller('auth')
 export class AuthController {
   private logger = new Logger(AuthController.name);
@@ -651,5 +653,11 @@ export class AuthController {
     }
 
     return res.status(StatusCodes.OK).json({});
+  }
+
+  @NeedsSecretKey()
+  @Get('/session')
+  public async getSession(@Req() req) {
+    return req.session;
   }
 }

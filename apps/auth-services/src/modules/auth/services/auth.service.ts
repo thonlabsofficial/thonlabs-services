@@ -22,6 +22,10 @@ import {
   EnvironmentCredentials,
 } from '@/auth/modules/environments/constants/environment-data';
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
+import { SessionData } from '@/utils/interfaces/session-data';
+import { decode as jwtDecode } from 'jsonwebtoken';
+import Crypt from '@/utils/services/crypt';
+import { JwtService } from '@nestjs/jwt';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -41,6 +45,7 @@ export class AuthService {
     private httpService: HTTPService,
     private environmentDataService: EnvironmentDataService,
     private emailTemplateService: EmailTemplateService,
+    private jwtService: JwtService,
   ) {}
 
   async authenticateFromEmailAndPassword(
@@ -604,5 +609,67 @@ export class AuthService {
       If sign up is enabled for B2B only the "user.create" method will validate the domain
     */
     return { data: enableSignUpB2BOnly || enableSignUp };
+  }
+
+  async getUserBySessionToken(
+    token: string,
+  ): Promise<DataReturn<Partial<User>>> {
+    if (!token) {
+      this.logger.error(`Token not found`);
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.Unauthorized,
+      };
+    }
+
+    const session = jwtDecode(token) as SessionData;
+
+    if (!session.sub) {
+      this.logger.error(`Sub not found`);
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.Unauthorized,
+      };
+    }
+
+    // TODO: @gus -> collect this data from redis in the future
+    const user = await this.userService.getById(session.sub);
+
+    if (!user) {
+      this.logger.error(`user not found`);
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.Unauthorized,
+      };
+    }
+
+    if (!user.active) {
+      this.logger.error(`User ${user.id} is not active`);
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.Unauthorized,
+      };
+    }
+
+    const authKey = await Crypt.decrypt(
+      user.authKey,
+      Crypt.generateIV(user.id),
+      process.env.ENCODE_AUTH_KEYS_SECRET,
+    );
+
+    await this.jwtService.verifyAsync(token, {
+      secret: `${authKey}${process.env.AUTHENTICATION_SECRET}`,
+    });
+
+    return {
+      data: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        profilePicture: user.profilePicture,
+        active: user.active,
+        lastSignIn: user.lastSignIn,
+      },
+    };
   }
 }

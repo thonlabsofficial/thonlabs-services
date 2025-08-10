@@ -47,6 +47,7 @@ import { EnvironmentCredentialController } from './modules/environments/controll
 import { EnvironmentCredentialService } from './modules/environments/services/environment-credential.service';
 import { EmailProviderController } from './modules/emails/controllers/email-provider.controller';
 import { EmailProviderService } from './modules/emails/services/email-provider.service';
+import { NeedsSecretKeyGuard } from './modules/shared/decorators/needs-secret-key.decorator';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -87,6 +88,10 @@ import { EmailProviderService } from './modules/emails/services/email-provider.s
     {
       provide: APP_GUARD,
       useClass: NeedsPublicKeyGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: NeedsSecretKeyGuard,
     },
     { provide: APP_GUARD, useClass: ThonLabsOnlyGuard },
     { provide: APP_GUARD, useClass: HasEnvAccessGuard },
