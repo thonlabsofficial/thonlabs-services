@@ -47,6 +47,12 @@ import { EnvironmentCredentialController } from './modules/environments/controll
 import { EnvironmentCredentialService } from './modules/environments/services/environment-credential.service';
 import { EmailProviderController } from './modules/emails/controllers/email-provider.controller';
 import { EmailProviderService } from './modules/emails/services/email-provider.service';
+import { UserDataController } from './modules/users/controllers/user-data.controller';
+import { UserDataService } from './modules/users/services/user-data.service';
+import { UserSubscriptionController } from './modules/users/controllers/user-subscription.controller';
+import { AppDataController } from './modules/app/controllers/app-data.controller';
+import { AppDataService } from './modules/app/services/app-data.service';
+
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -120,6 +126,8 @@ import { EmailProviderService } from './modules/emails/services/email-provider.s
     UserService,
     EnvironmentCredentialService,
     EmailProviderService,
+    UserDataService,
+    AppDataService,
   ],
   controllers: [
     AuthController,
@@ -134,6 +142,9 @@ import { EmailProviderService } from './modules/emails/services/email-provider.s
     OrganizationController,
     ProjectController,
     UserController,
+    UserDataController,
+    UserSubscriptionController,
+    AppDataController,
   ],
 })
 export class AppModule {}

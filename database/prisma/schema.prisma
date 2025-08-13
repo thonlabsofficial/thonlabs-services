@@ -58,6 +58,16 @@ enum SubscriptionStatus {
   Cancelled
 }
 
+model AppData {
+  id        Int      @id @default(autoincrement())
+  key       String
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("app_data")
+}
+
 model User {
   id             String    @id @default(uuid())
   fullName       String?
