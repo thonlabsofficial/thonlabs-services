@@ -53,12 +53,6 @@ enum CustomDomainStatus {
   Failed
 }
 
-enum SubscriptionType {
-  Basic
-  Pro
-  ProLifetime
-}
-
 enum SubscriptionStatus {
   Active
   Cancelled
@@ -80,12 +74,12 @@ model User {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  environment       Environment?       @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  environmentId     String?
-  role              Role?              @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  roleId            String?
-  projects          Project[]
-  userSubscriptions UserSubscription[]
+  environment   Environment? @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  environmentId String?
+  role          Role?        @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  roleId        String?
+  projects      Project[]
+  userData      UserData[]
 
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
@@ -93,17 +87,17 @@ model User {
   @@map("users")
 }
 
-model UserSubscription {
-  id        String             @id @default(uuid())
-  type      SubscriptionType   @default(Basic)
-  status    SubscriptionStatus @default(Active)
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
-  refId     String?
-  user      User?              @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId    String?
+model UserData {
+  id        Int      @id @default(autoincrement())
+  key       String
+  value     Json
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@map("users_subscriptions")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("users_data")
 }
 
 model Project {
