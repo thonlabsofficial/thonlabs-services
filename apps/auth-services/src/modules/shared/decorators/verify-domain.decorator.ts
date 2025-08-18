@@ -23,6 +23,7 @@ export class VerifyDomainGuard implements CanActivate {
     '/auth/logout',
     '/auth/reset-password',
     '/auth/confirm-email',
+    '/auth/session',
     '/environments',
   ];
 

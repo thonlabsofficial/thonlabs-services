@@ -1,8 +1,4 @@
-import {
-  ErrorCodes,
-  ErrorMessages,
-  StatusCodes,
-} from '@/utils/enums/errors-metadata';
+import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import {
   CanActivate,
   ExecutionContext,
@@ -101,7 +97,7 @@ export class PublicKeyOrThonLabsOnlyGuard implements CanActivate {
       }
 
       this.logger.error(
-        `No session, environment id or secret was found on request`,
+        `No session, environment id or public key was found on request`,
       );
 
       res.status(StatusCodes.Unauthorized).json({

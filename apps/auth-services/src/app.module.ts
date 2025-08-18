@@ -53,6 +53,7 @@ import { UserSubscriptionController } from './modules/users/controllers/user-sub
 import { AppDataController } from './modules/app/controllers/app-data.controller';
 import { AppDataService } from './modules/app/services/app-data.service';
 import { UserSubscriptionService } from './modules/users/services/user-subscription.service';
+import { NeedsSecretKeyGuard } from './modules/shared/decorators/needs-secret-key.decorator';
 
 @Module({
   imports: [
@@ -94,6 +95,10 @@ import { UserSubscriptionService } from './modules/users/services/user-subscript
     {
       provide: APP_GUARD,
       useClass: NeedsPublicKeyGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: NeedsSecretKeyGuard,
     },
     { provide: APP_GUARD, useClass: ThonLabsOnlyGuard },
     { provide: APP_GUARD, useClass: HasEnvAccessGuard },
