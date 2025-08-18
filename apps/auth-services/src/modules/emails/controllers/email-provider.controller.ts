@@ -7,7 +7,7 @@ import {
   StatusCodes,
 } from '@/utils/enums/errors-metadata';
 import { EmailProviderType } from '@/auth/modules/emails/interfaces/email-template';
-import { ENVIRONMENT_EMAIL_PROVIDER_TYPES } from '../constants/email-providers';
+import { ENVIRONMENT_EMAIL_PROVIDER_TYPES } from '../constants/email';
 
 @Controller('email-providers')
 export class EmailProviderController {

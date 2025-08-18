@@ -3,7 +3,8 @@ import { Resend } from 'resend';
 import { maskData, MaskDataTypes } from '@/utils/services/mask-data';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { StatusCodes } from '@/utils/enums/errors-metadata';
-import { EmailInternalFromTypes, EmailService } from './email.service';
+import { EmailService } from './email.service';
+import { InternalEmailFrom } from '@/auth/modules/emails/constants/email';
 import { getFirstName } from '@/utils/services/names-helpers';
 import { JoinWaitlistDone } from '@/emails/internals/join-waitlist-done';
 
@@ -38,7 +39,7 @@ export class AudienceService {
 
       if (data?.id) {
         await this.emailService.sendInternal({
-          from: EmailInternalFromTypes.FOUNDER,
+          from: InternalEmailFrom.Founder,
           to: `${fullName} <${email}>`,
           subject: 'You joined ThonLabs waitlist',
           content: JoinWaitlistDone({

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EnvironmentCredentialService } from '../../environments/services/environment-credential.service';
-import { ENVIRONMENT_EMAIL_PROVIDER_TYPES } from '../constants/email-providers';
+import { ENVIRONMENT_EMAIL_PROVIDER_TYPES } from '../constants/email';
 
 @Injectable()
 export class EmailProviderService {

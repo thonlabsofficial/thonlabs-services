@@ -95,7 +95,7 @@ export class EnvironmentDataService {
     const values = {};
 
     for (const data of environmentData) {
-      const parsedValue = await this._parseValue(data.key, data.value);
+      const parsedValue = await Crypt.parseEncryptedValue(data.key, data.value);
       values[data.key] = parsedValue;
     }
 
@@ -122,7 +122,7 @@ export class EnvironmentDataService {
     const values = {};
 
     for (const data of environmentData) {
-      values[data.key] = await this._parseValue(data.key, data.value);
+      values[data.key] = await Crypt.parseEncryptedValue(data.key, data.value);
     }
 
     return values;
@@ -157,7 +157,9 @@ export class EnvironmentDataService {
       };
     }
 
-    return { data: (await this._parseValue(key, environmentData?.value)) as T };
+    return {
+      data: (await Crypt.parseEncryptedValue(key, environmentData?.value)) as T,
+    };
   }
 
   /**
@@ -186,26 +188,5 @@ export class EnvironmentDataService {
     await this.databaseService.environmentData.delete({
       where: { id: environmentData.id, environmentId },
     });
-  }
-
-  /**
-   * Decrypts a value if it is encrypted.
-   *
-   * @param {string} key - The key of the data.
-   * @param {any} value - The value of the data.
-   * @returns {any} - The decrypted value or the original value if not encrypted.
-   */
-  private async _parseValue(key: string, value: any) {
-    if (typeof value === 'string' && value.startsWith('ev:')) {
-      const decryptedValue = await Crypt.decrypt(
-        value.replace('ev:', ''),
-        Crypt.generateIV(key),
-        process.env.ENCODE_SECRET,
-      );
-
-      return JSON.parse(decryptedValue);
-    }
-
-    return value;
   }
 }

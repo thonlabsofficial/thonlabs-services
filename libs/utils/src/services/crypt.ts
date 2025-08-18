@@ -36,11 +36,33 @@ async function hash(textToHash: string, rounds = 10) {
   return await bcrypt.hash(textToHash, rounds);
 }
 
+/**
+ * Decrypts a data value in the database if it is encrypted.
+ *
+ * @param {string} key - The key of the data.
+ * @param {any} value - The value of the data.
+ * @returns {any} - The decrypted value or the original value if not encrypted.
+ */
+async function parseEncryptedValue(key: string, value: any) {
+  if (typeof value === 'string' && value.startsWith('ev:')) {
+    const decryptedValue = await decrypt(
+      value.replace('ev:', ''),
+      generateIV(key),
+      process.env.ENCODE_SECRET,
+    );
+
+    return JSON.parse(decryptedValue);
+  }
+
+  return value;
+}
+
 const Crypt = {
   encrypt,
   decrypt,
   generateIV,
   hash,
+  parseEncryptedValue,
 };
 
 export default Crypt;
