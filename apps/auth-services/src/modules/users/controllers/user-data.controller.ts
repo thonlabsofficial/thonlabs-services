@@ -23,7 +23,7 @@ export class UserDataController {
   @Get('/')
   async fetch(
     @Param('userId') userId: string,
-    @Query() query: { keys: string[] },
+    @Query() query: { keys: UserDataKeys[] },
   ) {
     const defaultKeys = [UserDataKeys.SubscriptionType];
 
@@ -34,11 +34,14 @@ export class UserDataController {
    * Get a specific user data by id.
    *
    * @param userId - The ID of the user
-   * @param id - The id of the data
+   * @param key - The key of the data
    */
-  @Get('/:id')
-  async getById(@Param('userId') userId: string, @Param('id') id: string) {
-    const data = await this.userDataService.get(userId, id);
+  @Get('/:key')
+  async getById(
+    @Param('userId') userId: string,
+    @Param('key') key: UserDataKeys,
+  ) {
+    const data = await this.userDataService.get(userId, key);
 
     if (data?.statusCode) {
       throw new exceptionsMapper[data.statusCode](data.error);

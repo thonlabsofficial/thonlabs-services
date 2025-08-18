@@ -11,7 +11,8 @@
       "extends": ["plugin:@nx/typescript"],
       "rules": {
         "no-console": "warn",
-        "@typescript-eslint/no-explicit-any": "off"
+        "@typescript-eslint/no-explicit-any": "off",
+        "no-case-declarations": "off"
       }
     },
     {

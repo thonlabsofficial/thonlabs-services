@@ -52,6 +52,7 @@ import { UserDataService } from './modules/users/services/user-data.service';
 import { UserSubscriptionController } from './modules/users/controllers/user-subscription.controller';
 import { AppDataController } from './modules/app/controllers/app-data.controller';
 import { AppDataService } from './modules/app/services/app-data.service';
+import { UserSubscriptionService } from './modules/users/services/user-subscription.service';
 
 @Module({
   imports: [
@@ -128,6 +129,7 @@ import { AppDataService } from './modules/app/services/app-data.service';
     EmailProviderService,
     UserDataService,
     AppDataService,
+    UserSubscriptionService,
   ],
   controllers: [
     AuthController,

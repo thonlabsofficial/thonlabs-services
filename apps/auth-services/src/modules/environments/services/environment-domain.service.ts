@@ -9,11 +9,11 @@ import { EnvironmentService } from '@/auth/modules/environments/services/environ
 import prepareString from '@/utils/services/prepare-string';
 import dns from 'dns/promises';
 import getEnvIdHash from '@/utils/services/get-env-id-hash';
+import { EmailService } from '@/auth/modules/emails/services/email.service';
 import {
-  EmailInternalFromTypes,
-  EmailService,
-  internalEmails,
-} from '@/auth/modules/emails/services/email.service';
+  INTERNAL_EMAILS,
+  InternalEmailFrom,
+} from '@/auth/modules/emails/constants/email';
 import { CustomDomainResult } from '@/emails/internals/custom-domain-result';
 import { CustomDomainRemoved } from '@/emails/internals/custom-domain-removed';
 import { getFirstName } from '@/utils/services/names-helpers';
@@ -298,7 +298,7 @@ export class EnvironmentDomainService {
         },
       });
       this.emailService.sendInternal({
-        from: EmailInternalFromTypes.SUPPORT,
+        from: InternalEmailFrom.Support,
         to: `${environment.project.userOwner.fullName} <${environment.project.userOwner.email}>`,
         subject: 'Custom Domain Removed',
         content: CustomDomainRemoved({
@@ -306,7 +306,7 @@ export class EnvironmentDomainService {
           project: environment.project,
           removedAt,
           userFirstName: getFirstName(environment.project.userOwner.fullName),
-          tlAppURL: internalEmails[EmailInternalFromTypes.SUPPORT].url,
+          tlAppURL: INTERNAL_EMAILS[InternalEmailFrom.Support].url,
         }),
       });
     }
@@ -514,7 +514,7 @@ export class EnvironmentDomainService {
         });
 
         this.emailService.sendInternal({
-          from: EmailInternalFromTypes.SUPPORT,
+          from: InternalEmailFrom.Support,
           to: `${environment.project.userOwner.fullName} <${environment.project.userOwner.email}>`,
           subject: 'Custom Domain Successfully Verified',
           content: CustomDomainResult({
@@ -589,7 +589,7 @@ export class EnvironmentDomainService {
           );
 
           this.emailService.sendInternal({
-            from: EmailInternalFromTypes.SUPPORT,
+            from: InternalEmailFrom.Support,
             to: `${environment.project.userOwner.fullName} <${environment.project.userOwner.email}>`,
             subject: 'Custom Domain Verification Failed',
             content: CustomDomainResult({
@@ -601,7 +601,7 @@ export class EnvironmentDomainService {
               userFirstName: getFirstName(
                 environment.project.userOwner.fullName,
               ),
-              tlAppURL: internalEmails[EmailInternalFromTypes.SUPPORT].url,
+              tlAppURL: INTERNAL_EMAILS[InternalEmailFrom.Support].url,
             }),
           });
 

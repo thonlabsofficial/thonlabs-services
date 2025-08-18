@@ -5,6 +5,7 @@ import { UserData } from '@prisma/client';
 import { StatusCodes } from '@/utils/enums/errors-metadata';
 import prepareString from '@/utils/services/prepare-string';
 import Crypt from '@/utils/services/crypt';
+import { UserDataKeys } from '@/auth/modules/users/constants/user-data';
 
 @Injectable()
 export class UserDataService {
@@ -17,53 +18,61 @@ export class UserDataService {
    *
    * @param {string} userId - The ID of the user.
    * @param {Object} payload - The payload containing the data to upsert.
-   * @param {string} payload.id - The ID of the data.
+   * @param {string} payload.key - The key of the data.
    * @param {any} payload.value - The value of the data.
    * @returns {Promise<DataReturn<UserData>>} - The upserted user data.
    */
   async upsert(
     userId: string,
-    payload: { key: string; value: any },
+    payload: { key: UserDataKeys; value: any },
     encrypt = false,
   ): Promise<DataReturn<UserData>> {
-    const key = prepareString(payload.key);
-    const currentRegister = await this.databaseService.userData.findFirst({
-      where: { key, userId },
-    });
+    try {
+      const key = prepareString(payload.key);
+      const currentRegister = await this.databaseService.userData.findFirst({
+        where: { key, userId },
+      });
 
-    let value = payload.value;
+      let value = payload.value;
 
-    if (encrypt) {
-      const encryptedValue = await Crypt.encrypt(
-        JSON.stringify(payload.value),
-        Crypt.generateIV(key),
-        process.env.ENCODE_SECRET,
-      );
+      if (encrypt) {
+        const encryptedValue = await Crypt.encrypt(
+          JSON.stringify(payload.value),
+          Crypt.generateIV(key),
+          process.env.ENCODE_SECRET,
+        );
 
-      value = `ev:${encryptedValue}`;
+        value = `ev:${encryptedValue}`;
+      }
+
+      const userData = await this.databaseService.userData.upsert({
+        where: { id: currentRegister?.id ?? -1 },
+        create: {
+          key,
+          value,
+          userId,
+        },
+        update: {
+          value,
+        },
+        select: {
+          id: true,
+          value: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      this.logger.log(`Upserted user data ${payload.key} (USER: ${userId})`);
+
+      return { data: userData as UserData };
+    } catch (error) {
+      this.logger.error(`Error upserting user data: ${error}`);
+      return {
+        statusCode: StatusCodes.Internal,
+        error: error.message,
+      };
     }
-
-    const userData = await this.databaseService.userData.upsert({
-      where: { id: currentRegister?.id ?? -1 },
-      create: {
-        key,
-        value,
-        userId,
-      },
-      update: {
-        value,
-      },
-      select: {
-        id: true,
-        value: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    this.logger.log(`Upserted user data ${payload.key} (USER: ${userId})`);
-
-    return { data: userData as UserData };
   }
 
   /**
@@ -74,7 +83,7 @@ export class UserDataService {
    */
   async fetch(
     userId: string,
-    keys: string[] = [],
+    keys: UserDataKeys[] = [],
   ): Promise<Record<string, any>> {
     const userData = await this.databaseService.userData.findMany({
       where: {
@@ -90,7 +99,10 @@ export class UserDataService {
     const values = {};
 
     for (const data of userData) {
-      const parsedValue = await this._parseValue(data.key, data.value);
+      const parsedValue = await Crypt.parseEncryptedValue(
+        data.key as UserDataKeys,
+        data.value,
+      );
       values[data.key] = parsedValue;
     }
 
@@ -100,10 +112,10 @@ export class UserDataService {
   /**
    * Fetches user data by key.
    *
-   * @param {string} key - The key of the data.
+   * @param {UserDataKeys} key - The key of the data.
    * @returns {Promise<Record<string, any>>} - The fetched user data.
    */
-  async fetchByKey(key: string): Promise<Record<string, any>> {
+  async fetchByKey(key: UserDataKeys): Promise<Record<string, any>> {
     const userData = await this.databaseService.userData.findMany({
       where: { key },
       select: {
@@ -115,7 +127,7 @@ export class UserDataService {
     const values = {};
 
     for (const data of userData) {
-      values[data.key] = await this._parseValue(data.key, data.value);
+      values[data.key] = await Crypt.parseEncryptedValue(data.key, data.value);
     }
 
     return values;
@@ -125,10 +137,13 @@ export class UserDataService {
    * Gets user data by ID.
    *
    * @param {string} userId - The ID of the user.
-   * @param {string} id - The ID of the data.
+   * @param {UserDataKeys} key - The key of the data.
    * @returns {Promise<DataReturn<UserData>>} - The fetched user data.
    */
-  async get<T = null>(userId: string, key: string): Promise<DataReturn<T>> {
+  async get<T = null>(
+    userId: string,
+    key: UserDataKeys,
+  ): Promise<DataReturn<T>> {
     const userData = await this.databaseService.userData.findFirst({
       where: { key, userId },
       select: {
@@ -146,17 +161,22 @@ export class UserDataService {
       };
     }
 
-    return { data: (await this._parseValue(key, userData?.value)) as T };
+    return {
+      data: (await Crypt.parseEncryptedValue(key, userData?.value)) as T,
+    };
   }
 
   /**
    * Deletes user data by ID.
    *
    * @param {string} userId - The ID of the user.
-   * @param {string} id - The ID of the data.
+   * @param {UserDataKeys} key - The key of the data.
    * @returns {Promise<DataReturn<UserData>>} - The deleted user data.
    */
-  async delete(userId: string, key: string): Promise<DataReturn<UserData>> {
+  async delete(
+    userId: string,
+    key: UserDataKeys,
+  ): Promise<DataReturn<UserData>> {
     const userData = await this.databaseService.userData.findFirst({
       where: { key, userId },
     });
@@ -171,26 +191,5 @@ export class UserDataService {
     await this.databaseService.userData.delete({
       where: { id: userData.id, userId },
     });
-  }
-
-  /**
-   * Decrypts a value if it is encrypted.
-   *
-   * @param {string} key - The key of the data.
-   * @param {any} value - The value of the data.
-   * @returns {any} - The decrypted value or the original value if not encrypted.
-   */
-  private async _parseValue(key: string, value: any) {
-    if (typeof value === 'string' && value.startsWith('ev:')) {
-      const decryptedValue = await Crypt.decrypt(
-        value.replace('ev:', ''),
-        Crypt.generateIV(key),
-        process.env.ENCODE_SECRET,
-      );
-
-      return JSON.parse(decryptedValue);
-    }
-
-    return value;
   }
 }
