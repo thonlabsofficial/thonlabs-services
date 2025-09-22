@@ -1,6 +1,12 @@
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { Injectable, Logger } from '@nestjs/common';
-import { EmailTemplates, TokenTypes, User } from '@prisma/client';
+import {
+  EmailTemplates,
+  Organization,
+  TokenTypes,
+  User,
+  UserData,
+} from '@prisma/client';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import {
   ErrorCodes,
@@ -16,6 +22,8 @@ import { EnvironmentDataService } from '@/auth/modules/environments/services/env
 import { OrganizationService } from '@/auth/modules/organizations/services/organization.service';
 import { EnvironmentDataKeys } from '@/auth/modules/environments/constants/environment-data';
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
+import { UpdateUserGeneralDataPayload } from '../validators/user-validators';
+import { UserDataService } from './user-data.service';
 
 @Injectable()
 export class UserService {
@@ -28,6 +36,7 @@ export class UserService {
     private environmentDataService: EnvironmentDataService,
     private organizationService: OrganizationService,
     private emailTemplateService: EmailTemplateService,
+    private userDataService: UserDataService,
   ) {}
 
   async getOurByEmail(email: string) {
@@ -73,8 +82,6 @@ export class UserService {
         environmentId: true,
         emailConfirmed: true,
         invitedAt: true,
-        environment: true,
-        projects: true,
       },
     });
 
@@ -374,11 +381,11 @@ export class UserService {
   async updateGeneralData(
     userId: string,
     environmentId: string,
-    payload: { fullName: string; organizationId?: string },
+    payload: UpdateUserGeneralDataPayload,
   ) {
-    const user = await this.getByIdAndEnv(userId, environmentId);
+    const userExists = await this.getByIdAndEnv(userId, environmentId);
 
-    if (!user) {
+    if (!userExists) {
       return {
         statusCode: StatusCodes.NotFound,
         error: ErrorMessages.UserNotFound,
@@ -405,6 +412,11 @@ export class UserService {
         };
       }
     }
+
+    let user = {} as User & {
+      organization: Organization;
+      metadata: UserData[];
+    };
 
     const updatedUser = await this.databaseService.user.update({
       where: {
@@ -438,9 +450,20 @@ export class UserService {
 
     this.deletePrivateData(updatedUser, true);
 
+    user = updatedUser as typeof user;
+
     this.logger.log(`General data updated for ${userId}`);
 
-    return updatedUser;
+    if (payload.metadata?.length > 0) {
+      const metadata = await this.userDataService.manageMetadata(
+        userId,
+        payload.metadata as { key: string; value: any }[],
+      );
+
+      user.metadata = metadata.data.metadata as UserData[];
+    }
+
+    return user;
   }
 
   async setAsThonLabsUser(userId: string) {

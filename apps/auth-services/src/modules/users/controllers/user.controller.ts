@@ -26,10 +26,14 @@ import {
 import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 import { PublicKeyOrThonLabsOnly } from '../../shared/decorators/public-key-or-thon-labs-user.decorator';
+import { UserDataService } from '@/auth/modules/users/services/user-data.service';
 
 @Controller('users')
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private userDataService: UserDataService,
+  ) {}
 
   @Post('/')
   @HttpCode(StatusCodes.Created)
@@ -93,7 +97,10 @@ export class UserController {
   async getById(@Req() req, @Param('id') id: string) {
     const environmentId = req.headers['tl-env-id'];
 
-    const user = await this.userService.getDetailedById(id);
+    const [user, metadata] = await Promise.all([
+      this.userService.getDetailedById(id),
+      this.userDataService.fetchMetadata(id),
+    ]);
 
     if (user.environmentId !== environmentId) {
       throw new exceptionsMapper[StatusCodes.NotFound](
@@ -101,7 +108,7 @@ export class UserController {
       );
     }
 
-    return user;
+    return { ...user, metadata };
   }
 
   @Patch('/:id/general-data')
