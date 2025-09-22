@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   Post,
   Query,
@@ -24,12 +25,14 @@ import { EnvironmentDataKeys } from '@/auth/modules/environments/constants/envir
 
 @Controller('environments/:envId/data')
 export class EnvironmentDataController {
+  private readonly logger = new Logger(EnvironmentDataController.name);
+
   constructor(
     private databaseService: DatabaseService,
     private environmentDataService: EnvironmentDataService,
     private environmentService: EnvironmentService,
     private authService: AuthService,
-  ) { }
+  ) {}
 
   /**
    * Get all environment data for a specific environment.
@@ -43,40 +46,48 @@ export class EnvironmentDataController {
   @PublicRoute()
   @NeedsPublicKey()
   async fetch(@Param('envId') environmentId: string) {
-    const [env, envData] = await Promise.all([
-      this.databaseService.environment.findUnique({
-        where: { id: environmentId },
-        select: {
-          id: true,
-          authProvider: true,
-          projectId: true,
-          project: {
-            select: {
-              appName: true,
+    try {
+      const [env, envData] = await Promise.all([
+        this.databaseService.environment.findUnique({
+          where: { id: environmentId },
+          select: {
+            id: true,
+            authProvider: true,
+            projectId: true,
+            project: {
+              select: {
+                appName: true,
+              },
             },
           },
-        },
-      }),
-      this.environmentDataService.fetch(environmentId, [
-        EnvironmentDataKeys.EnableSignUp,
-        EnvironmentDataKeys.EnableSignUpB2BOnly,
-        EnvironmentDataKeys.SDKIntegrated,
-        EnvironmentDataKeys.Styles,
-        EnvironmentDataKeys.Credentials,
-        EnvironmentDataKeys.ActiveSSOProviders,
-        EnvironmentDataKeys.EnvironmentLogo,
-      ]),
-    ]);
+        }),
+        this.environmentDataService.fetch(environmentId, [
+          EnvironmentDataKeys.EnableSignUp,
+          EnvironmentDataKeys.EnableSignUpB2BOnly,
+          EnvironmentDataKeys.SDKIntegrated,
+          EnvironmentDataKeys.Styles,
+          EnvironmentDataKeys.Credentials,
+          EnvironmentDataKeys.ActiveSSOProviders,
+          EnvironmentDataKeys.EnvironmentLogo,
+        ]),
+      ]);
 
-    delete envData[EnvironmentDataKeys.Credentials];
+      delete envData[EnvironmentDataKeys.Credentials];
 
-    return {
-      ...envData,
-      environmentId: env.id,
-      projectId: env.projectId,
-      appName: env.project.appName,
-      authProvider: env.authProvider,
-    };
+      return {
+        ...envData,
+        environmentId: env.id,
+        projectId: env.projectId,
+        appName: env.project.appName,
+        authProvider: env.authProvider,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching environment data (ENV: ${environmentId})`,
+        error,
+      );
+      throw new exceptionsMapper[StatusCodes.Internal](error);
+    }
   }
 
   /**
