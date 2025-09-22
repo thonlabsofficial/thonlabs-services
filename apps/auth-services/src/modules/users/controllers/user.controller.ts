@@ -44,8 +44,8 @@ export class UserController {
     @Req() req,
     @Body() payload,
     @Query('sendInvite') sendInvite: string,
+    @Query('sendInviteFromUserId') sendInviteFromUserId: string,
   ) {
-    const session = req.session;
     const environmentId = req.headers['tl-env-id'];
 
     const data = await this.userService.create({
@@ -64,7 +64,7 @@ export class UserController {
 
     if (sendInvite === 'true') {
       await this.userService.sendInvitation(
-        session.id,
+        req?.session?.id || sendInviteFromUserId || '',
         newUser.id,
         environmentId,
       );

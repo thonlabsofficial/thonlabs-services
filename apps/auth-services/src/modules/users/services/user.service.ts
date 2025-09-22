@@ -630,21 +630,24 @@ export class UserService {
       data: { invitedAt },
     });
 
-    const [inviter, { data: tokenData }] = await Promise.all([
-      this.databaseService.user.findFirst({
+    let inviter = null;
+
+    if (fromUserId) {
+      inviter = await this.databaseService.user.findFirst({
         where: { id: fromUserId },
         select: {
           fullName: true,
           email: true,
         },
-      }),
-      this.tokenStorageService.create({
-        type: TokenTypes.InviteUser,
-        expiresIn: '5h',
-        relationId: user.id,
-        environmentId,
-      }),
-    ]);
+      });
+    }
+
+    const { data: tokenData } = await this.tokenStorageService.create({
+      type: TokenTypes.InviteUser,
+      expiresIn: '5h',
+      relationId: user.id,
+      environmentId,
+    });
 
     try {
       await this.emailTemplateService.send({

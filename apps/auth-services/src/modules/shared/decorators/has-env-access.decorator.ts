@@ -46,13 +46,26 @@ export class HasEnvAccessGuard implements CanActivate {
       context.getHandler(),
     );
 
+    const http = context.switchToHttp();
+    const req = http.getRequest();
+    const res = http.getResponse();
+
     if (!metadata) {
       return true;
     }
 
-    const http = context.switchToHttp();
-    const req = http.getRequest();
-    const res = http.getResponse();
+    /*
+      If has some of the key headers we're considering it's an external API request
+      that requires public or secret key.
+
+      Those keys are validated in auth guard.
+    */
+    if (
+      req.headers['tl-env-id'] &&
+      (req.headers['tl-public-key'] || req.headers['tl-secret-key'])
+    ) {
+      return true;
+    }
 
     const { param, source } = metadata;
     const environmentId = req?.[source]?.[param];

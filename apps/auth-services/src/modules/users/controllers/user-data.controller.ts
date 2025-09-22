@@ -6,10 +6,10 @@ import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validat
 import { UserDataService } from '../services/user-data.service';
 import { setUserDataValidator } from '../validators/user-data-validators';
 import { UserDataKeys } from '../constants/user-data';
+import { PublicKeyOrThonLabsOnly } from '../../shared/decorators/public-key-or-thon-labs-user.decorator';
+import { SecretKeyOrThonLabsOnly } from '../../shared/decorators/secret-key-or-thon-labs-user.decorator';
 
 @Controller('users/:userId/data')
-@ThonLabsOnly()
-@HasEnvAccess({ param: 'userId' })
 export class UserDataController {
   constructor(private userDataService: UserDataService) {}
 
@@ -19,8 +19,11 @@ export class UserDataController {
    * @param userId - The ID of the user
    * @param query - The query parameters
    * @param query.keys - Specific keys to fetch
+   * @param query.type - The type of the data
    */
   @Get('/')
+  @ThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   async fetch(
     @Param('userId') userId: string,
     @Query() query: { keys: UserDataKeys[] },
@@ -31,12 +34,26 @@ export class UserDataController {
   }
 
   /**
+   * Get all metadata data for a specific user.
+   *
+   * @param userId - The ID of the user
+   */
+  @Get('/metadata')
+  @PublicKeyOrThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  async fetchMetadata(@Param('userId') userId: string) {
+    return this.userDataService.fetchMetadata(userId);
+  }
+
+  /**
    * Get a specific user data by id.
    *
    * @param userId - The ID of the user
    * @param key - The key of the data
    */
   @Get('/:key')
+  @PublicKeyOrThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   async getById(
     @Param('userId') userId: string,
     @Param('key') key: UserDataKeys,
@@ -57,6 +74,8 @@ export class UserDataController {
    * @param payload - The payload of the data
    */
   @Post('/')
+  @SecretKeyOrThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   @SchemaValidator(setUserDataValidator)
   async upsert(
     @Param('userId') userId: string,
