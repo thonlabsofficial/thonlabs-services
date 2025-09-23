@@ -232,7 +232,7 @@ export class UserDataService {
    */
   async manageMetadata(
     userId: string,
-    payload: { key: string; value: any }[],
+    payload: Record<string, any>,
   ): Promise<
     DataReturn<{
       metadata: Record<string, any>;
@@ -246,7 +246,7 @@ export class UserDataService {
         },
       });
 
-      const payloadKeys = new Set(payload.map((item) => item.key));
+      const payloadKeys = new Set(Object.keys(payload));
       const existingMetadataKeys = new Set(
         existingMetadata.map((item) => item.key),
       );
@@ -257,7 +257,7 @@ export class UserDataService {
       const toDelete: string[] = [];
 
       // Process payload items
-      for (const { key, value } of payload) {
+      for (const [key, value] of Object.entries(payload)) {
         const existingItem = existingMetadata.find((item) => item.key === key);
 
         if (!existingItem) {

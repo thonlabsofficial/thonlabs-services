@@ -19,28 +19,7 @@ export const updateUserGeneralDataValidator = z.object({
       message: 'Please enter the full name',
     }),
   organizationId: z.string().optional(),
-  metadata: z.array(
-    z
-      .object({
-        key: z.string(),
-        value: z.any(),
-      })
-      .refine(
-        (data) => {
-          /*
-              If one of the values is provided, the other one must also be provided
-            */
-          if ((data.key && !data.value) || (data.value && !data.key)) {
-            return false;
-          }
-
-          return true;
-        },
-        {
-          message: 'Both key and value are required for each metadata item',
-        },
-      ),
-  ),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 export type UpdateUserGeneralDataPayload = z.infer<

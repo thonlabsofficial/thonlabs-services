@@ -416,7 +416,7 @@ export class UserService {
 
     let user = {} as User & {
       organization: Organization;
-      metadata: UserData[];
+      metadata: Record<string, any>;
     };
 
     const updatedUser = await this.databaseService.user.update({
@@ -455,10 +455,10 @@ export class UserService {
 
     this.logger.log(`General data updated for ${userId}`);
 
-    if (payload.metadata?.length > 0) {
+    if (payload.metadata) {
       const metadata = await this.userDataService.manageMetadata(
         userId,
-        payload.metadata as { key: string; value: any }[],
+        payload.metadata,
       );
 
       user.metadata = metadata.data.metadata as UserData[];
@@ -552,24 +552,29 @@ export class UserService {
       },
     });
 
-    return users.map((user) => ({
-      active: user.active,
-      createdAt: user.createdAt,
-      email: user.email,
-      fullName: user.fullName,
-      id: user.id,
-      lastSignIn: user.lastSignIn,
-      profilePicture: user.profilePicture,
-      updatedAt: user.updatedAt,
-      environmentId: user.environmentId,
-      emailConfirmed: user.emailConfirmed,
-      invitedAt: user.invitedAt,
-      organization: user.organization,
-      metadata: user.userData.map((data) => ({
-        key: data.key,
-        value: data.value,
-      })),
-    }));
+    return users.map((user) => {
+      const metadata = {};
+
+      for (const data of user.userData) {
+        metadata[data.key] = data.value;
+      }
+
+      return {
+        active: user.active,
+        createdAt: user.createdAt,
+        email: user.email,
+        fullName: user.fullName,
+        id: user.id,
+        lastSignIn: user.lastSignIn,
+        profilePicture: user.profilePicture,
+        updatedAt: user.updatedAt,
+        environmentId: user.environmentId,
+        emailConfirmed: user.emailConfirmed,
+        invitedAt: user.invitedAt,
+        organization: user.organization,
+        metadata,
+      };
+    });
   }
 
   async exclude(
