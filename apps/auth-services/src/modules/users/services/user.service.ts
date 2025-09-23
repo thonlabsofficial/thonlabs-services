@@ -6,6 +6,7 @@ import {
   TokenTypes,
   User,
   UserData,
+  UserDataType,
 } from '@prisma/client';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import {
@@ -533,13 +534,42 @@ export class UserService {
             name: true,
           },
         },
+        userData: {
+          select: {
+            key: true,
+            value: true,
+            type: true,
+          },
+        },
       },
       where: {
         environmentId: params.environmentId,
+        userData: {
+          every: {
+            type: UserDataType.Metadata,
+          },
+        },
       },
     });
 
-    return users;
+    return users.map((user) => ({
+      active: user.active,
+      createdAt: user.createdAt,
+      email: user.email,
+      fullName: user.fullName,
+      id: user.id,
+      lastSignIn: user.lastSignIn,
+      profilePicture: user.profilePicture,
+      updatedAt: user.updatedAt,
+      environmentId: user.environmentId,
+      emailConfirmed: user.emailConfirmed,
+      invitedAt: user.invitedAt,
+      organization: user.organization,
+      metadata: user.userData.map((data) => ({
+        key: data.key,
+        value: data.value,
+      })),
+    }));
   }
 
   async exclude(
