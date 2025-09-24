@@ -54,6 +54,7 @@ export class UserController {
       environmentId,
       invitedAt: sendInvite === 'true' ? new Date() : null,
       organizationId: payload.organizationId,
+      metadata: payload.metadata,
     });
 
     if (data.error) {

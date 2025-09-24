@@ -144,6 +144,7 @@ export class UserService {
     environmentId: string;
     invitedAt?: Date;
     organizationId?: string;
+    metadata?: Record<string, any>;
   }): Promise<DataReturn<User>> {
     const environmentExists = await this.environmentService.getById(
       payload.environmentId,
@@ -246,6 +247,7 @@ export class UserService {
 
       this.logger.log(`User ${user.id} created`);
 
+      // Creates user auth key
       const iv = Crypt.generateIV(user.id);
       const authKey = await Crypt.encrypt(
         `${rand(8)}`,
@@ -260,18 +262,31 @@ export class UserService {
 
       this.logger.log(`User ${user.id} auth key created`);
 
+      this.deletePrivateData(user);
+
+      // Sets user as Thon Labs user if the project is main
       const environment = await this.environmentService.getDetailedById(
         payload.environmentId,
       );
-
-      this.deletePrivateData(user);
 
       if (environment.project.main) {
         await this.setAsThonLabsUser(user.id);
         user.thonLabsUser = true;
       }
 
-      return { data: user as unknown as User };
+      let metadata = {};
+      if (payload.metadata) {
+        const { data: metadataData } =
+          await this.userDataService.manageMetadata(user.id, payload.metadata);
+
+        metadata = metadataData.metadata;
+      }
+
+      return {
+        data: { ...user, metadata } as unknown as User & {
+          metadata: Record<string, any>;
+        },
+      };
     } catch (e) {
       this.logger.error('Error when creating user', e);
 
