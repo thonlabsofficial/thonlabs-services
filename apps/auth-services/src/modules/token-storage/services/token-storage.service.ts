@@ -123,12 +123,30 @@ export class TokenStorageService {
 
     this.logger.log(`User ${user.id} tokens deleted`);
 
+    let organization = null;
+
+    if (user.organizationId) {
+      const { name: orgName } =
+        await this.databaseService.organization.findFirst({
+          select: {
+            name: true,
+          },
+          where: { id: user.organizationId },
+        });
+
+      organization = {
+        id: user.organizationId,
+        name: orgName,
+      };
+    }
+
     const payload = {
       sub: user.id,
       thonLabsUser: user.thonLabsUser,
       email: user.email,
       profilePicture: user.profilePicture,
       fullName: user.fullName,
+      organization,
     };
 
     const iv = Crypt.generateIV(user.id);

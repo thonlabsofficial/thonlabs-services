@@ -71,6 +71,7 @@ export class AuthService {
         active: true,
         password: true,
         lastSignIn: true,
+        organizationId: true,
         environment: {
           select: {
             tokenExpiration: true,
@@ -265,6 +266,7 @@ export class AuthService {
         authKey: true,
         environmentId: true,
         lastSignIn: true,
+        organizationId: true,
         environment: {
           select: {
             tokenExpiration: true,
@@ -362,6 +364,7 @@ export class AuthService {
         fullName: true,
         authKey: true,
         environmentId: true,
+        organizationId: true,
         environment: {
           select: {
             tokenExpiration: true,
