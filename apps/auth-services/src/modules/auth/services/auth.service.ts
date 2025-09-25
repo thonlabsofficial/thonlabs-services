@@ -337,7 +337,7 @@ export class AuthService {
     );
 
     if (!data) {
-      this.logger.warn('Refresh Token not found');
+      this.logger.warn(`Refresh Token not found token: ${token}`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
