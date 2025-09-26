@@ -51,7 +51,7 @@ import { EnvironmentDataService } from '@/auth/modules/environments/services/env
 import { OrganizationService } from '@/auth/modules/organizations/services/organization.service';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
-import { NeedsSecretKey } from '../../shared/decorators/needs-secret-key.decorator';
+import extractTokenFromHeader from '@/utils/services/extract-token-from-header';
 
 @Controller('auth')
 export class AuthController {
@@ -379,6 +379,19 @@ export class AuthController {
     return data;
   }
 
+  @Get('/session')
+  @PublicRoute()
+  public async getSession(@Req() req) {
+    const token = extractTokenFromHeader(req);
+    const data = await this.authService.getUserBySessionToken(token);
+
+    if (data?.error) {
+      throw new exceptionsMapper[data.statusCode](data.error);
+    }
+
+    return data?.data;
+  }
+
   @Post('/logout')
   @HttpCode(StatusCodes.OK)
   @PublicKeyOrThonLabsOnly()
@@ -653,11 +666,5 @@ export class AuthController {
     }
 
     return res.status(StatusCodes.OK).json({});
-  }
-
-  @NeedsSecretKey()
-  @Get('/session')
-  public async getSession(@Req() req) {
-    return req.session;
   }
 }

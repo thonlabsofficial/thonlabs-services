@@ -640,7 +640,7 @@ export class AuthService {
     const session = jwtDecode(token) as SessionData;
 
     if (!session.sub) {
-      this.logger.error(`Sub not found`);
+      this.logger.error(`Sub not found (UID: ${session.sub})`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
@@ -651,7 +651,7 @@ export class AuthService {
     const user = await this.userService.getById(session.sub);
 
     if (!user) {
-      this.logger.error(`user not found`);
+      this.logger.error(`User not found (UID: ${session.sub})`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
@@ -659,7 +659,7 @@ export class AuthService {
     }
 
     if (!user.active) {
-      this.logger.error(`User ${user.id} is not active`);
+      this.logger.error(`User is not active (UID: ${user.id})`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
@@ -672,9 +672,17 @@ export class AuthService {
       process.env.ENCODE_AUTH_KEYS_SECRET,
     );
 
-    await this.jwtService.verifyAsync(token, {
-      secret: `${authKey}${process.env.AUTHENTICATION_SECRET}`,
-    });
+    try {
+      await this.jwtService.verifyAsync(token, {
+        secret: `${authKey}${process.env.AUTHENTICATION_SECRET}`,
+      });
+    } catch (e) {
+      this.logger.error(`Token verification failed (UID: ${user.id})`);
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.Unauthorized,
+      };
+    }
 
     return {
       data: {
