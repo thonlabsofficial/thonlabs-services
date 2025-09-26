@@ -26,6 +26,7 @@ import { SessionData } from '@/utils/interfaces/session-data';
 import { decode as jwtDecode } from 'jsonwebtoken';
 import Crypt from '@/utils/services/crypt';
 import { JwtService } from '@nestjs/jwt';
+import { RedisService } from '../../shared/database/redis.service';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -46,6 +47,7 @@ export class AuthService {
     private environmentDataService: EnvironmentDataService,
     private emailTemplateService: EmailTemplateService,
     private jwtService: JwtService,
+    private redisService: RedisService,
   ) {}
 
   async authenticateFromEmailAndPassword(
@@ -81,6 +83,7 @@ export class AuthService {
         organization: {
           select: {
             id: true,
+            name: true,
             active: true,
           },
         },
@@ -109,7 +112,7 @@ export class AuthService {
     const isValid = await bcrypt.compare(password, hashPassword);
 
     if (!isValid) {
-      this.logger.warn('Password nor matches', user.id);
+      this.logger.warn(`Password not match (UID: ${user.id})`);
       return error;
     }
 
@@ -124,7 +127,7 @@ export class AuthService {
         user.environment,
       );
 
-      this.logger.log('Created auth tokens');
+      this.logger.log(`Created auth tokens (UID: ${user.id})`);
 
       if (!user.lastSignIn) {
         await this.emailTemplateService.sendWelcomeEmail(
@@ -140,7 +143,7 @@ export class AuthService {
       };
     } catch (e) {
       this.logger.error(
-        `Login/Pass - Error on creating tokens for user ${user.id}`,
+        `Login/Pass - Error on creating tokens for user (UID: ${user.id})`,
       );
 
       return {
@@ -168,7 +171,7 @@ export class AuthService {
 
     if (token?.error) {
       this.logger.error(
-        `generateMagicLoginToken: error creating token for user ${userId}`,
+        `generateMagicLoginToken: error creating token (UID: ${userId})`,
       );
 
       return {
@@ -190,7 +193,7 @@ export class AuthService {
     const user = await this.userService.getByEmail(email, environment.id);
 
     if (!user) {
-      this.logger.error(`User ${email} not found`);
+      this.logger.error(`User email not found`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.EmailNotFound,
@@ -198,7 +201,9 @@ export class AuthService {
     }
 
     if (user?.organization?.id && !user?.organization?.active) {
-      this.logger.error(`Organization ${user.organization.id} is not active`);
+      this.logger.error(
+        `Organization is not active (OID: ${user.organization.id})`,
+      );
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.EmailNotFound,
@@ -277,7 +282,7 @@ export class AuthService {
     });
 
     if (!user) {
-      this.logger.error(`User ${data.relationId} not found`);
+      this.logger.error(`User not found (UID: ${data.relationId})`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.InvalidUser,
@@ -285,7 +290,7 @@ export class AuthService {
     }
 
     if (!user.active) {
-      this.logger.error(`User ${user.id} is not active`);
+      this.logger.error(`User is not active (UID: ${user.id})`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.InvalidUser,
@@ -294,7 +299,7 @@ export class AuthService {
 
     if (user.environmentId !== data.environmentId) {
       this.logger.error(
-        `Magic token not allowed for user ${data.relationId} on env ${data.environmentId}`,
+        `Magic token not allowed for user (UID: ${data.relationId}) (ENV: ${data.environmentId})`,
       );
       return {
         statusCode: StatusCodes.Unauthorized,
@@ -337,10 +342,9 @@ export class AuthService {
     );
 
     if (!data) {
-      this.logger.warn(`Refresh Token not found token: ${token}`);
+      this.logger.warn(`Refresh Token not found token`);
       return {
-        statusCode: StatusCodes.Unauthorized,
-        error: ErrorMessages.Unauthorized,
+        statusCode: StatusCodes.NotFound,
       };
     }
 
@@ -374,6 +378,7 @@ export class AuthService {
         organization: {
           select: {
             id: true,
+            name: true,
             active: true,
           },
         },
@@ -381,7 +386,7 @@ export class AuthService {
     });
 
     if (!user) {
-      this.logger.error(`User ${data.relationId} not found`);
+      this.logger.error(`User not found (UID: ${data.relationId})`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.InvalidUser,
@@ -389,7 +394,7 @@ export class AuthService {
     }
 
     if (!user?.active) {
-      this.logger.error(`User ${user.id} is not active`);
+      this.logger.error(`User is not active (UID: ${user.id})`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.InvalidUser,
@@ -397,7 +402,9 @@ export class AuthService {
     }
 
     if (user?.organization?.id && !user?.organization?.active) {
-      this.logger.error(`Organization ${user.organization.id} is not active`);
+      this.logger.error(
+        `Organization is not active (OID: ${user.organization.id})`,
+      );
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.InvalidUser,
@@ -406,7 +413,7 @@ export class AuthService {
 
     if (user.environmentId !== environmentId) {
       this.logger.error(
-        `Refresh token not allowed for user ${data.relationId} on env ${environmentId}`,
+        `Refresh token not allowed for user (UID: ${data.relationId}) (ENV: ${environmentId})`,
       );
       return {
         statusCode: StatusCodes.NotAcceptable,
@@ -414,7 +421,12 @@ export class AuthService {
       };
     }
 
-    return this.tokenStorageService.createAuthTokens(user, user.environment);
+    const authTokens = await this.tokenStorageService.createAuthTokens(
+      user,
+      user.environment,
+    );
+
+    return authTokens;
   }
 
   async logout(payload: { userId: string; environmentId: string }) {
@@ -422,7 +434,7 @@ export class AuthService {
 
     if (!user) {
       this.logger.error(
-        `User ${payload.userId} not found for Env ${payload.environmentId}`,
+        `User not found (UID: ${payload.userId}) (ENV: ${payload.environmentId})`,
       );
       return {
         statusCode: StatusCodes.NotFound,
@@ -432,7 +444,7 @@ export class AuthService {
 
     if (user?.environmentId !== payload.environmentId) {
       this.logger.error(
-        `Logout not allowed for user ${user.id} on env ${user.environmentId}`,
+        `Logout not allowed for user (UID: ${user.id}) (ENV: ${user.environmentId})`,
       );
       return {
         statusCode: StatusCodes.NotAcceptable,
@@ -442,7 +454,7 @@ export class AuthService {
 
     await this.tokenStorageService.deleteAllByRelation(user.id);
 
-    this.logger.log(`User ${user.id} logged out`);
+    this.logger.log(`User logged out (UID: ${user.id})`);
   }
 
   async validateUserTokenExpiration(
@@ -453,7 +465,7 @@ export class AuthService {
 
     if (!tokenData) {
       this.logger.warn(
-        `validateUserTokenExpiration: Token not found (${token.substring(0, 10)} - ${type})`,
+        `validateUserTokenExpiration: Token not found (TID: ${token.substring(0, 10)} - TYPE: ${type})`,
       );
       return {
         statusCode: StatusCodes.NotFound,
@@ -464,7 +476,7 @@ export class AuthService {
 
     if (!user || user.environmentId !== tokenData.environmentId) {
       this.logger.warn(
-        `validateUserTokenExpiration: invalid user (${tokenData.relationId})`,
+        `validateUserTokenExpiration: invalid user (UID: ${tokenData.relationId})`,
       );
       return {
         statusCode: StatusCodes.Unauthorized,
@@ -476,7 +488,7 @@ export class AuthService {
 
     if (data?.statusCode) {
       this.logger.warn(
-        `validateUserTokenExpiration: token expired (${token.substring(0, 10)} - ${type})`,
+        `validateUserTokenExpiration: token expired (TID: ${token.substring(0, 10)} - TYPE: ${type})`,
       );
       return {
         statusCode: StatusCodes.Unauthorized,
@@ -500,7 +512,7 @@ export class AuthService {
 
     if (token?.error) {
       this.logger.error(
-        `generateResetPasswordToken: error creating token for user ${userId}`,
+        `generateResetPasswordToken: error creating token for user (UID: ${userId})`,
       );
 
       return {
@@ -529,7 +541,7 @@ export class AuthService {
 
     if (!credentials?.google) {
       this.logger.error(
-        `Google SSO: invalid credentials found for env ${environmentId}`,
+        `Google SSO: invalid credentials found for env (ENV: ${environmentId})`,
       );
       return {
         statusCode: StatusCodes.Unauthorized,

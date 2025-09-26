@@ -60,7 +60,9 @@ export class TokenStorageService {
     });
 
     if (count > 0) {
-      this.logger.log(`Deleted tokens for relation ${type} ${relationId}`);
+      this.logger.log(
+        `Deleted tokens for relation "${type}" (RID: ${relationId})`,
+      );
     }
   }
 
@@ -69,7 +71,9 @@ export class TokenStorageService {
       where: { relationId },
     });
 
-    this.logger.log(`All tokens for relation id ${relationId} deleted`);
+    this.logger.log(
+      `All tokens for relation id were deleted (RID: ${relationId})`,
+    );
   }
 
   async create({
@@ -95,7 +99,6 @@ export class TokenStorageService {
         where: { token },
       });
       foundTokenToUse = tokenCount === 0;
-      this.logger.log(`Found a token for ${type} token`);
     }
 
     const tokenData = await this.databaseService.tokenStorage.create({
@@ -109,23 +112,21 @@ export class TokenStorageService {
       },
     });
 
-    this.logger.log(`Relation ${type} ${relationId} token created`);
+    this.logger.log(`Relation ${type} token created (RID: ${relationId})`);
 
     return { data: tokenData };
   }
 
   async createAuthTokens(
-    user: Partial<User>,
+    user: Partial<User & { organization?: { id: string; name: string } }>,
     environment: Partial<Environment>,
   ): Promise<DataReturn<AuthenticateMethodsReturn>> {
     // Delete all refresh tokens
     await this.deleteMany(TokenTypes.Refresh, user.id);
 
-    this.logger.log(`User ${user.id} tokens deleted`);
+    let organization = user.organization;
 
-    let organization = null;
-
-    if (user.organizationId) {
+    if (user.organizationId && !organization) {
       const { name: orgName } =
         await this.databaseService.organization.findFirst({
           select: {
@@ -167,7 +168,7 @@ export class TokenStorageService {
     result['token'] = token;
     result['tokenExpiresIn'] = tokenExpiresIn;
 
-    this.logger.log(`User ${user.id} JWT created`);
+    this.logger.log(`JWT created (UID: ${user.id})`);
 
     if (environment.refreshTokenExpiration) {
       const { data } = await this.create({
@@ -180,7 +181,9 @@ export class TokenStorageService {
       result['refreshTokenExpiresIn'] = data.expires.getTime();
     }
 
-    this.logger.log(`User ${user.id} refresh created`);
+    this.logger.log(
+      `Refresh created ${(result as AuthenticateMethodsReturn).refreshToken} (UID: ${user.id})`,
+    );
 
     return {
       data: result as AuthenticateMethodsReturn,

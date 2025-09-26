@@ -15,3 +15,14 @@ services:
       - '5432'
     volumes:
       - ./data/db:/var/lib/postgresql/data
+
+  redis:
+    image: redis:8.2.1
+    restart: always
+    container_name: thonlabs-redis
+    ports:
+      - '6380:6379'
+    expose:
+      - '6380'
+    volumes:
+      - ./data/redis:/data

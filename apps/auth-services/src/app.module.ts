@@ -54,6 +54,7 @@ import { AppDataController } from './modules/app/controllers/app-data.controller
 import { AppDataService } from './modules/app/services/app-data.service';
 import { UserSubscriptionService } from './modules/users/services/user-subscription.service';
 import { NeedsSecretKeyGuard } from './modules/shared/decorators/needs-secret-key.decorator';
+import { RedisService } from './modules/shared/database/redis.service';
 
 @Module({
   imports: [
@@ -116,6 +117,7 @@ import { NeedsSecretKeyGuard } from './modules/shared/decorators/needs-secret-ke
     CronService,
     CDNService,
     HTTPService,
+    RedisService,
 
     AuthService,
     EmailTemplateService,
