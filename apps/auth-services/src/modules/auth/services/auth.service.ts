@@ -344,7 +344,8 @@ export class AuthService {
     if (!data) {
       this.logger.warn(`Refresh Token not found token`);
       return {
-        statusCode: StatusCodes.NotFound,
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.InvalidToken,
       };
     }
 
@@ -648,7 +649,19 @@ export class AuthService {
     }
 
     // TODO: @gus -> collect this data from redis in the future
-    const user = await this.userService.getById(session.sub);
+    const user = await this.databaseService.user.findFirst({
+      where: { id: session.sub },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        profilePicture: true,
+        authKey: true,
+        active: true,
+        lastSignIn: true,
+        organizationId: true,
+      },
+    });
 
     if (!user) {
       this.logger.error(`User not found (UID: ${session.sub})`);
@@ -684,6 +697,17 @@ export class AuthService {
       };
     }
 
+    let organization = null;
+    if (user.organizationId) {
+      organization = await this.databaseService.organization.findFirst({
+        where: { id: user.organizationId },
+        select: {
+          id: true,
+          name: true,
+        },
+      });
+    }
+
     return {
       data: {
         id: user.id,
@@ -692,6 +716,7 @@ export class AuthService {
         profilePicture: user.profilePicture,
         active: user.active,
         lastSignIn: user.lastSignIn,
+        ...(organization && { organization }),
       },
     };
   }
