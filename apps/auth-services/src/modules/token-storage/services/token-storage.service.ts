@@ -122,7 +122,8 @@ export class TokenStorageService {
     environment: Partial<Environment>,
   ): Promise<DataReturn<AuthenticateMethodsReturn>> {
     // Delete all refresh tokens
-    await this.deleteMany(TokenTypes.Refresh, user.id);
+    // @TODO: Think in a better strategy
+    // await this.deleteMany(TokenTypes.Refresh, user.id);
 
     let organization = user.organization;
 
