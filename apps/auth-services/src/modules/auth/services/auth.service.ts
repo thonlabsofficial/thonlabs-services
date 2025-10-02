@@ -26,7 +26,8 @@ import { SessionData } from '@/utils/interfaces/session-data';
 import { decode as jwtDecode } from 'jsonwebtoken';
 import Crypt from '@/utils/services/crypt';
 import { JwtService } from '@nestjs/jwt';
-import { RedisService } from '../../shared/database/redis.service';
+import { UserDataService } from '@/auth/modules/users/services/user-data.service';
+import { UserDetails } from '../../users/models/user';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -47,7 +48,7 @@ export class AuthService {
     private environmentDataService: EnvironmentDataService,
     private emailTemplateService: EmailTemplateService,
     private jwtService: JwtService,
-    private redisService: RedisService,
+    private userDataService: UserDataService,
   ) {}
 
   async authenticateFromEmailAndPassword(
@@ -629,7 +630,7 @@ export class AuthService {
 
   async getUserBySessionToken(
     token: string,
-  ): Promise<DataReturn<Partial<User>>> {
+  ): Promise<DataReturn<Partial<UserDetails>>> {
     if (!token) {
       this.logger.error(`Token not found`);
       return {
@@ -660,6 +661,12 @@ export class AuthService {
         active: true,
         lastSignIn: true,
         organizationId: true,
+        createdAt: true,
+        updatedAt: true,
+        environmentId: true,
+        emailConfirmed: true,
+        invitedAt: true,
+        thonLabsUser: true,
       },
     });
 
@@ -708,6 +715,14 @@ export class AuthService {
       });
     }
 
+    let metadata = {};
+
+    if (user.thonLabsUser) {
+      metadata = await this.userDataService.fetch(user.id);
+    } else {
+      metadata = await this.userDataService.fetchMetadata(user.id);
+    }
+
     return {
       data: {
         id: user.id,
@@ -716,6 +731,12 @@ export class AuthService {
         profilePicture: user.profilePicture,
         active: user.active,
         lastSignIn: user.lastSignIn,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        environmentId: user.environmentId,
+        emailConfirmed: user.emailConfirmed,
+        invitedAt: user.invitedAt,
+        metadata,
         ...(organization && { organization }),
       },
     };

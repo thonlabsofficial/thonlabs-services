@@ -19,7 +19,6 @@ import {
   UpdateOrganizationStatusData,
   updateOrganizationStatusValidator,
 } from '../validators/organization-validators';
-import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 import {
   ErrorMessages,
@@ -32,16 +31,18 @@ import { DatabaseService } from '../../shared/database/database.service';
 import { Organization } from '@prisma/client';
 import { SafeParseError } from 'zod';
 import { logoValidator } from '../../shared/validators/custom-validators';
+import { PublicKeyOrThonLabsOnly } from '../../shared/decorators/public-key-or-thon-labs-user.decorator';
+import { SecretKeyOrThonLabsOnly } from '../../shared/decorators/secret-key-or-thon-labs-user.decorator';
 
 @Controller('organizations')
 export class OrganizationController {
   constructor(
     private organizationService: OrganizationService,
     private databaseService: DatabaseService,
-  ) { }
+  ) {}
 
   @Post('')
-  @ThonLabsOnly()
+  @SecretKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   @SchemaValidator(newOrganizationSchema)
   async createOrganization(@Body() data: NewOrganizationFormData, @Req() req) {
@@ -56,7 +57,7 @@ export class OrganizationController {
   }
 
   @Patch('/:id')
-  @ThonLabsOnly()
+  @SecretKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   @SchemaValidator(updateOrganizationSchema)
   async updateOrganization(
@@ -79,7 +80,7 @@ export class OrganizationController {
   }
 
   @Patch('/:id/logo')
-  @ThonLabsOnly()
+  @SecretKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   @UseInterceptors(FileInterceptor('file'))
   async uploadLogo(
@@ -100,7 +101,7 @@ export class OrganizationController {
   }
 
   @Get('')
-  @ThonLabsOnly()
+  @PublicKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   async fetch(@Req() req) {
     const environmentId = req.headers['tl-env-id'];
@@ -132,7 +133,7 @@ export class OrganizationController {
   }
 
   @Get('/:id')
-  @ThonLabsOnly()
+  @PublicKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   async getById(@Param('id') id: string) {
     const data = await this.databaseService.organization.findFirst({
@@ -186,7 +187,7 @@ export class OrganizationController {
   }
 
   @Delete('/:id')
-  @ThonLabsOnly()
+  @SecretKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   async delete(@Param('id') id: string) {
     const result = await this.organizationService.delete(id);
@@ -199,7 +200,7 @@ export class OrganizationController {
   }
 
   @Delete('/:id/logo')
-  @ThonLabsOnly()
+  @SecretKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   async deleteLogo(@Param('id') id: string) {
     const result = await this.organizationService.deleteLogo(id);
@@ -212,7 +213,7 @@ export class OrganizationController {
   }
 
   @Patch('/:id/status')
-  @ThonLabsOnly()
+  @SecretKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   @SchemaValidator(updateOrganizationStatusValidator)
   async toggleActive(
@@ -232,5 +233,30 @@ export class OrganizationController {
       id: result?.data?.id,
       active: result?.data?.active,
     };
+  }
+
+  @Get('/:id/users')
+  @PublicKeyOrThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  async getUsers(@Req() req, @Param('id') id: string) {
+    const environmentId = req.headers['tl-env-id'];
+
+    const envOrganization =
+      await this.organizationService.validateEnvOrganizationById(
+        environmentId,
+        id,
+      );
+
+    if (envOrganization?.statusCode) {
+      throw new exceptionsMapper[envOrganization.statusCode]();
+    }
+
+    const result = await this.organizationService.getUsers(id);
+
+    if (result?.statusCode) {
+      throw new exceptionsMapper[result.statusCode](result.error);
+    }
+
+    return { items: result?.data };
   }
 }

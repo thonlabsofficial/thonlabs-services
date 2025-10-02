@@ -8,6 +8,8 @@ import { DataReturn } from '@/utils/interfaces/data-return';
 import { Organization } from '@prisma/client';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { CDNService } from '../../shared/services/cdn.service';
+import { UserDataService } from '../../users/services/user-data.service';
+import { UserDetails } from '../../users/models/user';
 
 @Injectable()
 export class OrganizationService {
@@ -15,6 +17,7 @@ export class OrganizationService {
   constructor(
     private databaseService: DatabaseService,
     private cdnService: CDNService,
+    private userDataService: UserDataService,
   ) {}
 
   async create(
@@ -268,5 +271,65 @@ export class OrganizationService {
     );
 
     return { data: existingDomains };
+  }
+
+  async getUsers(organizationId: string): Promise<DataReturn<UserDetails[]>> {
+    let users: UserDetails[] = (await this.databaseService.user.findMany({
+      where: { organizationId, active: true },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        profilePicture: true,
+        active: true,
+        createdAt: true,
+        updatedAt: true,
+        emailConfirmed: true,
+        invitedAt: true,
+        lastSignIn: true,
+      },
+    })) as UserDetails[];
+
+    users = await Promise.all(
+      users.map(async (user) => {
+        const metadata = await this.userDataService.fetchMetadata(user.id);
+        return { ...user, metadata };
+      }),
+    );
+
+    return { data: users };
+  }
+
+  async validateEnvOrganizationById(
+    environmentId: string,
+    organizationId: string,
+  ) {
+    const organization = await this.databaseService.organization.findFirst({
+      select: {
+        id: true,
+        active: true,
+      },
+      where: { id: organizationId, environmentId },
+    });
+
+    if (!organization) {
+      this.logger.error(
+        `Organization not found in environment (ENV: ${environmentId}, OID: ${organizationId})`,
+      );
+      return {
+        statusCode: StatusCodes.Forbidden,
+      };
+    }
+
+    if (!organization.active) {
+      this.logger.error(
+        `Organization is not active in environment (ENV: ${environmentId}, OID: ${organizationId})`,
+      );
+      return {
+        statusCode: StatusCodes.Forbidden,
+      };
+    }
+
+    return { data: organization };
   }
 }
