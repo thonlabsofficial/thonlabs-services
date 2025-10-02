@@ -28,6 +28,7 @@ import Crypt from '@/utils/services/crypt';
 import { JwtService } from '@nestjs/jwt';
 import { UserDataService } from '@/auth/modules/users/services/user-data.service';
 import { UserDetails } from '../../users/models/user';
+import { getFirstName, getInitials } from '@/utils/services/names-helpers';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -728,6 +729,8 @@ export class AuthService {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
+        firstName: getFirstName(user.fullName),
+        initials: getInitials(user.fullName),
         profilePicture: user.profilePicture,
         active: user.active,
         lastSignIn: user.lastSignIn,
