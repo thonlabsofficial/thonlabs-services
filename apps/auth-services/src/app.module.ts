@@ -54,7 +54,8 @@ import { AppDataController } from './modules/app/controllers/app-data.controller
 import { AppDataService } from './modules/app/services/app-data.service';
 import { UserSubscriptionService } from './modules/users/services/user-subscription.service';
 import { NeedsSecretKeyGuard } from './modules/shared/decorators/needs-secret-key.decorator';
-import { RedisService } from './modules/shared/database/redis.service';
+// import { RedisService } from './modules/shared/database/redis.service';
+import { AppController } from './modules/app/controllers/app.controller';
 
 @Module({
   imports: [
@@ -117,7 +118,7 @@ import { RedisService } from './modules/shared/database/redis.service';
     CronService,
     CDNService,
     HTTPService,
-    RedisService,
+    // RedisService,
 
     AuthService,
     EmailTemplateService,
@@ -154,6 +155,7 @@ import { RedisService } from './modules/shared/database/redis.service';
     UserDataController,
     UserSubscriptionController,
     AppDataController,
+    AppController,
   ],
 })
 export class AppModule {}

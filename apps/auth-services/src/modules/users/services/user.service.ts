@@ -25,6 +25,7 @@ import { EnvironmentDataKeys } from '@/auth/modules/environments/constants/envir
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
 import { UpdateUserGeneralDataPayload } from '../validators/user-validators';
 import { UserDataService } from './user-data.service';
+import { getFirstName, getInitials } from '@/utils/services/names-helpers';
 
 @Injectable()
 export class UserService {
@@ -83,10 +84,21 @@ export class UserService {
         environmentId: true,
         emailConfirmed: true,
         invitedAt: true,
+        organizationId: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
-    return data;
+    return {
+      ...data,
+      firstName: getFirstName(data.fullName),
+      initials: getInitials(data.fullName),
+    };
   }
 
   async getByIdAndEnv(id: string, environmentId: string) {
