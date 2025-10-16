@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseInterceptors,
@@ -238,7 +239,11 @@ export class OrganizationController {
   @Get('/:id/users')
   @PublicKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
-  async getUsers(@Req() req, @Param('id') id: string) {
+  async getUsers(
+    @Req() req,
+    @Param('id') id: string,
+    @Query('active') active: string = 'false',
+  ) {
     const environmentId = req.headers['tl-env-id'];
 
     const envOrganization =
@@ -251,7 +256,9 @@ export class OrganizationController {
       throw new exceptionsMapper[envOrganization.statusCode]();
     }
 
-    const result = await this.organizationService.getUsers(id);
+    const result = await this.organizationService.getUsers(id, {
+      active: active === 'true',
+    });
 
     if (result?.statusCode) {
       throw new exceptionsMapper[result.statusCode](result.error);

@@ -7,7 +7,7 @@
   },
   "scripts": {
     "start:auth": "nx run auth-services:start",
-    "build:auth": "nx build auth-services --prod",
+    "build:auth-services": "nx build auth-services --prod",
     "run:auth-cert": "CERT=1 pnpm run:auth",
     "run:auth": "PORT=3100 nx serve auth-services",
     "run:website": "nx serve website",

@@ -1,7 +1,9 @@
 #######################
 ### PROD DOCKERFILE ###
 #######################
-FROM node:22 AS builder
+FROM node:22-slim AS builder
+
+ARG BUILD_PROJECT
 
 RUN apt-get update -y && \ 
     apt-get install -y openssl
@@ -13,17 +15,20 @@ COPY . .
 
 RUN pnpm install --frozen-lockfile
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 RUN dotenv -e ./.env.prod -- pnpm db:migrate
 RUN rm ./.env.prod
 
-RUN pnpm build:auth
+RUN pnpm build:$BUILD_PROJECT
 
 RUN pnpm prune --prod && \
     pnpm store prune
 # -------------------------------------------------- #
-FROM node:22 AS runner
+FROM node:22-slim AS runner
+
+ARG BUILD_PROJECT
+
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -42,4 +47,6 @@ COPY --from=builder --chown=thonlabs:nodejs /app/package.json /app/pnpm-lock.yam
 COPY --from=builder --chown=thonlabs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=thonlabs:nodejs /app/dist ./dist
 
-CMD ["node", "dist/apps/auth-services/main.js"]
+WORKDIR /app/dist/apps/$BUILD_PROJECT
+
+CMD ["node", "main.js"]

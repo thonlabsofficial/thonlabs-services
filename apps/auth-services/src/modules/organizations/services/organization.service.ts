@@ -273,9 +273,15 @@ export class OrganizationService {
     return { data: existingDomains };
   }
 
-  async getUsers(organizationId: string): Promise<DataReturn<UserDetails[]>> {
+  async getUsers(
+    organizationId: string,
+    filters: { active?: boolean },
+  ): Promise<DataReturn<UserDetails[]>> {
     let users: UserDetails[] = (await this.databaseService.user.findMany({
-      where: { organizationId, active: true },
+      where: {
+        organizationId,
+        ...(filters.active && { active: filters.active }),
+      },
       select: {
         id: true,
         email: true,

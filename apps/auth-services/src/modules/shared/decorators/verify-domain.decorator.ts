@@ -25,6 +25,7 @@ export class VerifyDomainGuard implements CanActivate {
     '/auth/confirm-email',
     '/auth/session',
     '/environments',
+    '/app/health',
   ];
 
   constructor(
