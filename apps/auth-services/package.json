@@ -1,5 +1,5 @@
 {
-  "name": "@thon-labs-services/auth-services",
+  "name": "@thonlabs-services/auth-services",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -21,8 +21,8 @@
     "@nestjs/throttler": "^5.1.1",
     "@prisma/client": "^5.8.1",
     "@react-email/render": "^0.0.12",
-    "@thon-labs-services/react-email": "workspace:*",
-    "@thon-labs-services/utils": "workspace:*",
+    "@thonlabs-services/react-email": "workspace:*",
+    "@thonlabs-services/utils": "workspace:*",
     "axios": "^1.12.0",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",

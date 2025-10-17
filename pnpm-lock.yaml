@@ -62,10 +62,10 @@ importers:
       '@react-email/render':
         specifier: ^0.0.12
         version: 0.0.12
-      '@thon-labs-services/react-email':
+      '@thonlabs-services/react-email':
         specifier: workspace:*
         version: link:../../packages/react-email
-      '@thon-labs-services/utils':
+      '@thonlabs-services/utils':
         specifier: workspace:*
         version: link:../../packages/utils
       axios:
@@ -217,7 +217,7 @@ importers:
       '@react-email/tailwind':
         specifier: ^0.0.14
         version: 0.0.14(react@18.2.0)
-      '@thon-labs-services/ui':
+      '@thonlabs-services/ui':
         specifier: workspace:*
         version: link:../ui
       date-fns:

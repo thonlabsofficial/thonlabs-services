@@ -1,5 +1,5 @@
 {
-  "extends": "@thon-labs-services/typescript-config/base.json",
+  "extends": "@thonlabs-services/typescript-config/base.json",
   "compilerOptions": {
     "composite": true,
     "module": "commonjs",

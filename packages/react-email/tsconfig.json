@@ -1,5 +1,5 @@
 {
-  "extends": "@thon-labs-services/typescript-config/react-library.json",
+  "extends": "@thonlabs-services/typescript-config/react-library.json",
   "compilerOptions": {
     "composite": true,
     "outDir": "dist"

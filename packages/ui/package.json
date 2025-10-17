@@ -1,5 +1,5 @@
 {
-  "name": "@thon-labs-services/ui",
+  "name": "@thonlabs-services/ui",
   "version": "0.0.0",
   "private": true,
   "main": "./src/index.ts",

@@ -1,5 +1,5 @@
 {
-  "name": "@thon-labs-services/typescript-config",
+  "name": "@thonlabs-services/typescript-config",
   "version": "0.0.0",
   "private": true,
   "main": "index.js",
