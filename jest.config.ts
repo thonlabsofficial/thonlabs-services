@@ -1,5 +1,5 @@
-import { getJestProjects } from '@nx/jest';
-
 export default {
-  projects: getJestProjects(),
+  projects: [
+    '<rootDir>/apps/auth-services',
+  ],
 };

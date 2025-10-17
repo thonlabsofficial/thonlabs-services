@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./apps/auth-services" },
+    { "path": "./packages/react-email" },
+    { "path": "./packages/ui" },
+    { "path": "./packages/utils" },
+    { "path": "./database" }
+  ]
+}

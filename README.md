@@ -6,7 +6,7 @@ Join our waitlist - https://thonlabs.io
 
 ## Getting started
 
-This is the frontend project and uses Nest.js, NX, Prisma, Docker and Postgres
+This is the backend project and uses Nest.js, Turborepo, Prisma, Docker and Postgres
 
 ### How to install
 

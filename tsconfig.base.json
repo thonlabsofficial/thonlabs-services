@@ -17,9 +17,9 @@
     "paths": {
       "@/auth/*": ["./apps/auth-services/src/*"],
       "@/website/*": ["./apps/website/src/*"],
-      "@/emails/*": ["./libs/react-email/emails/*"],
-      "@/utils/*": ["libs/utils/src/*"],
-      "@/ui/*": ["libs/ui/src/*"]
+      "@/emails/*": ["./packages/react-email/emails/*"],
+      "@/utils/*": ["packages/utils/src/*"],
+      "@/ui/*": ["packages/ui/src/*"]
     }
   },
   "exclude": ["node_modules", "tmp"]
