@@ -1,0 +1,20 @@
+{
+  "name": "@thon-labs-services/database",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "prisma": "prisma",
+    "create-migration": "prisma migrate dev",
+    "migrate": "prisma migrate deploy",
+    "push": "prisma db push",
+    "generate": "prisma generate",
+    "studio": "prisma studio",
+    "reset": "prisma migrate reset"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.8.1"
+  },
+  "devDependencies": {
+    "prisma": "^5.8.1"
+  }
+}
