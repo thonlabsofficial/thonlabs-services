@@ -1,6 +1,7 @@
 {
   "files": [],
   "references": [
+    { "path": "./packages/typescript-config" },
     { "path": "./apps/auth-services" },
     { "path": "./packages/react-email" },
     { "path": "./packages/ui" },

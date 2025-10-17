@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/auth/*": ["./apps/auth-services/src/*"],
+      "@/website/*": ["./apps/website/src/*"],
+      "@/emails/*": ["./packages/react-email/emails/*"],
+      "@/utils/*": ["packages/utils/src/*"],
+      "@/ui/*": ["packages/ui/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}

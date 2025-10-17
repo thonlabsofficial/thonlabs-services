@@ -1,19 +1,11 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "files": [],
-  "include": [],
-  "references": [
-    {
-      "path": "./tsconfig.app.json"
-    },
-    {
-      "path": "./tsconfig.spec.json"
-    }
-  ],
+  "extends": "@thon-labs-services/typescript-config/base.json",
   "compilerOptions": {
     "composite": true,
-    "esModuleInterop": true,
-    "jsx": "react",
-    "outDir": "dist"
-  }
+    "module": "commonjs",
+    "outDir": "../../dist/apps/auth-services",
+    "esModuleInterop": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
 }

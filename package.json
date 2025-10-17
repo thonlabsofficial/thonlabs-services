@@ -9,6 +9,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev:auth": "turbo run dev --filter=@thon-labs-services/auth-services",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "start:auth": "turbo run start --filter=@thon-labs-services/auth-services",
