@@ -65,6 +65,9 @@ importers:
       '@thonlabs-services/react-email':
         specifier: workspace:*
         version: link:../../packages/react-email
+      '@thonlabs-services/typescript-config':
+        specifier: workspace:*
+        version: link:../../packages/typescript-config
       '@thonlabs-services/utils':
         specifier: workspace:*
         version: link:../../packages/utils
@@ -217,6 +220,9 @@ importers:
       '@react-email/tailwind':
         specifier: ^0.0.14
         version: 0.0.14(react@18.2.0)
+      '@thonlabs-services/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       '@thonlabs-services/ui':
         specifier: workspace:*
         version: link:../ui
@@ -244,6 +250,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@thonlabs-services/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       class-variance-authority:
         specifier: ^0.7.0
         version: 0.7.1
@@ -266,6 +275,9 @@ importers:
 
   packages/utils:
     dependencies:
+      '@thonlabs-services/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       bcrypt:
         specifier: ^5.1.1
         version: 5.1.1
