@@ -5,6 +5,7 @@ dist
 tmp
 /out-tsc
 data
+.react-email
 
 # dependencies
 node_modules
