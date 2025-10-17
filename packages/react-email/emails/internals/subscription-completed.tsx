@@ -1,8 +1,7 @@
 import { Link, Text } from '@react-email/components';
 import * as React from 'react';
 import InternalEmailBaseTemplate from './internal-email-base-template';
-import { textVariants } from '@/ui/components/text';
-import { buttonVariants } from '@/ui/components/button';
+import { textVariants, buttonVariants } from '@thonlabs-services/ui';
 
 interface Props {
   user: {

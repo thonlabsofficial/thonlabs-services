@@ -1,4 +1,4 @@
-import { ErrorCodes } from '@/utils/enums/errors-metadata';
+import { ErrorCodes } from '../enums/errors-metadata';
 
 export interface DataReturn<T = null> {
   statusCode?: number;

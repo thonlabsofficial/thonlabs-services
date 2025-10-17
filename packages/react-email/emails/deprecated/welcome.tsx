@@ -1,7 +1,7 @@
 import { Text } from '@react-email/components';
 import * as React from 'react';
 import EmailBaseTemplate from './email-base-template';
-import { textVariants } from '@/ui/components/text';
+import { textVariants } from '@thonlabs-services/ui';
 
 export function Welcome() {
   return (

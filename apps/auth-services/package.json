@@ -1,5 +1,5 @@
 {
-  "name": "auth-services",
+  "name": "@thonlabs-services/auth-services",
   "version": "0.0.0",
   "private": true,
   "scripts": {

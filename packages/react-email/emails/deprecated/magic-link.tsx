@@ -1,8 +1,7 @@
 import { Link, Text } from '@react-email/components';
 import * as React from 'react';
 import EmailBaseTemplate from './email-base-template';
-import { buttonVariants } from '@/ui/components/button';
-import { textVariants } from '@/ui/components/text';
+import { buttonVariants, textVariants } from '@thonlabs-services/ui';
 
 export function MagicLink() {
   const href = `<%= environment.appURL %>/auth/magic/<%= token %>`;

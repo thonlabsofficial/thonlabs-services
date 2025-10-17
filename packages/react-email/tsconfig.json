@@ -1,8 +1,9 @@
 {
-  "extends": "@thonlabs-services/typescript-config/react-library.json",
+  "extends": "../typescript-config/react-library.json",
   "compilerOptions": {
     "composite": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "rootDir": "emails"
   },
   "include": ["emails/**/*"]
 }

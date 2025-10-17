@@ -1,12 +1,31 @@
 import { Link, Text } from '@react-email/components';
 import * as React from 'react';
 import InternalEmailBaseTemplate from './internal-email-base-template';
-import { textVariants } from '@/ui/components/text';
+import { textVariants } from '@thonlabs-services/ui';
 import { Environment, Project } from '@prisma/client';
-import {
-  EmailProvider,
-  EmailProviderDomainStatus,
-} from '@/auth/modules/emails/interfaces/email-template';
+
+// Types duplicated from auth-services to avoid circular dependency
+export enum EmailProviderDomainStatus {
+  Verifying = 'Verifying',
+  Verified = 'Verified',
+  Failed = 'Failed',
+}
+
+export interface EmailProvider {
+  refId: string;
+  domain: string;
+  status: EmailProviderDomainStatus;
+  records: {
+    record: string;
+    name: string;
+    type: string;
+    ttl: string;
+    status: string;
+    value: string;
+    priority: number;
+  }[];
+  region: string;
+}
 
 interface Props {
   environment?: Partial<Environment>;
