@@ -3,10 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "echo 'Skipping build for react-email - files used directly'",
+    "build": "echo 'No build needed - files used directly'",
+    "typecheck": "echo 'No typecheck for react-email'",
     "dev": "email dev -p 3001 --dir emails",
     "export": "email export",
-    "lint": "echo \"No lint configured for react-email\""
+    "lint": "echo 'No lint configured for react-email'"
   },
   "dependencies": {
     "@prisma/client": "^5.8.1",

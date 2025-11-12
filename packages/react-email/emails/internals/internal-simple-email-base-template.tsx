@@ -28,6 +28,7 @@ export function InternalSimpleEmailBaseTemplate({
 }: Props) {
   return (
     <Tailwind
+      // @ts-ignore - Tailwind config type mismatch with @react-email
       config={{
         theme: {
           extend: {

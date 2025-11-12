@@ -5,8 +5,8 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "build": "npx tsc",
-    "dev": "npx tsc --watch",
+    "build": "echo 'No build needed - using TypeScript directly with Bun'",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint \"**/*.ts\""
   },
   "dependencies": {

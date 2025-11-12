@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "npx tsc",
-    "dev": "NODE_ENV=development bun --watch src/main.ts",
-    "serve": "bun dist/main.js",
-    "start": "bun dist/main.js",
+    "build": "tsc",
+    "dev": "bun --watch src/main.ts",
+    "start": "NODE_ENV=production bun dist/main.js",
+    "typecheck": "tsc --noEmit",
     "test": "bun test",
     "lint": "eslint \"**/*.ts\""
   },

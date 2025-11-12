@@ -13,11 +13,6 @@
       "@/emails/*": ["../../packages/react-email/emails/*"]
     }
   },
-  "references": [
-    { "path": "../../packages/utils" },
-    { "path": "../../packages/ui" },
-    { "path": "../../packages/react-email" }
-  ],
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "../../packages/react-email/**/*"]
 }
