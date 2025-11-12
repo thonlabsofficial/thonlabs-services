@@ -9,8 +9,25 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
 
 import { AppModule } from './app.module';
+
+// Load environment variables in development
+if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
+  // Try to load .env.local file
+  const envPath = path.resolve(__dirname, '../.env.local');
+
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+    Logger.log(`🔧 Loaded environment variables from: ${envPath}`);
+  } else {
+    Logger.warn(`⚠️  No .env.local file found at: ${envPath}`);
+    Logger.warn(
+      `💡 Create a .env.local file with your environment variables for development`,
+    );
+  }
+}
 
 async function bootstrap() {
   const httpsOptions =

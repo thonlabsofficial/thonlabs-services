@@ -1,7 +1,6 @@
 {
   "extends": "../packages/typescript-config/base.json",
   "compilerOptions": {
-    "composite": true,
     "outDir": "dist",
     "rootDir": "prisma"
   },

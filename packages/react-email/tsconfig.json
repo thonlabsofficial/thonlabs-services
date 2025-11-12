@@ -2,8 +2,11 @@
   "extends": "../typescript-config/react-library.json",
   "compilerOptions": {
     "composite": true,
+    "declaration": true,
+    "declarationMap": true,
     "outDir": "dist",
-    "rootDir": "emails"
+    "rootDir": "emails",
+    "jsx": "react-jsx"
   },
   "include": ["emails/**/*"]
 }

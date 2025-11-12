@@ -110,7 +110,7 @@ export class UserService {
   }
 
   async createOwner(payload: { password: string }): Promise<DataReturn<User>> {
-    const owner = await this.getOurByEmail('guscsales@gmail.com');
+    const owner = await this.getOurByEmail('gus@thonlabs.io');
 
     if (owner) {
       this.logger.warn('Owner already exists');
@@ -121,8 +121,8 @@ export class UserService {
 
     const user = await this.databaseService.user.create({
       data: {
-        email: 'guscsales@gmail.com',
-        fullName: 'Gustavo Owner',
+        email: 'gus@thonlabs.io',
+        fullName: 'Gus Sales',
         password,
         thonLabsUser: true,
         emailConfirmed: true,

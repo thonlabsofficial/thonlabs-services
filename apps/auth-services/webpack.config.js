@@ -5,7 +5,12 @@ module.exports = {
   entry: './src/main.ts',
   target: 'node',
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
-  externals: [nodeExternals()],
+  // Allow local packages to be included in the bundle, excluding node_modules
+  externals: [
+    nodeExternals({
+      allowlist: [/^@thonlabs-services\/.*/, /^@\/.*/],
+    }),
+  ],
   module: {
     rules: [
       {
@@ -31,6 +36,10 @@ module.exports = {
   },
   output: {
     filename: 'main.js',
-    path: path.resolve(__dirname, '../../dist/apps/auth-services'),
+    path: path.resolve(__dirname, 'dist'),
+  },
+  // Ignore warnings about large modules
+  performance: {
+    hints: false,
   },
 };

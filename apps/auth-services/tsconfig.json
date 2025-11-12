@@ -1,11 +1,11 @@
 {
   "extends": "../../packages/typescript-config/base.json",
   "compilerOptions": {
-    "composite": true,
     "module": "commonjs",
-    "outDir": "../../dist/apps/auth-services",
+    "outDir": "./dist",
     "esModuleInterop": true,
     "baseUrl": ".",
+    "jsx": "react-jsx",
     "paths": {
       "@/auth/*": ["./src/*"],
       "@/utils/*": ["../../packages/utils/src/*"],
@@ -13,6 +13,11 @@
       "@/emails/*": ["../../packages/react-email/emails/*"]
     }
   },
+  "references": [
+    { "path": "../../packages/utils" },
+    { "path": "../../packages/ui" },
+    { "path": "../../packages/react-email" }
+  ],
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.spec.ts"]
 }
