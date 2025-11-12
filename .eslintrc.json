@@ -10,7 +10,7 @@
       "files": ["*.ts", "*.tsx"],
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
-        "project": ["tsconfig.base.json"]
+        "project": ["apps/main/tsconfig.json"]
       },
       "extends": [
         "eslint:recommended",
