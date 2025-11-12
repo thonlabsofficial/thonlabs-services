@@ -2,10 +2,15 @@
   "name": "@thonlabs-services/source",
   "version": "0.0.0",
   "license": "MIT",
-  "packageManager": "pnpm@10.18.1",
+  "packageManager": "bun@1.1.0",
   "engines": {
-    "node": "22.x"
+    "bun": ">=1.1.0"
   },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "database"
+  ],
   "scripts": {
     "build:main": "turbo run build --filter=main",
     "db:migrate": "turbo run migrate --filter=@thonlabs-services/database",
@@ -21,11 +26,6 @@
     "prettier": "^3.2.4",
     "turbo": "^2.5.6",
     "typescript": "~5.3.3"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "bcrypt"
-    ]
   },
   "dependencies": {
     "tslib": "^2.8.1"

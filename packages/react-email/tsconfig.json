@@ -6,7 +6,9 @@
     "declarationMap": true,
     "outDir": "dist",
     "rootDir": "emails",
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "skipLibCheck": true,
+    "noEmit": false
   },
   "include": ["emails/**/*"]
 }

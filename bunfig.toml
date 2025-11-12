@@ -1,0 +1,11 @@
+[install]
+# Bun workspace configuration
+# Replaces pnpm-workspace.yaml
+
+[install.cache]
+# Enable caching for faster installs
+dir = "node_modules/.cache/bun"
+
+[install.scopes]
+# Trust local workspace packages
+"@thonlabs-services" = { trust = true }

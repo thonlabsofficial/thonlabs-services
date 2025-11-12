@@ -30,7 +30,7 @@
 #         - action: rebuild
 #           path: ./package.json
 #         - action: rebuild
-#           path: ./pnpm-lock.yaml
+#           path: ./bun.lock
 
 #   main-db:
 #     image: postgres:16
