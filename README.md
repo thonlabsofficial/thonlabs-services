@@ -6,7 +6,7 @@ Join our waitlist - https://thonlabs.io
 
 ## Getting started
 
-This is the frontend project and uses Nest.js, NX, Prisma, Docker and Postgres
+This is the backend project and uses Nest.js, Turborepo, Prisma, Docker and Postgres
 
 ### How to install
 
@@ -74,9 +74,42 @@ CLOUDFLARE_API_KEY=-<your_cloudflare_api_key>
 Run the project
 
 ```bash
+# Start the database
 docker compose up -d
-pnpm db:migrate # First time only
+
+# Run migrations (first time only)
+pnpm db:migrate
+
+# Start auth-services in development mode (with hot reload)
+pnpm dev:auth
+
+# OR start auth-services in production mode
 pnpm run:auth
 ```
 
 The project will start on port `https://localhost:3100`
+
+### Available Commands
+
+```bash
+# Development
+pnpm dev              # Run all packages in dev mode
+pnpm dev:auth         # Run auth-services in dev mode with hot reload
+
+# Build
+pnpm build            # Build all packages
+pnpm build:auth       # Build auth-services only
+
+# Database
+pnpm db:generate      # Generate Prisma client
+pnpm db:migrate       # Run migrations
+pnpm db:push          # Push schema changes
+pnpm db:studio        # Open Prisma Studio
+
+# Email Development
+pnpm run:email        # Start react-email dev server
+
+# Code Quality
+pnpm lint             # Lint all packages
+pnpm test             # Run tests
+```

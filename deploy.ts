@@ -12,7 +12,7 @@ interface DeployConfig {
 }
 
 const config: DeployConfig = {
-  'auth-services': {
+  main: {
     prod: {
       serviceId: '7acb5880-cf20-4931-a3c5-5c00cc0d65d1',
       registryTag: 'prod',

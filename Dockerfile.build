@@ -8,21 +8,24 @@ ARG BUILD_PROJECT
 RUN apt-get update -y && \ 
     apt-get install -y openssl
 
-RUN npm install -g pnpm dotenv-cli
+RUN npm install -g pnpm
 
 WORKDIR /app
 COPY . .
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 ENV NODE_ENV=production
 
-RUN dotenv -e ./.env.prod -- pnpm db:migrate
-RUN rm ./.env.prod
+# We need to re-visit this in case of creating deploy to a dev env on railway.
+RUN cp ./.env.prod ./database/.env && \
+    pnpm db:migrate && \
+    pnpm db:generate && \
+    rm ./database/.env ./.env.prod
 
 RUN pnpm build:$BUILD_PROJECT
 
-RUN pnpm prune --prod && \
+RUN CI=true pnpm prune --prod --no-optional && \
     pnpm store prune
 # -------------------------------------------------- #
 FROM node:22-slim AS runner
@@ -45,8 +48,8 @@ USER thonlabs
 
 COPY --from=builder --chown=thonlabs:nodejs /app/package.json /app/pnpm-lock.yaml ./
 COPY --from=builder --chown=thonlabs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=thonlabs:nodejs /app/dist ./dist
+COPY --from=builder --chown=thonlabs:nodejs /app/apps/$BUILD_PROJECT/dist ./apps/$BUILD_PROJECT/dist
 
-WORKDIR /app/dist/apps/$BUILD_PROJECT
+WORKDIR /app/apps/$BUILD_PROJECT/dist
 
 CMD ["node", "main.js"]

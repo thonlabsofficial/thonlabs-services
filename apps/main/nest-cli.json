@@ -1,0 +1,23 @@
+{
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": false,
+    "tsConfigPath": "tsconfig.json",
+    "outDir": "./dist",
+    "watchAssets": false,
+    "assets": [
+      "**/*.json",
+      "**/*.md"
+    ]
+  },
+  "watchOptions": {
+    "ignored": [
+      "node_modules",
+      "dist",
+      "**/*.spec.ts",
+      "**/*.d.ts"
+    ]
+  }
+}

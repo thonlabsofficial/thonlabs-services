@@ -1,0 +1,25 @@
+{
+  "watch": [
+    "src",
+    "../../packages/*/src/**/*.ts",
+    "../../packages/*/src/**/*.tsx"
+  ],
+  "ext": "ts,tsx",
+  "ignore": [
+    "src/**/*.spec.ts",
+    "dist/**/*",
+    "**/*.d.ts",
+    "**/*.map",
+    "node_modules/**/*",
+    "../../packages/*/dist/**/*",
+    "../../packages/*/node_modules/**/*"
+  ],
+  "exec": "ts-node -r tsconfig-paths/register src/main.ts",
+  "env": {
+    "NODE_ENV": "development",
+    "PORT": "3100"
+  },
+  "delay": 300,
+  "legacyWatch": false,
+  "verbose": false
+}
