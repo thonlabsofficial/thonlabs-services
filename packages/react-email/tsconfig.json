@@ -1,12 +1,12 @@
 {
-  "extends": "../typescript-config/react-library.json",
   "compilerOptions": {
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true,
-    "outDir": "dist",
-    "rootDir": "emails",
-    "jsx": "react-jsx"
+    "composite": false,
+    "jsx": "react-jsx",
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "strictNullChecks": true
   },
-  "include": ["emails/**/*"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", ".react-email"]
 }
