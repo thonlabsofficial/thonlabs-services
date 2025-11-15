@@ -29,6 +29,7 @@ import {
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DatabaseService } from '../../shared/database/database.service';
+import { MetadataValueService } from '@/auth/modules/metadata/services/metadata-value.service';
 import { Organization } from '@prisma/client';
 import { SafeParseError } from 'zod';
 import { logoValidator } from '../../shared/validators/custom-validators';
@@ -40,6 +41,7 @@ export class OrganizationController {
   constructor(
     private organizationService: OrganizationService,
     private databaseService: DatabaseService,
+    private metadataValueService: MetadataValueService,
   ) {}
 
   @Post('')
@@ -123,13 +125,25 @@ export class OrganizationController {
       },
     });
 
+    // Get metadata for all organizations in batch
+    const organizationIds = items.map((item) => item.id);
+    const metadataByOrg = await this.metadataValueService.getMetadataByContext(
+      organizationIds,
+      'Organization',
+    );
+
     return {
-      items: items.map((item) => ({
-        ...item,
-        logo: item.logo
-          ? this.organizationService.getLogoUrl(item as Organization)
-          : null,
-      })),
+      items: items.map((item) => {
+        const metadata = metadataByOrg[item.id] || {};
+
+        return {
+          ...item,
+          logo: item.logo
+            ? this.organizationService.getLogoUrl(item as Organization)
+            : null,
+          metadata,
+        };
+      }),
     };
   }
 
@@ -184,7 +198,17 @@ export class OrganizationController {
       );
     }
 
-    return data;
+    // Get organization metadata
+    const metadataResult = await this.metadataValueService.getMetadataByContext(
+      [id],
+      'Organization',
+    );
+    const metadata = metadataResult[id] || {};
+
+    return {
+      ...data,
+      metadata,
+    };
   }
 
   @Delete('/:id')

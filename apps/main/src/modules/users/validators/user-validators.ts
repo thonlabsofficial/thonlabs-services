@@ -19,7 +19,6 @@ export const updateUserGeneralDataValidator = z.object({
       message: 'Please enter the full name',
     }),
   organizationId: z.string().optional(),
-  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 export type UpdateUserGeneralDataPayload = z.infer<

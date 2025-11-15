@@ -50,12 +50,14 @@ import { EmailProviderService } from './modules/emails/services/email-provider.s
 import { UserDataController } from './modules/users/controllers/user-data.controller';
 import { UserDataService } from './modules/users/services/user-data.service';
 import { UserSubscriptionController } from './modules/users/controllers/user-subscription.controller';
-import { AppDataController } from './modules/app/controllers/app-data.controller';
-import { AppDataService } from './modules/app/services/app-data.service';
 import { UserSubscriptionService } from './modules/users/services/user-subscription.service';
 import { NeedsSecretKeyGuard } from './modules/shared/decorators/needs-secret-key.decorator';
 // import { RedisService } from './modules/shared/database/redis.service';
 import { AppController } from './modules/app/controllers/app.controller';
+import { MetadataModelService } from './modules/metadata/services/metadata-model.service';
+import { MetadataValueService } from './modules/metadata/services/metadata-value.service';
+import { MetadataModelController } from './modules/metadata/controllers/metadata-model.controller';
+import { MetadataValueController } from './modules/metadata/controllers/metadata-value.controller';
 
 @Module({
   imports: [
@@ -136,8 +138,9 @@ import { AppController } from './modules/app/controllers/app.controller';
     EnvironmentCredentialService,
     EmailProviderService,
     UserDataService,
-    AppDataService,
     UserSubscriptionService,
+    MetadataModelService,
+    MetadataValueService,
   ],
   controllers: [
     AuthController,
@@ -154,8 +157,9 @@ import { AppController } from './modules/app/controllers/app.controller';
     UserController,
     UserDataController,
     UserSubscriptionController,
-    AppDataController,
     AppController,
+    MetadataModelController,
+    MetadataValueController,
   ],
 })
 export class AppModule {}

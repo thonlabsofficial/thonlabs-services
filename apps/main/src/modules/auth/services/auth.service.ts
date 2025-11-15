@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   EmailTemplates,
   Environment,
+  MetadataModelContext,
   TokenStorage,
   TokenTypes,
   User,
@@ -26,9 +27,9 @@ import { SessionData } from '@/utils/interfaces/session-data';
 import { decode as jwtDecode } from 'jsonwebtoken';
 import Crypt from '@/utils/services/crypt';
 import { JwtService } from '@nestjs/jwt';
-import { UserDataService } from '@/auth/modules/users/services/user-data.service';
 import { UserDetails } from '../../users/models/user';
 import { getFirstName, getInitials } from '@/utils/services/names-helpers';
+import { MetadataValueService } from '@/auth/modules/metadata/services/metadata-value.service';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -49,7 +50,7 @@ export class AuthService {
     private environmentDataService: EnvironmentDataService,
     private emailTemplateService: EmailTemplateService,
     private jwtService: JwtService,
-    private userDataService: UserDataService,
+    private metadataValueService: MetadataValueService,
   ) {}
 
   async authenticateFromEmailAndPassword(
@@ -716,13 +717,11 @@ export class AuthService {
       });
     }
 
-    let metadata = {};
-
-    if (user.thonLabsUser) {
-      metadata = await this.userDataService.fetch(user.id);
-    } else {
-      metadata = await this.userDataService.fetchMetadata(user.id);
-    }
+    const metadataResult = await this.metadataValueService.getMetadataByContext(
+      [user.id],
+      MetadataModelContext.User,
+    );
+    const metadata = metadataResult[user.id] || {};
 
     return {
       data: {

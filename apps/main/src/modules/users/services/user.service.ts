@@ -1,13 +1,6 @@
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  EmailTemplates,
-  Organization,
-  TokenTypes,
-  User,
-  UserData,
-  UserDataType,
-} from '@prisma/client';
+import { EmailTemplates, Organization, TokenTypes, User } from '@prisma/client';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import {
   ErrorCodes,
@@ -25,6 +18,7 @@ import { EnvironmentDataKeys } from '@/auth/modules/environments/constants/envir
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
 import { UpdateUserGeneralDataPayload } from '../validators/user-validators';
 import { UserDataService } from './user-data.service';
+import { MetadataValueService } from '@/auth/modules/metadata/services/metadata-value.service';
 import { getFirstName, getInitials } from '@/utils/services/names-helpers';
 
 @Injectable()
@@ -39,6 +33,7 @@ export class UserService {
     private organizationService: OrganizationService,
     private emailTemplateService: EmailTemplateService,
     private userDataService: UserDataService,
+    private metadataValueService: MetadataValueService,
   ) {}
 
   async getOurByEmail(email: string) {
@@ -94,10 +89,18 @@ export class UserService {
       },
     });
 
+    // Get user metadata
+    const metadataResult = await this.metadataValueService.getMetadataByContext(
+      [id],
+      'User',
+    );
+    const metadata = metadataResult[id] || {};
+
     return {
       ...data,
       firstName: getFirstName(data.fullName),
       initials: getInitials(data.fullName),
+      metadata,
     };
   }
 
@@ -482,15 +485,6 @@ export class UserService {
 
     this.logger.log(`General data updated for ${userId}`);
 
-    if (payload.metadata) {
-      const metadata = await this.userDataService.manageMetadata(
-        userId,
-        payload.metadata,
-      );
-
-      user.metadata = metadata.data.metadata as UserData[];
-    }
-
     return user;
   }
 
@@ -561,44 +555,26 @@ export class UserService {
             name: true,
           },
         },
-        userData: {
-          select: {
-            key: true,
-            value: true,
-            type: true,
-          },
-        },
       },
       where: {
         environmentId: params.environmentId,
-        userData: {
-          every: {
-            type: UserDataType.Metadata,
-          },
-        },
       },
     });
 
-    return users.map((user) => {
-      const metadata = {};
+    // Get metadata for all users in batch
+    const userIds = users.map((user) => user.id);
+    const metadataByUser = await this.metadataValueService.getMetadataByContext(
+      userIds,
+      'User',
+    );
 
-      for (const data of user.userData) {
-        metadata[data.key] = data.value;
-      }
+    return users.map((user) => {
+      const metadata = metadataByUser[user.id] || {};
 
       return {
-        active: user.active,
-        createdAt: user.createdAt,
-        email: user.email,
-        fullName: user.fullName,
-        id: user.id,
-        lastSignIn: user.lastSignIn,
-        profilePicture: user.profilePicture,
-        updatedAt: user.updatedAt,
-        environmentId: user.environmentId,
-        emailConfirmed: user.emailConfirmed,
-        invitedAt: user.invitedAt,
-        organization: user.organization,
+        ...user,
+        firstName: getFirstName(user.fullName),
+        initials: getInitials(user.fullName),
         metadata,
       };
     });

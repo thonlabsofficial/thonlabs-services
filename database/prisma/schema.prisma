@@ -17,23 +17,6 @@ enum TokenTypes {
   InviteUser
 }
 
-enum CustomFieldTypes {
-  String
-  Int
-  Boolean
-  JSON
-}
-
-enum CustomFieldRelationsTypes {
-  User
-  CMS
-}
-
-enum ProjectConfigRelationTypes {
-  CustomFields
-  UserRoles
-}
-
 enum EmailTemplates {
   Welcome
   MagicLink
@@ -58,19 +41,23 @@ enum SubscriptionStatus {
   Cancelled
 }
 
+enum MetadataModelType {
+  String
+  Number
+  Boolean
+  JSON
+  List
+}
+
+enum MetadataModelContext {
+  Environment  @map("environment")
+  User
+  Organization
+}
+
 enum UserDataType {
   Internal
   Metadata
-}
-
-model AppData {
-  id        Int      @id @default(autoincrement())
-  key       String
-  value     Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("app_data")
 }
 
 model User {
@@ -91,13 +78,11 @@ model User {
 
   environment   Environment? @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   environmentId String?
-  role          Role?        @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  roleId        String?
   projects      Project[]
-  userData      UserData[]
 
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
+  userData       UserData[]
 
   @@map("users")
 }
@@ -117,37 +102,17 @@ model UserData {
 }
 
 model Project {
-  id                  String                       @id
-  appName             String
-  active              Boolean                      @default(true)
-  createdAt           DateTime                     @default(now())
-  updatedAt           DateTime                     @updatedAt
-  userOwner           User                         @relation(fields: [userOwnerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userOwnerId         String
-  main                Boolean                      @default(false)
-  environments        Environment[]
-  environmentsConfigs ProjectConfigOnEnvironment[]
+  id           String        @id
+  appName      String
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  userOwner    User          @relation(fields: [userOwnerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userOwnerId  String
+  main         Boolean       @default(false)
+  environments Environment[]
 
   @@map("projects")
-}
-
-model CustomField {
-  // This ID is connected to ProjectConfigOnEnvironment
-  id           String                    @id @default(uuid())
-  name         String
-  type         CustomFieldTypes
-  relationType CustomFieldRelationsTypes
-
-  @@map("custom_fields")
-}
-
-model Role {
-  // This ID is connected to ProjectConfigOnEnvironment
-  id    String @id
-  name  String
-  users User[]
-
-  @@map("roles")
 }
 
 model Environment {
@@ -169,10 +134,9 @@ model Environment {
   customDomainTXT               String?
   customDomainTXTStatus         CustomDomainStatus?
 
-  project         Project                      @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  project         Project           @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   projectId       String
   users           User[]
-  projectConfigs  ProjectConfigOnEnvironment[]
   emailsTemplates EmailTemplate[]
   tokens          TokenStorage[]
   environmentData EnvironmentData[]
@@ -210,23 +174,6 @@ model EnvironmentData {
   @@map("environment_data")
 }
 
-model ProjectConfigOnEnvironment {
-  id            String  @default(uuid())
-  environmentId String
-  active        Boolean @default(true)
-  projectId     String
-
-  // Relation connected to Roles and Custom Fields
-  relationId   String
-  relationType ProjectConfigRelationTypes
-
-  environment Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@id([environmentId, projectId])
-  @@map("projects_configs_on_environments")
-}
-
 model EmailTemplate {
   id            String         @id @default(uuid())
   type          EmailTemplates
@@ -261,4 +208,32 @@ model TokenStorage {
   environmentId String?
 
   @@map("tokens_storage")
+}
+
+model MetadataModel {
+  id          Int                  @id @default(autoincrement())
+  name        String
+  key         String
+  description String?
+  type        MetadataModelType
+  options     Json?
+  context     MetadataModelContext
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  values      MetadataValue[]
+
+  @@map("metadata_models")
+}
+
+model MetadataValue {
+  metadataModelId Int
+  relationId      String
+  value           Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  metadataModel MetadataModel @relation(fields: [metadataModelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([metadataModelId, relationId])
+  @@map("metadata_values")
 }

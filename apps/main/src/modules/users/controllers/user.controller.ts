@@ -98,10 +98,7 @@ export class UserController {
   async getById(@Req() req, @Param('id') id: string) {
     const environmentId = req.headers['tl-env-id'];
 
-    const [user, metadata] = await Promise.all([
-      this.userService.getDetailedById(id),
-      this.userDataService.fetchMetadata(id),
-    ]);
+    const user = await this.userService.getDetailedById(id);
 
     if (user.environmentId !== environmentId) {
       throw new exceptionsMapper[StatusCodes.NotFound](
@@ -109,7 +106,7 @@ export class UserController {
       );
     }
 
-    return { ...user, metadata };
+    return user;
   }
 
   @Patch('/:id/general-data')
