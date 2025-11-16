@@ -56,6 +56,11 @@ export class VerifyDomainGuard implements CanActivate {
         .hostname;
       const apiDomain = new URL(process.env.API_ROOT_URL).hostname;
 
+      if (originDomain === 'healthcheck.railway.app') {
+        this.logger.log('Performing health check on Railway...');
+        return true;
+      }
+
       if (originDomain === apiDomain) {
         return true;
       }

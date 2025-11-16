@@ -101,7 +101,7 @@ export class PublicKeyOrThonLabsOnlyGuard implements CanActivate {
 
       return false;
     } catch (e) {
-      this.logger.log('Invalid Token');
+      this.logger.log('Invalid Token', e);
 
       res.status(StatusCodes.Unauthorized).json({
         error: ErrorMessages.Unauthorized,

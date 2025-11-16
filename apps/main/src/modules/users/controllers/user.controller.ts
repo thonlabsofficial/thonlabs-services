@@ -223,7 +223,6 @@ export class UserController {
 
   @Patch(':userId/set-as-thon-labs-user')
   @ThonLabsOnly()
-  // TODO: update decorator to use ROLES
   async setAsThonLabsUser(@Param('userId') userId: string) {
     await this.userService.setAsThonLabsUser(userId);
   }

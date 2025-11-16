@@ -50,7 +50,7 @@ async function deploy(project: string, environment: string) {
     console.log('✅ Logged in to GitHub Container Registry\n');
 
     console.log('🔨 Building and pushing image\n');
-    await exec(`docker buildx build --file ${dockerfile || 'Dockerfile.build'} \\
+    await exec(`docker buildx build --progress=plain --file ${dockerfile || 'Dockerfile.build'} \\
       --platform ${platformStr} \\
       --build-arg BUILD_PROJECT=${project} \\
       -t ghcr.io/guscsales/thonlabs-${project}:${registryTag} \\
