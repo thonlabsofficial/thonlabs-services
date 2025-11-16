@@ -43,23 +43,23 @@ async function deploy(project: string, environment: string) {
   console.log(`🖥️  Platform: ${platformStr}`);
   console.log('========================================\n');
   try {
-    console.log('🔐 Logging in to GitHub Container Registry\n');
-    await exec(
-      `echo "${process.env.GITHUB_TOKEN}" | docker login ghcr.io -u guscsales --password-stdin`,
-    );
-    console.log('✅ Logged in to GitHub Container Registry\n');
+    // console.log('🔐 Logging in to GitHub Container Registry\n');
+    // await exec(
+    //   `echo "${process.env.GITHUB_TOKEN}" | docker login ghcr.io -u guscsales --password-stdin`,
+    // );
+    // console.log('✅ Logged in to GitHub Container Registry\n');
 
-    console.log('🔨 Building and pushing image\n');
-    await exec(`docker buildx build --progress=plain --file ${dockerfile || 'Dockerfile.build'} \\
-      --platform ${platformStr} \\
-      --build-arg BUILD_PROJECT=${project} \\
-      -t ghcr.io/guscsales/thonlabs-${project}:${registryTag} \\
-      --push .`);
-    console.log('✅ Image built and pushed\n');
+    // console.log('🔨 Building and pushing image\n');
+    // await exec(`docker buildx build --progress=plain --file ${dockerfile || 'Dockerfile.build'} \\
+    //   --platform ${platformStr} \\
+    //   --build-arg BUILD_PROJECT=${project} \\
+    //   -t ghcr.io/guscsales/thonlabs-${project}:${registryTag} \\
+    //   --push .`);
+    // console.log('✅ Image built and pushed\n');
 
     console.log('🚂 Deploying to Railway\n');
     await exec(
-      `RAILWAY_TOKEN=${process.env.RAILWAY_TOKEN} railway redeploy --service=${serviceId} -y`,
+      `RAILWAY_TOKEN=${process.env.RAILWAY_TOKEN} railway up --service=${serviceId}`,
     );
     console.log('✅ Deployed to Railway in background\n');
 
