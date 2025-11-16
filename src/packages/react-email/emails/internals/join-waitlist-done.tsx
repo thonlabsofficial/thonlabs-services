@@ -1,7 +1,7 @@
 import { Text } from '@react-email/components';
 import * as React from 'react';
 import InternalSimpleEmailBaseTemplate from './internal-simple-email-base-template';
-import { textVariants } from '@thonlabs-services/ui';
+import { textVariants } from '@/ui';
 
 interface Props {
   userFirstName: string;

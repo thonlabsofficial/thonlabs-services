@@ -1,7 +1,7 @@
 import { Link, Text } from '@react-email/components';
 import * as React from 'react';
 import InternalEmailBaseTemplate from './internal-email-base-template';
-import { textVariants } from '@thonlabs-services/ui';
+import { textVariants } from '@/ui';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Environment, Project } from '@prisma/client';
 

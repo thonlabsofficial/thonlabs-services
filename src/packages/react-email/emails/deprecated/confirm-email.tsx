@@ -1,14 +1,19 @@
 import { Link, Text } from '@react-email/components';
 import * as React from 'react';
 import EmailBaseTemplate from './email-base-template';
-import { buttonVariants, textVariants } from '@thonlabs-services/ui';
+import { buttonVariants, textVariants } from '@/ui';
 
-export function MagicLink() {
-  const href = `<%= environment.appURL %>/auth/magic/<%= token %>`;
+export function ConfirmEmail() {
+  const href = `<%= environment.appURL %>/auth/confirm-email/<%= token %>`;
 
   return (
-    <EmailBaseTemplate title="Your Login Link">
-      <Text className={textVariants({ variant: 'paragraphEmail' })}>
+    <EmailBaseTemplate title="Confirm Your Email">
+      <Text
+        className={textVariants({
+          variant: 'paragraphEmail',
+          className: 'mb-4',
+        })}
+      >
         Hey{' '}
         {
           '<% if (user.firstName) { %> <%= user.firstName %><% } else { %>there<% } %>'
@@ -22,7 +27,10 @@ export function MagicLink() {
           className: 'mb-3',
         })}
       >
-        You can safely complete your login by clicking on button below.
+        We've received a request to sign up for{' '}
+        {'<%= environment.project.appName %>'} using this email address. To
+        complete the registration process, kindly confirm your email by clicking
+        on the button below.
       </Text>
 
       <Link
@@ -31,7 +39,7 @@ export function MagicLink() {
         })}
         href={href}
       >
-        Complete Login
+        Confirm Email
       </Link>
 
       <Text
@@ -40,7 +48,7 @@ export function MagicLink() {
           className: 'mt-4 mb-0',
         })}
       >
-        In case of the button not works, you can login through the link:
+        In case of the button not works, you can confirm through the link:
       </Text>
       <Link
         href={href}
@@ -58,8 +66,8 @@ export function MagicLink() {
           className: 'mt-6 mb-5',
         })}
       >
-        If you didn't initiate this login request, please disregard this message
-        or contact our security team on{' '}
+        If you didn't initiate this sign-up request, please disregard this
+        message or contact our security team{' '}
         <Link
           href="mailto:security@thonlabs.io"
           className={textVariants({
@@ -74,4 +82,4 @@ export function MagicLink() {
   );
 }
 
-export default MagicLink;
+export default ConfirmEmail;

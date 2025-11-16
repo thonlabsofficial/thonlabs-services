@@ -3,8 +3,6 @@
 #######################
 FROM node:22-slim AS builder
 
-ARG BUILD_PROJECT
-
 RUN apt-get update -y && \ 
     apt-get install -y openssl
 
@@ -17,19 +15,20 @@ RUN pnpm install
 
 ENV NODE_ENV=production
 
-# We need to re-visit this in case of creating deploy to a dev env on railway.
-RUN cp ./.env.prod ./database/.env && \
-    pnpm db:migrate && \
-    pnpm db:generate && \
-    rm ./database/.env ./.env.prod
+# Migrate and generate Prisma
+RUN cp ./.env.prod ./src/database/.env && \
+    pnpm prisma:generate && \
+    pnpm prisma:migrate && \
+    rm ./src/database/.env ./.env.prod
 
-RUN pnpm build:$BUILD_PROJECT
+# Build the application
+RUN pnpm build
 
-RUN rm -rf node_modules
+# Remove dev dependencies
+RUN pnpm install --prod
+
 # -------------------------------------------------- #
 FROM node:22-slim AS runner
-
-ARG BUILD_PROJECT
 
 WORKDIR /app
 
@@ -39,18 +38,15 @@ ENV PORT=8080
 RUN apt-get update -y && \ 
     apt-get install -y openssl
 
-RUN npm install -g pnpm
-
-COPY --from=builder --chown=thonlabs:nodejs /app/packages ./packages
-COPY --from=builder --chown=thonlabs:nodejs /app/database ./database
-COPY --from=builder --chown=thonlabs:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY --from=builder --chown=thonlabs:nodejs /app/apps/$BUILD_PROJECT/package.json ./
-COPY --from=builder --chown=thonlabs:nodejs /app/apps/$BUILD_PROJECT/dist ./
-
-RUN pnpm install --prod
-
+# Create user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 thonlabs
+
+# Copy built application and dependencies
+COPY --from=builder --chown=thonlabs:nodejs /app/dist ./dist
+COPY --from=builder --chown=thonlabs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=thonlabs:nodejs /app/package.json ./package.json
+
 USER thonlabs
 
-CMD ["node", "main.js"]
+CMD ["node", "dist/main.js"]

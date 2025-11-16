@@ -1,4 +1,4 @@
-# ThonLabs Backend Monorepo
+# ThonLabs Backend
 
 ThonLabs is an open-source all-in-one platform that gives your SaaS the foundation it needs — with plug-and-play authentication, user and organization management, and more.
 
@@ -6,7 +6,7 @@ Join our waitlist - https://thonlabs.io
 
 ## Getting started
 
-This is the backend project and uses Nest.js, Turborepo, Prisma, Docker and Postgres
+This is the backend project and uses NestJS, Prisma, Docker and PostgreSQL.
 
 ### How to install
 
@@ -19,19 +19,10 @@ npm i -g pnpm
 Install the packages
 
 ```bash
-pnpm i
+pnpm install
 ```
 
-ThonLabs uses ThonLabs, so you need to create two `.env` files
-
-The first one with a name `.env` will be located at root folder.
-
-```markdown
-DATABASE_URL='postgresql://thonlabs:12345678@localhost:5432/thonlabs?schema=public'
-DIRECT_URL='postgresql://thonlabs:12345678@localhost:5432/thonlabs?schema=public'
-```
-
-The second one with a name `.env.local` will be located at root `apps/auth-services/.env.local`.
+ThonLabs uses ThonLabs, so you need to create a `.env.local` file at the root folder:
 
 ```markdown
 ## THON LABS SERVICES LOCAL ENVS
@@ -68,7 +59,7 @@ AWS_SECRET_ACCESS_KEY=<your_aws_secret_access_key>
 # Cloudflare
 CLOUDFLARE_BASE_API_URL=https://api.cloudflare.com/client/v4
 CLOUDFLARE_ZONE_ID=<your_cloudflare_zone_id>
-CLOUDFLARE_API_KEY=-<your_cloudflare_api_key>
+CLOUDFLARE_API_KEY=<your_cloudflare_api_key>
 ```
 
 Run the project
@@ -77,14 +68,17 @@ Run the project
 # Start the database
 docker compose up -d
 
+# Generate Prisma client
+pnpm prisma:generate
+
 # Run migrations (first time only)
-pnpm db:migrate
+pnpm prisma:migrate
 
-# Start auth-services in development mode (with hot reload)
-pnpm dev:auth
+# Start in development mode (with hot reload)
+pnpm start:dev
 
-# OR start auth-services in production mode
-pnpm run:auth
+# OR start in production mode
+pnpm start:prod
 ```
 
 The project will start on port `https://localhost:3100`
@@ -93,23 +87,43 @@ The project will start on port `https://localhost:3100`
 
 ```bash
 # Development
-pnpm dev              # Run all packages in dev mode
-pnpm dev:auth         # Run auth-services in dev mode with hot reload
+pnpm start:dev        # Run in development mode with hot reload
+pnpm start:debug      # Run in debug mode
+pnpm start:prod       # Run in production mode
 
 # Build
-pnpm build            # Build all packages
-pnpm build:auth       # Build auth-services only
+pnpm build            # Build the project
 
-# Database
-pnpm db:generate      # Generate Prisma client
-pnpm db:migrate       # Run migrations
-pnpm db:push          # Push schema changes
-pnpm db:studio        # Open Prisma Studio
+# Database (Prisma)
+pnpm prisma:generate  # Generate Prisma client
+pnpm prisma:migrate   # Run migrations in production
+pnpm prisma:migrate:dev # Create and run migrations in development
+pnpm prisma:push      # Push schema changes without migration
+pnpm prisma:studio    # Open Prisma Studio
+pnpm prisma:reset     # Reset database
 
 # Email Development
-pnpm run:email        # Start react-email dev server
+pnpm email:dev        # Start react-email dev server
+pnpm email:export     # Export email templates
 
 # Code Quality
-pnpm lint             # Lint all packages
+pnpm lint             # Lint the codebase
 pnpm test             # Run tests
+pnpm test:watch       # Run tests in watch mode
+pnpm test:cov         # Run tests with coverage
+```
+
+## Project Structure
+
+```
+/workspace
+├── src/
+│   ├── modules/          # NestJS modules
+│   ├── packages/         # Internal packages (utils, ui, react-email)
+│   └── database/         # Prisma schema and migrations
+├── dist/                 # Build output
+├── package.json          # Single package.json for the entire project
+├── tsconfig.json         # TypeScript configuration
+├── nest-cli.json         # NestJS CLI configuration
+└── Dockerfile.build      # Docker build configuration
 ```

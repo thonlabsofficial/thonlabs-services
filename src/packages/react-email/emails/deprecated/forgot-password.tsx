@@ -1,7 +1,7 @@
 import { Link, Text } from '@react-email/components';
 import * as React from 'react';
 import EmailBaseTemplate from './email-base-template';
-import { buttonVariants, textVariants } from '@thonlabs-services/ui';
+import { buttonVariants, textVariants } from '@/ui';
 
 export function ForgotPassword() {
   const href = `<%= environment.appURL %>/auth/reset-password/<%= token %>`;
