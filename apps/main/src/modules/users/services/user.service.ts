@@ -19,6 +19,8 @@ import { UpdateUserGeneralDataPayload } from '../validators/user-validators';
 import { UserDataService } from './user-data.service';
 import { MetadataValueService } from '@/auth/modules/metadata/services/metadata-value.service';
 import { getFirstName, getInitials } from '@/utils/services/names-helpers';
+import { RedisService } from '@/auth/modules/shared/database/redis.service';
+import { RedisKeys } from '@/auth/modules/shared/database/redis-keys';
 
 @Injectable()
 export class UserService {
@@ -33,6 +35,7 @@ export class UserService {
     private emailTemplateService: EmailTemplateService,
     private userDataService: UserDataService,
     private metadataValueService: MetadataValueService,
+    private redisService: RedisService,
   ) {}
 
   async getOurByEmail(email: string) {
@@ -454,6 +457,8 @@ export class UserService {
 
     user = updatedUser as typeof user;
 
+    await this.redisService.delete(RedisKeys.session(userId));
+
     this.logger.log(`General data updated for ${userId}`);
 
     return user;
@@ -583,6 +588,8 @@ export class UserService {
         active,
       },
     });
+
+    await this.redisService.delete(RedisKeys.session(userId));
 
     this.logger.log(
       `User ${userId} has been ${active ? 'activated' : 'deactivated'}`,

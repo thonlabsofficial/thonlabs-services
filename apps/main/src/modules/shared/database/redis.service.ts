@@ -73,6 +73,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const serializedValue =
       typeof value === 'object' ? JSON.stringify(value) : value;
 
+    this.logger.debug(`Setting value in Redis (key: ${key})`);
+
     if (ttlInSeconds) {
       await this.client.setex(key, ttlInSeconds, serializedValue);
     } else {
@@ -95,10 +97,13 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
+    this.logger.debug(`Getting value from Redis (key: ${key})`);
+
     return value as T;
   }
 
   async delete(...keys: string[]): Promise<number> {
+    this.logger.debug(`Deleting value from Redis (keys: ${keys.join(', ')})`);
     return await this.client.del(...keys);
   }
 

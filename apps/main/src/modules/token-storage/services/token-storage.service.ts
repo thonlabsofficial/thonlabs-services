@@ -160,10 +160,6 @@ export class TokenStorageService {
     const payload = {
       sub: user.id,
       thonLabsUser: user.thonLabsUser,
-      email: user.email,
-      profilePicture: user.profilePicture,
-      fullName: user.fullName,
-      organization,
     };
 
     const result = {};

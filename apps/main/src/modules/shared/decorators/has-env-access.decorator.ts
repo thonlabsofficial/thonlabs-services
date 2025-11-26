@@ -180,21 +180,21 @@ export class HasEnvAccessGuard implements CanActivate {
       );
     }
 
-    if (
-      req?.headers['tl-env-id'] &&
-      (req?.headers['tl-public-key'] || req?.headers['tl-secret-key'])
-    ) {
-      const userBelongsToEnvironment =
-        await this.environmentService.userBelongsTo(user.sub, environmentId);
+    // if (
+    //   req?.headers['tl-env-id'] &&
+    //   (req?.headers['tl-public-key'] || req?.headers['tl-secret-key'])
+    // ) {
+    //   const userBelongsToEnvironment =
+    //     await this.environmentService.userBelongsTo(user.sub, environmentId);
 
-      if (userBelongsToEnvironment) {
-        return true;
-      }
+    //   if (userBelongsToEnvironment) {
+    //     return true;
+    //   }
 
-      this.logger.warn(
-        `User ${user.sub} not belongs to Environment ${environmentId}`,
-      );
-    }
+    //   this.logger.warn(
+    //     `User ${user.sub} not belongs to Environment ${environmentId}`,
+    //   );
+    // }
 
     return false;
   }

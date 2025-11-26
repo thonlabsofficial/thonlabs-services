@@ -24,11 +24,12 @@ import {
 } from '@/auth/modules/environments/constants/environment-data';
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
 import { SessionData } from '@/utils/interfaces/session-data';
-import { decode as jwtDecode } from 'jsonwebtoken';
 import { JwtService } from '@nestjs/jwt';
 import { UserDetails } from '../../users/models/user';
 import { getFirstName, getInitials } from '@/utils/services/names-helpers';
 import { MetadataValueService } from '@/auth/modules/metadata/services/metadata-value.service';
+import { RedisService } from '@/auth/modules/shared/database/redis.service';
+import { RedisKeys } from '@/auth/modules/shared/database/redis-keys';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -50,6 +51,7 @@ export class AuthService {
     private emailTemplateService: EmailTemplateService,
     private jwtService: JwtService,
     private metadataValueService: MetadataValueService,
+    private redisService: RedisService,
   ) {}
 
   async authenticateFromEmailAndPassword(
@@ -631,45 +633,75 @@ export class AuthService {
     token: string,
   ): Promise<DataReturn<Partial<UserDetails>>> {
     if (!token) {
-      this.logger.error(`Token not found`);
+      this.logger.warn(`Token not found`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
       };
     }
 
-    const session = jwtDecode(token) as SessionData;
+    let session: SessionData;
+
+    try {
+      session = await this.jwtService.verifyAsync(token, {
+        secret: process.env.ENCODE_SECRET,
+      });
+    } catch (e) {
+      this.logger.warn('Token verification failed', e);
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.Unauthorized,
+      };
+    }
 
     if (!session?.sub) {
-      this.logger.error(`Sub not found`);
+      this.logger.warn(`Sub not found`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
       };
     }
 
-    // TODO: @gus -> collect this data from redis in the future
-    const user = await this.databaseService.user.findFirst({
-      where: { id: session.sub },
-      select: {
-        id: true,
-        email: true,
-        fullName: true,
-        profilePicture: true,
-        active: true,
-        lastSignIn: true,
-        organizationId: true,
-        createdAt: true,
-        updatedAt: true,
-        environmentId: true,
-        emailConfirmed: true,
-        invitedAt: true,
-        thonLabsUser: true,
-      },
-    });
+    const userData = await this.redisService.get<Partial<UserDetails>>(
+      RedisKeys.session(session.sub),
+    );
+
+    if (userData) {
+      return { data: userData };
+    }
+
+    const [user, metadataResult] = await Promise.all([
+      this.databaseService.user.findFirst({
+        where: { id: session.sub },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          profilePicture: true,
+          active: true,
+          lastSignIn: true,
+          createdAt: true,
+          updatedAt: true,
+          environmentId: true,
+          emailConfirmed: true,
+          invitedAt: true,
+          thonLabsUser: true,
+          organization: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      }),
+      this.metadataValueService.getMetadataByContext(
+        [session.sub],
+        MetadataModelContext.User,
+      ),
+    ]);
 
     if (!user) {
-      this.logger.error(`User not found (UID: ${session.sub})`);
+      this.logger.warn(`User not found (UID: ${session.sub})`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
@@ -677,61 +709,40 @@ export class AuthService {
     }
 
     if (!user.active) {
-      this.logger.error(`User is not active (UID: ${user.id})`);
+      this.logger.warn(`User is not active (UID: ${user.id})`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
       };
     }
 
-    try {
-      await this.jwtService.verifyAsync(token, {
-        secret: process.env.ENCODE_SECRET,
-      });
-    } catch (e) {
-      this.logger.error(`Token verification failed (UID: ${user.id})`);
-      return {
-        statusCode: StatusCodes.Unauthorized,
-        error: ErrorMessages.Unauthorized,
-      };
-    }
+    const data = {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      firstName: getFirstName(user.fullName),
+      initials: getInitials(user.fullName),
+      profilePicture: user.profilePicture,
+      active: user.active,
+      lastSignIn: user.lastSignIn,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      environmentId: user.environmentId,
+      emailConfirmed: user.emailConfirmed,
+      invitedAt: user.invitedAt,
+      metadata: metadataResult[user.id] || {},
+      ...(user.organization && { organization: user.organization }),
+      ...(user.thonLabsUser && { thonLabsUser: true }),
+    };
 
-    let organization = null;
-    if (user.organizationId) {
-      organization = await this.databaseService.organization.findFirst({
-        where: { id: user.organizationId },
-        select: {
-          id: true,
-          name: true,
-        },
-      });
-    }
-
-    const metadataResult = await this.metadataValueService.getMetadataByContext(
-      [user.id],
-      MetadataModelContext.User,
+    await this.redisService.set(
+      RedisKeys.session(session.sub),
+      data,
+      session.exp - Math.floor(Date.now() / 1000),
     );
-    const metadata = metadataResult[user.id] || {};
 
     return {
-      data: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        firstName: getFirstName(user.fullName),
-        initials: getInitials(user.fullName),
-        profilePicture: user.profilePicture,
-        active: user.active,
-        lastSignIn: user.lastSignIn,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        environmentId: user.environmentId,
-        emailConfirmed: user.emailConfirmed,
-        invitedAt: user.invitedAt,
-        metadata,
-        ...(organization && { organization }),
-        ...(user.thonLabsUser && { thonLabsUser: true }),
-      },
+      data,
     };
   }
 }

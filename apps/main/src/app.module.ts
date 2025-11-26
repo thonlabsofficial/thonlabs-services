@@ -51,7 +51,7 @@ import { UserDataService } from './modules/users/services/user-data.service';
 import { UserSubscriptionController } from './modules/users/controllers/user-subscription.controller';
 import { UserSubscriptionService } from './modules/users/services/user-subscription.service';
 import { NeedsSecretKeyGuard } from './modules/shared/decorators/needs-secret-key.decorator';
-// import { RedisService } from './modules/shared/database/redis.service';
+import { RedisService } from './modules/shared/database/redis.service';
 import { AppController } from './modules/app/controllers/app.controller';
 import { MetadataModelService } from './modules/metadata/services/metadata-model.service';
 import { MetadataValueService } from './modules/metadata/services/metadata-value.service';
@@ -118,7 +118,7 @@ import { MetadataValueController } from './modules/metadata/controllers/metadata
     CronService,
     CDNService,
     HTTPService,
-    // RedisService,
+    RedisService,
 
     AuthService,
     EmailTemplateService,

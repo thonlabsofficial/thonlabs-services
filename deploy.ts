@@ -5,8 +5,6 @@ interface DeployConfig {
     [environment: string]: {
       serviceId: string;
       registryTag: string;
-      platform?: string[];
-      dockerfile?: string;
     };
   };
 }
@@ -28,19 +26,12 @@ async function deploy(project: string, environment: string) {
     process.exit(1);
   }
 
-  const {
-    serviceId,
-    registryTag,
-    platform = ['linux/amd64'],
-    dockerfile,
-  } = projectConfig;
-  const platformStr = platform.join(',');
+  const { serviceId, registryTag } = projectConfig;
 
   console.log('\n========================================');
   console.log(`🚀 Deploying ${project} to ${environment}`);
   console.log(`📦 Service ID: ${serviceId}`);
   console.log(`🏷️  Tag: ${registryTag}`);
-  console.log(`🖥️  Platform: ${platformStr}`);
   console.log('========================================\n');
   try {
     // console.log('🔐 Logging in to GitHub Container Registry\n');
