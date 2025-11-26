@@ -8,8 +8,8 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
-import decodeSession from '@/utils/services/decode-session';
-import { UserService } from '@/auth/modules/users/services/user.service';
+import { AuthService } from '@/auth/modules/auth/services/auth.service';
+import extractTokenFromHeader from '@/utils/services/extract-token-from-header';
 
 const PUBLIC_KEY_OR_THON_LABS_ONLY_KEY = 'PublicKeyOrThonLabsOnly';
 
@@ -23,7 +23,7 @@ export class PublicKeyOrThonLabsOnlyGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private environmentService: EnvironmentService,
-    private userService: UserService,
+    private authService: AuthService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -60,31 +60,27 @@ export class PublicKeyOrThonLabsOnlyGuard implements CanActivate {
 
         return true;
       } else {
-        const session = decodeSession(req);
+        const token = extractTokenFromHeader(req);
 
-        // User has session, validates the token and thon labs user
-        if (session) {
-          if (!session.thonLabsUser) {
-            this.logger.error(
-              `User ${session.sub} is not a Thon Labs user (session)`,
-            );
+        if (token) {
+          const data = await this.authService.getUserBySessionToken(token);
+
+          if (data.statusCode) {
+            res.status(data.statusCode).json({
+              error: data.error,
+            });
+            return false;
+          }
+
+          if (!data.data.thonLabsUser) {
+            this.logger.log(`User ${data.data.id} is not a Thon Labs user`);
             res.status(StatusCodes.Unauthorized).json({
               error: ErrorMessages.Unauthorized,
             });
             return false;
           }
 
-          const user = await this.userService.getById(session.sub);
-
-          if (!user.thonLabsUser) {
-            this.logger.error(
-              `User ${session.sub} is not a Thon Labs user (db)`,
-            );
-            res.status(StatusCodes.Unauthorized).json({
-              error: ErrorMessages.Unauthorized,
-            });
-            return false;
-          }
+          req['session'] = data.data;
 
           return true;
         }

@@ -73,8 +73,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const serializedValue =
       typeof value === 'object' ? JSON.stringify(value) : value;
 
-    this.logger.debug(`Setting value in Redis (key: ${key})`);
-
     if (ttlInSeconds) {
       await this.client.setex(key, ttlInSeconds, serializedValue);
     } else {
@@ -84,8 +82,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   async get<T = string>(key: string, parseJson = false): Promise<T | null> {
     const value = await this.client.get(key);
-
-    this.logger.debug(`Getting value from Redis (key: ${key})`);
 
     if (value === null) {
       return null;
@@ -103,7 +99,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async delete(...keys: string[]): Promise<number> {
-    this.logger.debug(`Deleting value from Redis (keys: ${keys.join(', ')})`);
     return await this.client.del(...keys);
   }
 
