@@ -664,6 +664,7 @@ export class AuthService {
 
     const userData = await this.redisService.get<Partial<UserDetails>>(
       RedisKeys.session(session.sub),
+      true,
     );
 
     if (userData) {

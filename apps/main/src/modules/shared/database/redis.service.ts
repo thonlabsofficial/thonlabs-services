@@ -85,6 +85,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async get<T = string>(key: string, parseJson = false): Promise<T | null> {
     const value = await this.client.get(key);
 
+    this.logger.debug(`Getting value from Redis (key: ${key})`);
+
     if (value === null) {
       return null;
     }
@@ -96,8 +98,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         return value as T;
       }
     }
-
-    this.logger.debug(`Getting value from Redis (key: ${key})`);
 
     return value as T;
   }
