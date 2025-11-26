@@ -12,11 +12,9 @@ import {
   exceptionsMapper,
   StatusCodes,
 } from '@/utils/enums/errors-metadata';
-import { ThonLabsOnly } from '@/auth/modules/shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
 import { NeedsPublicKey } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
-import { PublicRoute } from '@/auth/modules/auth/decorators/auth.decorator';
 import {
   EnvironmentCredentials,
   EnvironmentDataKeys,
@@ -29,6 +27,7 @@ import { createSSOCredentialValidator } from '@/auth/modules/environments/valida
 import { EnvironmentCredentialService } from '@/auth/modules/environments/services/environment-credential.service';
 import { ENVIRONMENT_SSO_CREDENTIAL_TYPES } from '@/auth/modules/environments/constants/environment-data';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
+import { NeedsAuth } from '@/auth/modules/auth/decorators/auth.decorator';
 
 @Controller('environments/:envId/credentials')
 export class EnvironmentCredentialController {
@@ -48,7 +47,6 @@ export class EnvironmentCredentialController {
    * @returns The credentials for the provider
    */
   @Get('/sso/public')
-  @PublicRoute()
   @NeedsPublicKey()
   async getSSOCredentialsPublicData(@Param('envId') environmentId: string) {
     const data = await this.environmentDataService.get(
@@ -90,7 +88,7 @@ export class EnvironmentCredentialController {
    * @returns The credentials for the provider
    */
   @Get('/:key')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'envId' })
   async getCredential(
     @Param('envId') environmentId: string,
@@ -109,7 +107,7 @@ export class EnvironmentCredentialController {
   }
 
   @Post('/:key')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'envId' })
   @SchemaValidator(createSSOCredentialValidator)
   async upsertCredential(
@@ -152,7 +150,7 @@ export class EnvironmentCredentialController {
   }
 
   @Delete('/:key')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'envId' })
   async deleteCredential(
     @Param('envId') environmentId: string,

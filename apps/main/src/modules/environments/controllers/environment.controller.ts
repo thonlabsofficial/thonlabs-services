@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { EnvironmentService } from '../services/environment.service';
 import { StatusCodes, exceptionsMapper } from '@/utils/enums/errors-metadata';
-import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
+import { NeedsAuth } from '@/auth/modules/auth/decorators/auth.decorator';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 
@@ -26,10 +26,10 @@ import { logoValidator } from '../../shared/validators/custom-validators';
 
 @Controller('environments')
 export class EnvironmentController {
-  constructor(private environmentService: EnvironmentService) { }
+  constructor(private environmentService: EnvironmentService) {}
 
   @Get('/:id')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess()
   async getById(@Param('id') id: string) {
     const [{ data: environment }, publicKey] = await Promise.all([
@@ -45,7 +45,7 @@ export class EnvironmentController {
   }
 
   @Get('/:id/secret')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess()
   async getSecretKey(@Param('id') id: string) {
     const secretKey = await this.environmentService.getSecretKey(id);
@@ -54,7 +54,7 @@ export class EnvironmentController {
   }
 
   @Patch('/:id/secret')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess()
   async updateSecretKey(@Param('id') id: string) {
     const key = await this.environmentService.updateSecretKey(id);
@@ -63,7 +63,7 @@ export class EnvironmentController {
   }
 
   @Patch('/:id/public')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess()
   async updatePublicKey(@Param('id') id: string) {
     const key = await this.environmentService.updatePublicKey(id);
@@ -72,7 +72,7 @@ export class EnvironmentController {
   }
 
   @Post('/')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @SchemaValidator(createEnvironmentValidator)
   async create(@Body() payload) {
     const environment = await this.environmentService.create(payload);
@@ -89,7 +89,7 @@ export class EnvironmentController {
   }
 
   @Patch('/:id/auth-settings')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess()
   @SchemaValidator(updateAuthSettingsValidator)
   async updateAuthSettings(@Param('id') id: string, @Body() payload) {
@@ -104,7 +104,7 @@ export class EnvironmentController {
   }
 
   @Patch('/:id/general-settings')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess()
   @SchemaValidator(updateGeneralSettingsValidator)
   async updateGeneralSettings(@Param('id') id: string, @Body() payload) {
@@ -112,7 +112,7 @@ export class EnvironmentController {
   }
 
   @Patch('/:id/general-settings/logo')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   @UseInterceptors(FileInterceptor('file'))
   async uploadGeneralSettingsLogo(
@@ -129,19 +129,20 @@ export class EnvironmentController {
       );
     }
 
-    const newLogo = await this.environmentService.updateGeneralSettingsLogo(id, file)
+    const newLogo = await this.environmentService.updateGeneralSettingsLogo(
+      id,
+      file,
+    );
 
     if (newLogo.error) {
       throw new exceptionsMapper[newLogo.statusCode](newLogo.error);
-
     }
 
-    return newLogo.data
-
+    return newLogo.data;
   }
 
   @Delete('/:id')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess()
   async delete(@Param('id') id: string) {
     await this.environmentService.delete(id);

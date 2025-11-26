@@ -29,9 +29,11 @@ export class TokenStorageService {
       return null;
     }
 
+    const tokenHash = await Crypt.hash256(token, process.env.ENCODE_SECRET);
+
     return this.databaseService.tokenStorage.findFirst({
       where: {
-        token,
+        token: tokenHash,
         type,
       },
     });
@@ -81,11 +83,13 @@ export class TokenStorageService {
     relationId,
     expiresIn,
     environmentId,
+    encrypt = false,
   }: {
     type: TokenTypes;
     relationId: string;
     expiresIn: string | number;
     environmentId?: string;
+    encrypt?: boolean;
   }): Promise<DataReturn<TokenStorage>> {
     // Register a new token for magic link
     let foundTokenToUse = false;
@@ -101,6 +105,12 @@ export class TokenStorageService {
       foundTokenToUse = tokenCount === 0;
     }
 
+    const plainToken = token;
+
+    if (encrypt) {
+      token = await Crypt.hash256(plainToken, process.env.ENCODE_SECRET);
+    }
+
     const tokenData = await this.databaseService.tokenStorage.create({
       data: {
         environmentId,
@@ -114,7 +124,12 @@ export class TokenStorageService {
 
     this.logger.log(`Relation ${type} token created (RID: ${relationId})`);
 
-    return { data: tokenData };
+    return {
+      data: {
+        ...tokenData,
+        token: plainToken,
+      },
+    };
   }
 
   async createAuthTokens(
@@ -151,18 +166,11 @@ export class TokenStorageService {
       organization,
     };
 
-    const iv = Crypt.generateIV(user.id);
-    const authKey = await Crypt.decrypt(
-      user.authKey,
-      iv,
-      process.env.ENCODE_AUTH_KEYS_SECRET,
-    );
-
     const result = {};
 
     const token = await this.jwtService.signAsync(payload, {
       expiresIn: environment.tokenExpiration,
-      secret: `${authKey}${process.env.AUTHENTICATION_SECRET}`,
+      secret: process.env.ENCODE_SECRET,
     });
     const tokenExpiresIn = (jwtDecode(token) as SessionData).exp * 1000;
 
@@ -176,15 +184,14 @@ export class TokenStorageService {
         type: TokenTypes.Refresh,
         relationId: user.id,
         expiresIn: environment.refreshTokenExpiration,
+        encrypt: true,
       });
 
       result['refreshToken'] = data.token;
       result['refreshTokenExpiresIn'] = data.expires.getTime();
     }
 
-    this.logger.log(
-      `Refresh created ${(result as AuthenticateMethodsReturn).refreshToken} (UID: ${user.id})`,
-    );
+    this.logger.log(`Refresh created (UID: ${user.id})`);
 
     return {
       data: result as AuthenticateMethodsReturn,

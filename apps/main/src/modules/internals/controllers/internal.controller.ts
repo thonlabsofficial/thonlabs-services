@@ -1,6 +1,5 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
 import { NeedsInternalKey } from '@/auth/modules/shared/decorators/needs-internal-key.decorator';
-import { PublicRoute } from '@/auth/modules/auth/decorators/auth.decorator';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
 import {
@@ -33,7 +32,6 @@ export class InternalController {
   ) {}
 
   @Post('/init-owner')
-  @PublicRoute()
   @NeedsInternalKey()
   public async signUpOwner(
     @Body() payload: { password: string; environmentId: string },
@@ -47,7 +45,7 @@ export class InternalController {
     } = await this.projectService.create({
       appName: 'ThonLabs',
       userId: user.id,
-      appURL: 'https://thonlabs.io',
+      appURL: 'http://localhost:7809',
       main: true,
     });
 
@@ -93,7 +91,6 @@ export class InternalController {
    * @returns {Promise<void>}
    */
   @Post('/waitlist/:environmentId')
-  @PublicRoute()
   @NeedsInternalKey()
   @SchemaValidator(joinWaitlistFormSchema)
   public async addToWaitlist(

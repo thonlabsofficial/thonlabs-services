@@ -9,7 +9,6 @@ import {
 } from '@/utils/enums/errors-metadata';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import Crypt from '@/utils/services/crypt';
-import rand from '@/utils/services/rand';
 import prepareString from '@/utils/services/prepare-string';
 import { TokenStorageService } from '@/auth/modules/token-storage/services/token-storage.service';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
@@ -134,19 +133,6 @@ export class UserService {
 
     this.logger.warn(`ADMIN Thon Labs owner user created ${user.id}`);
 
-    const iv = Crypt.generateIV(user.id);
-    const authKey = await Crypt.encrypt(
-      `${rand(8)}`,
-      iv,
-      process.env.ENCODE_AUTH_KEYS_SECRET,
-    );
-    await this.databaseService.user.update({
-      where: { id: user.id },
-      data: { authKey },
-    });
-
-    this.logger.log(`User ${user.id} auth key created`);
-
     this.deletePrivateData(user);
 
     return { data: user };
@@ -261,21 +247,6 @@ export class UserService {
       });
 
       this.logger.log(`User ${user.id} created`);
-
-      // Creates user auth key
-      const iv = Crypt.generateIV(user.id);
-      const authKey = await Crypt.encrypt(
-        `${rand(8)}`,
-        iv,
-        process.env.ENCODE_AUTH_KEYS_SECRET,
-      );
-      await this.databaseService.user.update({
-        where: { id: user.id },
-        data: { authKey },
-      });
-      user.authKey = authKey;
-
-      this.logger.log(`User ${user.id} auth key created`);
 
       this.deletePrivateData(user);
 
@@ -479,7 +450,7 @@ export class UserService {
       },
     });
 
-    this.deletePrivateData(updatedUser, true);
+    this.deletePrivateData(updatedUser);
 
     user = updatedUser as typeof user;
 
@@ -593,7 +564,7 @@ export class UserService {
 
     this.logger.log(`User ${userId} has been deleted with all relations`);
 
-    this.deletePrivateData(user, true);
+    this.deletePrivateData(user);
 
     return { data: user };
   }
@@ -781,12 +752,8 @@ export class UserService {
     };
   }
 
-  private deletePrivateData(user, includeInternalData = false) {
+  private deletePrivateData(user) {
     delete user.password;
     delete user.thonLabsUser;
-
-    if (includeInternalData) {
-      delete user.authKey;
-    }
   }
 }

@@ -45,7 +45,6 @@ export class PublicKeyOrThonLabsOnlyGuard implements CanActivate {
       if (req.headers['tl-public-key'] && req.headers['tl-env-id']) {
         const { data: environment } =
           await this.environmentService.getByPublicKey(
-            req.headers['tl-env-id'],
             req.headers['tl-public-key'],
           );
 

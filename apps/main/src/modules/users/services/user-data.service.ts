@@ -38,7 +38,6 @@ export class UserDataService {
       if (encrypt) {
         const encryptedValue = await Crypt.encrypt(
           JSON.stringify(payload.value),
-          Crypt.generateIV(key),
           process.env.ENCODE_SECRET,
         );
 

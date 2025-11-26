@@ -2,15 +2,15 @@ import { Controller, Get, Req } from '@nestjs/common';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { startOfDay, subDays } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { ThonLabsOnly } from '@/auth/modules/shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
+import { NeedsAuth } from '@/auth/modules/auth/decorators/auth.decorator';
 
 @Controller('dashboard')
 export class DashboardController {
   constructor(private databaseService: DatabaseService) {}
 
   @Get('/summary')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   async getSummary(@Req() request: Request) {
     const environmentId = request.headers['tl-env-id'];

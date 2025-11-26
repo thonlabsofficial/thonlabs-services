@@ -1,6 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
-import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
 import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
 import {
@@ -10,13 +9,14 @@ import {
 } from '../validators/email-template-validators';
 import { exceptionsMapper } from '@/utils/enums/errors-metadata';
 import { NeedsInternalKey } from '../../shared/decorators/needs-internal-key.decorator';
+import { NeedsAuth } from '@/auth/modules/auth/decorators/auth.decorator';
 
 @Controller('email-templates')
 export class EmailTemplateController {
   constructor(private emailTemplateService: EmailTemplateService) {}
 
   @Patch('/:id')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   @SchemaValidator(updateTemplateValidator)
   async updateTemplate(@Req() req, @Param('id') id: string, @Body() payload) {
@@ -50,7 +50,7 @@ export class EmailTemplateController {
   }
 
   @Get('')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   async fetchTemplates(@Req() req) {
     const environmentId = req.headers['tl-env-id'];
@@ -61,7 +61,7 @@ export class EmailTemplateController {
   }
 
   @Get('/:id')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   async getTemplateById(@Req() req, @Param('id') id: string) {
     const environmentId = req.headers['tl-env-id'];
@@ -75,7 +75,7 @@ export class EmailTemplateController {
   }
 
   @Patch('/:id/status')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   @SchemaValidator(updateTemplateEnabledStatusValidator)
   async updateTemplateEnabledStatus(

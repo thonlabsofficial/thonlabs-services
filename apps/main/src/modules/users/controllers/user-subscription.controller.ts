@@ -6,7 +6,6 @@ import {
   Req,
   UnauthorizedException,
 } from '@nestjs/common';
-import { PublicRoute } from '@/auth/modules/auth/decorators/auth.decorator';
 import stripe from 'stripe';
 import { UserSubscriptionService } from '@/auth/modules/users/services/user-subscription.service';
 import { UserSubscriptionType } from '@/auth/modules/users/constants/user-data';
@@ -25,7 +24,6 @@ export class UserSubscriptionController {
   ) {}
 
   @Post('/webhook')
-  @PublicRoute()
   async webhook(@Req() req) {
     try {
       const event = await this._handleWebhook(req);

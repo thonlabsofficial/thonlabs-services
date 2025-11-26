@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
 import { EnvironmentDomainService } from '@/auth/modules/environments/services/environment-domain.service';
 import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
-import { ThonLabsOnly } from '@/auth/modules/shared/decorators/thon-labs-only.decorator';
+import { NeedsAuth } from '@/auth/modules/auth/decorators/auth.decorator';
 import { exceptionsMapper } from '@/utils/enums/errors-metadata';
 import { setEnvironmentDomainValidator } from '@/auth/modules/environments/validators/environment-domain-validators';
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
@@ -11,7 +11,7 @@ export class EnvironmentDomainController {
   constructor(private environmentDomainService: EnvironmentDomainService) {}
 
   @Post('/reverify')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'envId' })
   async get(@Param('envId') envId: string) {
     const result =
@@ -25,7 +25,7 @@ export class EnvironmentDomainController {
   }
 
   @Patch('/')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'envId' })
   @SchemaValidator(setEnvironmentDomainValidator)
   async set(@Param('envId') envId: string, @Body() payload) {
@@ -42,7 +42,7 @@ export class EnvironmentDomainController {
   }
 
   @Delete('/')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'envId' })
   async delete(@Param('envId') envId: string) {
     const result =
@@ -54,7 +54,7 @@ export class EnvironmentDomainController {
   }
 
   @Post('/verify')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'envId' })
   async verify(@Param('envId') envId: string) {
     const result =

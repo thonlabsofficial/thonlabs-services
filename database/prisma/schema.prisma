@@ -50,7 +50,7 @@ enum MetadataModelType {
 }
 
 enum MetadataModelContext {
-  Environment  @map("environment")
+  Environment
   User
   Organization
 }
@@ -67,8 +67,6 @@ model User {
   profilePicture String?
   password       String?
   lastSignIn     DateTime?
-  // This key is used to compose the JWT token
-  authKey        String?
   thonLabsUser   Boolean   @default(false)
   active         Boolean   @default(true)
   emailConfirmed Boolean   @default(false)
@@ -120,7 +118,9 @@ model Environment {
   name                          String
   active                        Boolean             @default(true)
   publicKey                     String              @unique
+  publicKeyHash                 String              @unique
   secretKey                     String              @unique
+  secretKeyHash                 String              @unique
   tokenExpiration               String              @default("1d")
   refreshTokenExpiration        String?             @default("10d")
   appURL                        String?
@@ -141,6 +141,7 @@ model Environment {
   tokens          TokenStorage[]
   environmentData EnvironmentData[]
   organizations   Organization[]
+  metadataModels  MetadataModel[]
 
   @@map("environments")
 }
@@ -211,16 +212,18 @@ model TokenStorage {
 }
 
 model MetadataModel {
-  id          Int                  @id @default(autoincrement())
-  name        String
-  key         String
-  description String?
-  type        MetadataModelType
-  options     Json?
-  context     MetadataModelContext
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
-  values      MetadataValue[]
+  id            Int                  @id @default(autoincrement())
+  name          String
+  key           String
+  description   String?
+  type          MetadataModelType
+  options       Json?
+  context       MetadataModelContext
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  values        MetadataValue[]
+  environmentId String
+  environment   Environment          @relation(fields: [environmentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@map("metadata_models")
 }

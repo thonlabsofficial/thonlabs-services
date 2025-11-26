@@ -50,7 +50,6 @@ export class NeedsPublicKeyGuard implements CanActivate {
     const session = decodeSession(req);
 
     const { data: environment } = await this.environmentService.getByPublicKey(
-      req.headers['tl-env-id'],
       req.headers['tl-public-key'],
       session?.sub,
     );

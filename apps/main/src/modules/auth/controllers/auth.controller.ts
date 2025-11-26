@@ -13,7 +13,6 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
-import { PublicRoute } from '@/auth/modules/auth/decorators/auth.decorator';
 import { signUpValidator } from '@/auth/modules/auth/validators/signup-validators';
 import { UserService } from '@/auth/modules/users/services/user.service';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
@@ -46,12 +45,12 @@ import {
 } from '../validators/reset-password-validators';
 import { getFirstName } from '@/utils/services/names-helpers';
 import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
-import { PublicKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
 import { OrganizationService } from '@/auth/modules/organizations/services/organization.service';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
 import extractTokenFromHeader from '@/utils/services/extract-token-from-header';
+import { PublicKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -68,7 +67,6 @@ export class AuthController {
     private emailTemplateService: EmailTemplateService,
   ) {}
 
-  @PublicRoute()
   @Post('/signup')
   @NeedsPublicKey()
   @SchemaValidator(signUpValidator)
@@ -157,7 +155,6 @@ export class AuthController {
   }
 
   @Post('/login')
-  @PublicRoute()
   @HttpCode(StatusCodes.OK)
   @NeedsPublicKey()
   @SchemaValidator(loginValidator)
@@ -165,12 +162,9 @@ export class AuthController {
     @Body() payload: { email: string; password?: string },
     @Req() req,
   ) {
-    const { data: environment, ...envError } =
-      await this.environmentService.getByPublicKeyFromRequest(req);
-
-    if (envError.statusCode === StatusCodes.Unauthorized) {
-      throw new UnauthorizedException(envError.error);
-    }
+    const environmentId = req.headers['tl-env-id'];
+    const { data: environment } =
+      await this.environmentService.getById(environmentId);
 
     const { data: enableSignUpB2BOnly } = await this.environmentDataService.get(
       environment.id,
@@ -229,7 +223,6 @@ export class AuthController {
   }
 
   @Post('/login/sso/:provider')
-  @PublicRoute()
   @HttpCode(StatusCodes.OK)
   @NeedsPublicKey()
   @SchemaValidator(loginSSOValidator)
@@ -330,7 +323,6 @@ export class AuthController {
     return tokens;
   }
 
-  @PublicRoute()
   @NeedsPublicKey()
   @Get('/magic/:token')
   @SchemaValidator(authenticateFromMagicLinkValidator, ['params'])
@@ -346,7 +338,6 @@ export class AuthController {
     return data?.data;
   }
 
-  @PublicRoute()
   @Post('/refresh')
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   @SchemaValidator(reauthenticateFromRefreshTokenValidator)
@@ -380,7 +371,6 @@ export class AuthController {
   }
 
   @Get('/session')
-  @PublicRoute()
   public async getSession(@Req() req) {
     const token = extractTokenFromHeader(req);
     const data = await this.authService.getUserBySessionToken(token);
@@ -415,7 +405,6 @@ export class AuthController {
     return data;
   }
 
-  @PublicRoute()
   @NeedsPublicKey()
   @Post('/reset-password')
   @SchemaValidator(requestResetPasswordValidator)
@@ -468,7 +457,6 @@ export class AuthController {
     }
   }
 
-  @PublicRoute()
   @NeedsPublicKey()
   @HttpCode(StatusCodes.OK)
   @Get('/reset-password/:token')
@@ -496,7 +484,6 @@ export class AuthController {
     }
   }
 
-  @PublicRoute()
   @HttpCode(StatusCodes.OK)
   @NeedsPublicKey()
   @Patch('/reset-password/:token')
@@ -540,7 +527,6 @@ export class AuthController {
     }
   }
 
-  @PublicRoute()
   @NeedsPublicKey()
   @HttpCode(StatusCodes.OK)
   @Get('/confirm-email/:token')

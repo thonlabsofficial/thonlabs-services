@@ -18,9 +18,9 @@ import {
 import { ProjectService } from '../services/project.service';
 import { exceptionsMapper } from '@/utils/enums/errors-metadata';
 import { EnvironmentService } from '../../environments/services/environment.service';
-import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
+import { NeedsAuth } from '@/auth/modules/auth/decorators/auth.decorator';
 import decodeSession from '@/utils/services/decode-session';
-import { UserOwnsProject } from '../../shared/decorators/user-owns-project.decorator';
+import { UserOwnsProject } from '@/auth/modules/shared/decorators/user-owns-project.decorator';
 
 @Controller('projects')
 export class ProjectController {
@@ -30,7 +30,7 @@ export class ProjectController {
   ) {}
 
   @Post('/')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @SchemaValidator(createProjectValidator)
   async create(@Body() payload, @Request() req) {
     const userId = req.session.id;
@@ -56,7 +56,7 @@ export class ProjectController {
   }
 
   @Get('/')
-  @ThonLabsOnly()
+  @NeedsAuth()
   async fetch(@Request() req) {
     const userId = req.session.id;
 
@@ -66,7 +66,7 @@ export class ProjectController {
   }
 
   @Get('/:id')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @UserOwnsProject()
   async get(@Param('id') id: string) {
     const result = await this.projectService.getById(id);
@@ -75,7 +75,7 @@ export class ProjectController {
   }
 
   @Delete('/:id')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @UserOwnsProject()
   @SchemaValidator(deleteProjectValidator, ['params'])
   async delete(@Param('id') id: string, @Request() req) {
@@ -89,7 +89,7 @@ export class ProjectController {
   }
 
   @Get('/:id/environments')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @UserOwnsProject()
   async fetchEnvironments(@Param('id') id: string, @Req() req) {
     const { sub } = decodeSession(req);
@@ -103,7 +103,7 @@ export class ProjectController {
   }
 
   @Patch('/:id')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @UserOwnsProject()
   @SchemaValidator(updateGeneralInfoValidator)
   async updateGeneralInfo(
@@ -126,7 +126,7 @@ export class ProjectController {
   }
 
   @Get('/:id/integration-status')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @UserOwnsProject()
   async getIntegrationStatus(@Param('id') id: string) {
     const result = await this.projectService.getIntegrationStatus(id);

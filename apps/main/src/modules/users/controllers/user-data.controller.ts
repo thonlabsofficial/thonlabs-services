@@ -1,6 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
 import { exceptionsMapper, StatusCodes } from '@/utils/enums/errors-metadata';
-import { ThonLabsOnly } from '@/auth/modules/shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
 import { UserDataService } from '../services/user-data.service';
@@ -22,7 +21,7 @@ export class UserDataController {
    * @param query.type - The type of the data
    */
   @Get('/')
-  @ThonLabsOnly()
+  @PublicKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   async fetch(
     @Param('userId') userId: string,

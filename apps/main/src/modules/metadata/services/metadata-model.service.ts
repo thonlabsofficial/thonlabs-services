@@ -21,6 +21,7 @@ export class MetadataModelService {
    * @returns {Promise<DataReturn<MetadataModel>>} - The created metadata model.
    */
   async create(
+    environmentId: string,
     payload: CreateMetadataModelPayload,
   ): Promise<DataReturn<MetadataModel>> {
     try {
@@ -32,6 +33,7 @@ export class MetadataModelService {
           type: payload.type,
           options: payload.options,
           context: payload.context,
+          environmentId,
         },
       });
 
@@ -49,15 +51,21 @@ export class MetadataModelService {
   /**
    * Finds all metadata models with optional filtering.
    *
+   * @param {string} environmentId - The ID of the environment.
    * @param {Object} filters - Optional filters.
    * @param {MetadataModelContext} filters.context - Filter by context.
    * @returns {Promise<DataReturn<MetadataModel[]>>} - The metadata models.
    */
-  async findAll(filters?: {
-    context?: MetadataModelContext;
-  }): Promise<DataReturn<MetadataModel[]>> {
+  async findAll(
+    environmentId: string,
+    filters?: {
+      context?: MetadataModelContext;
+    },
+  ): Promise<DataReturn<MetadataModel[]>> {
     try {
-      const where: any = {};
+      const where: any = {
+        environmentId,
+      };
 
       if (filters?.context) {
         where.context = filters.context;
@@ -81,14 +89,18 @@ export class MetadataModelService {
   /**
    * Finds a metadata model by ID.
    *
+   * @param {string} environmentId - The ID of the environment.
    * @param {string} id - The ID of the metadata model.
    * @returns {Promise<DataReturn<MetadataModel>>} - The metadata model.
    */
-  async findOne(id: string): Promise<DataReturn<MetadataModel>> {
+  async findOne(
+    environmentId: string,
+    id: string,
+  ): Promise<DataReturn<MetadataModel>> {
     try {
       const metadataModel = await this.databaseService.metadataModel.findUnique(
         {
-          where: { id: parseInt(id) },
+          where: { id: parseInt(id), environmentId },
         },
       );
 
@@ -112,11 +124,13 @@ export class MetadataModelService {
   /**
    * Updates a metadata model.
    *
+   * @param {string} environmentId - The ID of the environment.
    * @param {string} id - The ID of the metadata model.
    * @param {UpdateMetadataModelPayload} payload - The payload containing the updated data.
    * @returns {Promise<DataReturn<MetadataModel>>} - The updated metadata model.
    */
   async update(
+    environmentId: string,
     id: string,
     payload: UpdateMetadataModelPayload,
   ): Promise<DataReturn<MetadataModel>> {
@@ -136,7 +150,7 @@ export class MetadataModelService {
       }
 
       const metadataModel = await this.databaseService.metadataModel.update({
-        where: { id: parseInt(id) },
+        where: { id: parseInt(id), environmentId },
         data: updateData,
       });
 
@@ -154,15 +168,16 @@ export class MetadataModelService {
   /**
    * Deletes a metadata model.
    *
+   * @param {string} environmentId - The ID of the environment.
    * @param {string} id - The ID of the metadata model.
    * @returns {Promise<DataReturn>} - The result of the deletion.
    */
-  async delete(id: string): Promise<DataReturn> {
+  async delete(environmentId: string, id: string): Promise<DataReturn> {
     try {
       const modelId = parseInt(id);
 
       await this.databaseService.metadataModel.delete({
-        where: { id: modelId },
+        where: { id: modelId, environmentId },
       });
     } catch (error) {
       this.logger.error('Error deleting metadata model:', error);

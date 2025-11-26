@@ -25,7 +25,6 @@ import {
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
 import { SessionData } from '@/utils/interfaces/session-data';
 import { decode as jwtDecode } from 'jsonwebtoken';
-import Crypt from '@/utils/services/crypt';
 import { JwtService } from '@nestjs/jwt';
 import { UserDetails } from '../../users/models/user';
 import { getFirstName, getInitials } from '@/utils/services/names-helpers';
@@ -71,7 +70,6 @@ export class AuthService {
         email: true,
         profilePicture: true,
         fullName: true,
-        authKey: true,
         environmentId: true,
         active: true,
         password: true,
@@ -148,6 +146,7 @@ export class AuthService {
       this.logger.error(
         `Login/Pass - Error on creating tokens for user (UID: ${user.id})`,
       );
+      this.logger.error(e.stack);
 
       return {
         error: ErrorMessages.InternalError,
@@ -271,7 +270,6 @@ export class AuthService {
         email: true,
         profilePicture: true,
         fullName: true,
-        authKey: true,
         environmentId: true,
         lastSignIn: true,
         organizationId: true,
@@ -370,7 +368,6 @@ export class AuthService {
         email: true,
         profilePicture: true,
         fullName: true,
-        authKey: true,
         environmentId: true,
         organizationId: true,
         environment: {
@@ -643,8 +640,8 @@ export class AuthService {
 
     const session = jwtDecode(token) as SessionData;
 
-    if (!session.sub) {
-      this.logger.error(`Sub not found (UID: ${session.sub})`);
+    if (!session?.sub) {
+      this.logger.error(`Sub not found`);
       return {
         statusCode: StatusCodes.Unauthorized,
         error: ErrorMessages.Unauthorized,
@@ -659,7 +656,6 @@ export class AuthService {
         email: true,
         fullName: true,
         profilePicture: true,
-        authKey: true,
         active: true,
         lastSignIn: true,
         organizationId: true,
@@ -688,15 +684,9 @@ export class AuthService {
       };
     }
 
-    const authKey = await Crypt.decrypt(
-      user.authKey,
-      Crypt.generateIV(user.id),
-      process.env.ENCODE_AUTH_KEYS_SECRET,
-    );
-
     try {
       await this.jwtService.verifyAsync(token, {
-        secret: `${authKey}${process.env.AUTHENTICATION_SECRET}`,
+        secret: process.env.ENCODE_SECRET,
       });
     } catch (e) {
       this.logger.error(`Token verification failed (UID: ${user.id})`);
@@ -740,6 +730,7 @@ export class AuthService {
         invitedAt: user.invitedAt,
         metadata,
         ...(organization && { organization }),
+        ...(user.thonLabsUser && { thonLabsUser: true }),
       },
     };
   }

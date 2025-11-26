@@ -1,16 +1,20 @@
-import { createCipheriv, createDecipheriv, scrypt, createHash } from 'crypto';
-import { promisify } from 'util';
+import {
+  createCipheriv,
+  createDecipheriv,
+  scrypt,
+  randomBytes,
+  createHmac,
+} from 'node:crypto';
+import { promisify } from 'node:util';
 import * as bcrypt from 'bcrypt';
 
-function generateIV(key: string) {
-  return createHash('sha512')
-    .update(key.split('').reverse().join(''))
-    .digest('hex')
-    .substring(0, 16);
-}
+async function encrypt(textToEncrypt: string, password: string) {
+  const salt = randomBytes(16).toString('hex');
 
-async function encrypt(textToEncrypt: string, iv: string, password: string) {
-  const key = (await promisify(scrypt)(password, 'salt', 32)) as Buffer;
+  const key = (await promisify(scrypt)(password, salt, 32)) as Buffer;
+
+  const iv = randomBytes(16);
+
   const cipher = createCipheriv('aes-256-ctr', key, iv);
 
   const encryptedText = Buffer.concat([
@@ -18,22 +22,34 @@ async function encrypt(textToEncrypt: string, iv: string, password: string) {
     cipher.final(),
   ]);
 
-  return encryptedText.toString('base64');
+  return `${salt}:${iv.toString('hex')}:${encryptedText.toString('base64')}`;
 }
 
-async function decrypt(encryptedText: string, iv: string, password: string) {
-  const key = (await promisify(scrypt)(password, 'salt', 32)) as Buffer;
+async function decrypt(encryptedData: string, password: string) {
+  const [salt, ivHex, encryptedBase64] = encryptedData.split(':');
+
+  const key = (await promisify(scrypt)(password, salt, 32)) as Buffer;
+
+  const iv = Buffer.from(ivHex, 'hex');
+  const encryptedText = Buffer.from(encryptedBase64, 'base64');
+
   const decipher = createDecipheriv('aes-256-ctr', key, iv);
   const decryptedText = Buffer.concat([
-    decipher.update(Buffer.from(encryptedText, 'base64')),
+    decipher.update(encryptedText),
     decipher.final(),
   ]);
 
   return decryptedText.toString('utf-8');
 }
 
-async function hash(textToHash: string, rounds = 10) {
-  return await bcrypt.hash(textToHash, rounds);
+async function hash(textToHash: string, rounds?: number) {
+  const safeRounds = Math.max(rounds, 13);
+
+  if (safeRounds < 10) {
+    throw new Error('Bcrypt rounds must be at least 10');
+  }
+
+  return await bcrypt.hash(textToHash, safeRounds);
 }
 
 /**
@@ -47,7 +63,6 @@ async function parseEncryptedValue(key: string, value: any) {
   if (typeof value === 'string' && value.startsWith('ev:')) {
     const decryptedValue = await decrypt(
       value.replace('ev:', ''),
-      generateIV(key),
       process.env.ENCODE_SECRET,
     );
 
@@ -57,12 +72,16 @@ async function parseEncryptedValue(key: string, value: any) {
   return value;
 }
 
+function hash256(text: string, secret: string): string {
+  return createHmac('sha256', secret).update(text).digest('hex');
+}
+
 const Crypt = {
   encrypt,
   decrypt,
-  generateIV,
   hash,
   parseEncryptedValue,
+  hash256,
 };
 
 export default Crypt;

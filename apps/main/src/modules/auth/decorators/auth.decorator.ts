@@ -9,11 +9,12 @@ import {
 import { Reflector } from '@nestjs/core';
 import extractTokenFromHeader from '@/utils/services/extract-token-from-header';
 import { AuthService } from '../services/auth.service';
-import { EnvironmentService } from '../../environments/services/environment.service';
+import { ErrorMessages } from '@/utils/enums/errors-metadata';
+import { StatusCodes } from '@/utils/enums/errors-metadata';
 
-export const AUTH_VALIDATION_DISABLED = 'authValidationDisabled';
+export const NEED_AUTH_VALIDATION = 'needAuthValidation';
 
-export const PublicRoute = () => SetMetadata(AUTH_VALIDATION_DISABLED, true);
+export const NeedsAuth = () => SetMetadata(NEED_AUTH_VALIDATION, true);
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -22,28 +23,11 @@ export class AuthGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private authService: AuthService,
-    private environmentService: EnvironmentService,
   ) {}
 
-  static enableAuthGuard(context: ExecutionContext) {
-    Reflect.defineMetadata(
-      AUTH_VALIDATION_DISABLED,
-      false,
-      context.getHandler(),
-    );
-  }
-
-  static disableAuthGuard(context: ExecutionContext) {
-    Reflect.defineMetadata(
-      AUTH_VALIDATION_DISABLED,
-      true,
-      context.getHandler(),
-    );
-  }
-
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const authValidationDisabled = this.reflector.get<boolean>(
-      AUTH_VALIDATION_DISABLED,
+    const needAuthValidation = this.reflector.get<boolean>(
+      NEED_AUTH_VALIDATION,
       context.getHandler(),
     );
 
@@ -51,48 +35,11 @@ export class AuthGuard implements CanActivate {
     const req = http.getRequest();
     const res = http.getResponse();
 
-    if (authValidationDisabled) {
+    if (!needAuthValidation) {
       return true;
     }
 
     const token = extractTokenFromHeader(req);
-
-    /*
-      if has some of the key headers we're considering it's an external API request
-      that requires public or secret key.
-      
-      To keep things safe and avoid bypassing the auth guard 
-      we need to validate the public or secret key.
-    */
-    if (req.headers['tl-env-id'] && !token) {
-      if (req.headers['tl-public-key']) {
-        const publicKey = await this.environmentService.getByPublicKey(
-          req.headers['tl-env-id'],
-          req.headers['tl-public-key'],
-        );
-
-        if (publicKey?.error) {
-          this.logger.error('Invalid public key');
-          throw new UnauthorizedException();
-        }
-
-        return true;
-      }
-
-      if (req.headers['tl-secret-key']) {
-        const secretKey = await this.environmentService.getBySecretKey(
-          req.headers['tl-env-id'],
-          req.headers['tl-secret-key'],
-        );
-
-        if (secretKey?.error) {
-          this.logger.error('Invalid secret key');
-          throw new UnauthorizedException();
-        }
-
-        return true;
-      }
-    }
 
     try {
       const data = await this.authService.getUserBySessionToken(token);
@@ -100,6 +47,14 @@ export class AuthGuard implements CanActivate {
       if (data.statusCode) {
         res.status(data.statusCode).json({
           error: data.error,
+        });
+        return false;
+      }
+
+      if (!data.data.thonLabsUser) {
+        this.logger.log(`User ${data.data.id} is not a Thon Labs user`);
+        res.status(StatusCodes.Unauthorized).json({
+          error: ErrorMessages.Unauthorized,
         });
         return false;
       }

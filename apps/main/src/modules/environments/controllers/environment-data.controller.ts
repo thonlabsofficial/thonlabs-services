@@ -10,14 +10,13 @@ import {
   Res,
 } from '@nestjs/common';
 import { exceptionsMapper, StatusCodes } from '@/utils/enums/errors-metadata';
-import { ThonLabsOnly } from '@/auth/modules/shared/decorators/thon-labs-only.decorator';
+import { NeedsAuth } from '@/auth/modules/auth/decorators/auth.decorator';
 import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
 import { EnvironmentDataService } from '@/auth/modules/environments/services/environment-data.service';
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
 import { setEnvironmentDataValidator } from '@/auth/modules/environments/validators/environment-data-validators';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
 import { NeedsPublicKey } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
-import { PublicRoute } from '@/auth/modules/auth/decorators/auth.decorator';
 import { NeedsInternalKey } from '@/auth/modules/shared/decorators/needs-internal-key.decorator';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { AuthService } from '@/auth/modules/auth/services/auth.service';
@@ -43,7 +42,6 @@ export class EnvironmentDataController {
    * @param environmentId - The ID of the environment
    */
   @Get('/')
-  @PublicRoute()
   @NeedsPublicKey()
   async fetch(@Param('envId') environmentId: string) {
     try {
@@ -100,7 +98,6 @@ export class EnvironmentDataController {
    * @param query - The query of the data
    */
   @Get('/app')
-  @PublicRoute()
   @NeedsInternalKey()
   async fetchAppData(
     @Param('envId') environmentId: string,
@@ -151,7 +148,7 @@ export class EnvironmentDataController {
    * @param id - The id of the data
    */
   @Get('/:id')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'envId' })
   async getById(
     @Param('envId') environmentId: string,
@@ -174,7 +171,7 @@ export class EnvironmentDataController {
    * @param payload - The payload of the data
    */
   @Post('/')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'envId' })
   @SchemaValidator(setEnvironmentDataValidator)
   async upsert(
@@ -212,7 +209,6 @@ export class EnvironmentDataController {
    * @param environmentId - The ID of the environment
    */
   @Post('/integrated')
-  @PublicRoute()
   @NeedsPublicKey()
   async sdkIntegration(@Param('envId') environmentId: string) {
     const data = await this.environmentDataService.get(
@@ -236,7 +232,7 @@ export class EnvironmentDataController {
    * @param key - The key of the data
    */
   @Delete('/:key')
-  @ThonLabsOnly()
+  @NeedsAuth()
   @HasEnvAccess({ param: 'envId' })
   async delete(
     @Param('envId') environmentId: string,

@@ -59,7 +59,6 @@ export class EnvironmentDomainService {
       if (domain.customDomainTXT) {
         domain.customDomainTXT = await Crypt.decrypt(
           domain.customDomainTXT,
-          Crypt.generateIV(domain.id),
           process.env.ENCODE_SECRET,
         );
       }
@@ -84,7 +83,6 @@ export class EnvironmentDomainService {
     if (data.customDomainTXT) {
       data.customDomainTXT = await Crypt.decrypt(
         data.customDomainTXT,
-        Crypt.generateIV(environmentId),
         process.env.ENCODE_SECRET,
       );
     }
@@ -146,7 +144,6 @@ export class EnvironmentDomainService {
     const customDomainTXT = `c=${rand(3)}`;
     const encryptedCustomDomainTXT = await Crypt.encrypt(
       customDomainTXT,
-      Crypt.generateIV(environmentId),
       process.env.ENCODE_SECRET,
     );
 
@@ -222,7 +219,6 @@ export class EnvironmentDomainService {
 
     const customDomainTXT = await Crypt.decrypt(
       environment.customDomainTXT,
-      Crypt.generateIV(environmentId),
       process.env.ENCODE_SECRET,
     );
     await this.validateCustomDomains([
@@ -391,7 +387,6 @@ export class EnvironmentDomainService {
 
     const customDomainTXT = await Crypt.decrypt(
       environment.customDomainTXT,
-      Crypt.generateIV(environmentId),
       process.env.ENCODE_SECRET,
     );
     await this.validateCustomDomains([

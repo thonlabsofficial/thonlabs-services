@@ -7,9 +7,8 @@ import {
   Post,
   Put,
   Query,
+  Req,
 } from '@nestjs/common';
-import { PublicKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
-import { SecretKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/secret-key-or-thon-labs-user.decorator';
 import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
 import { MetadataModelService } from '../services/metadata-model.service';
@@ -21,6 +20,8 @@ import {
 } from '../validators/metadata-model-validators';
 import { MetadataModelContext } from '@prisma/client';
 import { exceptionsMapper } from '@/utils/index';
+import { PublicKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
+import { SecretKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/secret-key-or-thon-labs-user.decorator';
 
 @Controller('metadata/models')
 export class MetadataModelController {
@@ -35,8 +36,12 @@ export class MetadataModelController {
   @SecretKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
   @SchemaValidator(createMetadataModelValidator)
-  async create(@Body() payload: CreateMetadataModelPayload) {
-    const result = await this.metadataModelService.create(payload);
+  async create(@Body() payload: CreateMetadataModelPayload, @Req() req) {
+    const environmentId = req.headers['tl-env-id'];
+    const result = await this.metadataModelService.create(
+      environmentId,
+      payload,
+    );
 
     if (result?.statusCode) {
       throw new exceptionsMapper[result.statusCode](result.error);
@@ -53,14 +58,21 @@ export class MetadataModelController {
   @Get('/')
   @PublicKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
-  async findAll(@Query() query: { context?: MetadataModelContext }) {
+  async findAll(
+    @Query() query: { context?: MetadataModelContext },
+    @Req() req,
+  ) {
+    const environmentId = req.headers['tl-env-id'];
     const filters: any = {};
 
     if (query.context) {
       filters.context = query.context;
     }
 
-    const result = await this.metadataModelService.findAll(filters);
+    const result = await this.metadataModelService.findAll(
+      environmentId,
+      filters,
+    );
 
     if (result?.statusCode) {
       throw new exceptionsMapper[result.statusCode](result.error);
@@ -79,8 +91,9 @@ export class MetadataModelController {
   @Get('/:id')
   @PublicKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
-  async findOne(@Param('id') id: string) {
-    const result = await this.metadataModelService.findOne(id);
+  async findOne(@Param('id') id: string, @Req() req) {
+    const environmentId = req.headers['tl-env-id'];
+    const result = await this.metadataModelService.findOne(environmentId, id);
 
     if (result?.statusCode) {
       throw new exceptionsMapper[result.statusCode](result.error);
@@ -102,8 +115,14 @@ export class MetadataModelController {
   async update(
     @Param('id') id: string,
     @Body() payload: UpdateMetadataModelPayload,
+    @Req() req,
   ) {
-    const result = await this.metadataModelService.update(id, payload);
+    const environmentId = req.headers['tl-env-id'];
+    const result = await this.metadataModelService.update(
+      environmentId,
+      id,
+      payload,
+    );
 
     if (result?.statusCode) {
       throw new exceptionsMapper[result.statusCode](result.error);
@@ -120,8 +139,9 @@ export class MetadataModelController {
   @Delete('/:id')
   @SecretKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
-  async delete(@Param('id') id: string) {
-    const result = await this.metadataModelService.delete(id);
+  async delete(@Param('id') id: string, @Req() req) {
+    const environmentId = req.headers['tl-env-id'];
+    const result = await this.metadataModelService.delete(environmentId, id);
 
     if (result?.statusCode) {
       throw new exceptionsMapper[result.statusCode](result.error);

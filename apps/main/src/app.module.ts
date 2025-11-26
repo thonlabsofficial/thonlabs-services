@@ -10,7 +10,6 @@ import { SchemaValidatorGuard } from '@/auth/modules/shared/decorators/schema-va
 import { AuthGuard } from '@/auth/modules/auth/decorators/auth.decorator';
 import { SecretKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/secret-key-or-thon-labs-user.decorator';
 import { NeedsPublicKeyGuard } from '@/auth/modules/shared/decorators/needs-public-key.decorator';
-import { ThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/thon-labs-only.decorator';
 import { HasEnvAccessGuard } from '@/auth/modules/shared/decorators/has-env-access.decorator';
 import { UserOwnsProjectGuard } from '@/auth/modules/shared/decorators/user-owns-project.decorator';
 import { PublicKeyOrThonLabsOnlyGuard } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
@@ -104,7 +103,6 @@ import { MetadataValueController } from './modules/metadata/controllers/metadata
       provide: APP_GUARD,
       useClass: NeedsSecretKeyGuard,
     },
-    { provide: APP_GUARD, useClass: ThonLabsOnlyGuard },
     { provide: APP_GUARD, useClass: HasEnvAccessGuard },
     { provide: APP_GUARD, useClass: UserOwnsProjectGuard },
     {

@@ -11,29 +11,25 @@ import {
   Delete,
 } from '@nestjs/common';
 import { UserService } from '@/auth/modules/users/services/user.service';
-import { SecretKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/secret-key-or-thon-labs-user.decorator';
 import {
   ErrorMessages,
   StatusCodes,
   exceptionsMapper,
 } from '@/utils/enums/errors-metadata';
-import { SchemaValidator } from '../../shared/decorators/schema-validator.decorator';
+import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
 import {
   createUserValidator,
   updateStatusValidator,
   updateUserGeneralDataValidator,
 } from '../validators/user-validators';
-import { ThonLabsOnly } from '../../shared/decorators/thon-labs-only.decorator';
-import { HasEnvAccess } from '../../shared/decorators/has-env-access.decorator';
-import { PublicKeyOrThonLabsOnly } from '../../shared/decorators/public-key-or-thon-labs-user.decorator';
-import { UserDataService } from '@/auth/modules/users/services/user-data.service';
+import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
+import { SecretKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/secret-key-or-thon-labs-user.decorator';
+import { PublicKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
+import { NeedsAuth } from '@/auth/modules/auth/decorators/auth.decorator';
 
 @Controller('users')
 export class UserController {
-  constructor(
-    private userService: UserService,
-    private userDataService: UserDataService,
-  ) {}
+  constructor(private userService: UserService) {}
 
   @Post('/')
   @HttpCode(StatusCodes.Created)
@@ -71,7 +67,6 @@ export class UserController {
       );
     }
 
-    delete newUser.authKey;
     delete newUser.thonLabsUser;
 
     return newUser;
@@ -222,7 +217,7 @@ export class UserController {
   }
 
   @Patch(':userId/set-as-thon-labs-user')
-  @ThonLabsOnly()
+  @NeedsAuth()
   async setAsThonLabsUser(@Param('userId') userId: string) {
     await this.userService.setAsThonLabsUser(userId);
   }
