@@ -7,9 +7,10 @@ import {
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { Organization } from '@prisma/client';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
-import { CDNService } from '../../shared/services/cdn.service';
-import { UserDataService } from '../../users/services/user-data.service';
-import { UserDetails } from '../../users/models/user';
+import { CDNService } from '@/auth/modules/shared/services/cdn.service';
+import { UserDataService } from '@/auth/modules/users/services/user-data.service';
+import { UserDetails } from '@/auth/modules/users/models/user';
+import { MetadataValueService } from '@/auth/modules/metadata/services/metadata-value.service';
 
 @Injectable()
 export class OrganizationService {
@@ -18,6 +19,7 @@ export class OrganizationService {
     private databaseService: DatabaseService,
     private cdnService: CDNService,
     private userDataService: UserDataService,
+    private metadataValueService: MetadataValueService,
   ) {}
 
   async create(
@@ -54,6 +56,14 @@ export class OrganizationService {
     });
 
     this.logger.log(`Organization created: ${organization.id}`);
+
+    if (data.metadata) {
+      await this.metadataValueService.manageMetadata(
+        organization.id,
+        'Organization',
+        data.metadata,
+      );
+    }
 
     return { data: organization };
   }

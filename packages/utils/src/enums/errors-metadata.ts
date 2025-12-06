@@ -71,6 +71,7 @@ export enum ErrorMessages {
   CredentialNotFound = 'Credential not found',
   CredentialsNotFound = 'Credentials not found',
   InvalidProvider = 'Invalid provider',
+  MetadataModelAlreadyExistsForContext = 'The key already exists for this context',
 }
 
 export const exceptionsMapper = {

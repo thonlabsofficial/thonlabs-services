@@ -393,8 +393,8 @@ export class MetadataValueService {
       // Delete existing values that are not in the payload
       for (const existingValue of existingValues) {
         if (!payloadKeys.has(existingValue.metadataModel.key)) {
-          operations.push(
-            this.databaseService.metadataValue.delete({
+          operations.push({
+            delete: this.databaseService.metadataValue.delete({
               where: {
                 metadataModelId_relationId: {
                   metadataModelId: existingValue.metadataModelId,
@@ -402,7 +402,7 @@ export class MetadataValueService {
                 },
               },
             }),
-          );
+          });
         }
       }
 
@@ -430,7 +430,7 @@ export class MetadataValueService {
         );
         if (!validationResult.isValid) {
           this.logger.error(
-            `Validation failed for key ${key}: ${validationResult.error?.message}`,
+            `Validation failed for key "${key}": ${validationResult.error?.message}`,
           );
 
           let errorMessage =
@@ -451,8 +451,8 @@ export class MetadataValueService {
         }
 
         // Upsert the value
-        operations.push(
-          this.databaseService.metadataValue.upsert({
+        operations.push({
+          upsert: this.databaseService.metadataValue.upsert({
             where: {
               metadataModelId_relationId: {
                 metadataModelId: metadataModel.id,
@@ -468,11 +468,13 @@ export class MetadataValueService {
               value,
             },
           }),
-        );
+        });
       }
 
       // Execute all operations in a transaction
-      await this.databaseService.$transaction(operations);
+      await this.databaseService.$transaction(
+        operations.map((operation) => operation.upsert || operation.delete),
+      );
 
       // Get updated metadata
       const updatedValues = await this.databaseService.metadataValue.findMany({
@@ -490,6 +492,17 @@ export class MetadataValueService {
           },
         },
       });
+
+      const upsertCount = operations.filter(
+        (operation) => operation.upsert,
+      ).length;
+      const deleteCount = operations.filter(
+        (operation) => operation.delete,
+      ).length;
+
+      this.logger.log(
+        `Managed metadata: ${upsertCount} upserts, ${deleteCount} deletes executed (RELATION: ${relationId}, CONTEXT: ${context})`,
+      );
 
       // Format response as key-value pairs using the utility function
       const metadata = MetadataValueService.toMetadataStructure(updatedValues);

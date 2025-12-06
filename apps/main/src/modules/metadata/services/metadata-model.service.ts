@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '@/auth/modules/shared/database/database.service';
 import { DataReturn } from '@/utils/interfaces/data-return';
 import { MetadataModel, MetadataModelContext } from '@prisma/client';
-import { StatusCodes } from '@/utils/enums/errors-metadata';
+import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import {
   CreateMetadataModelPayload,
   UpdateMetadataModelPayload,
@@ -25,6 +25,22 @@ export class MetadataModelService {
     payload: CreateMetadataModelPayload,
   ): Promise<DataReturn<MetadataModel>> {
     try {
+      const keyContextExists =
+        await this.databaseService.metadataModel.findFirst({
+          where: {
+            environmentId,
+            key: payload.key,
+            context: payload.context,
+          },
+        });
+
+      if (keyContextExists) {
+        return {
+          statusCode: StatusCodes.Conflict,
+          error: ErrorMessages.MetadataModelAlreadyExistsForContext,
+        };
+      }
+
       const metadataModel = await this.databaseService.metadataModel.create({
         data: {
           name: payload.name,

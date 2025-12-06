@@ -266,7 +266,11 @@ export class UserService {
       let metadata = {};
       if (payload.metadata) {
         const { data: metadataData } =
-          await this.userDataService.manageMetadata(user.id, payload.metadata);
+          await this.metadataValueService.manageMetadata(
+            user.id,
+            'User',
+            payload.metadata,
+          );
 
         metadata = metadataData.metadata;
       }
@@ -455,7 +459,24 @@ export class UserService {
 
     this.deletePrivateData(updatedUser);
 
-    user = updatedUser as typeof user;
+    if (payload.metadata) {
+      const metadataResult = await this.metadataValueService.manageMetadata(
+        userId,
+        'User',
+        payload.metadata,
+      );
+
+      if (metadataResult?.statusCode) {
+        return {
+          statusCode: metadataResult.statusCode,
+          error: metadataResult.error,
+        };
+      }
+
+      user.metadata = metadataResult.data.metadata;
+    }
+
+    user = { ...updatedUser, metadata: payload.metadata } as typeof user;
 
     await this.redisService.delete(RedisKeys.session(userId));
 
@@ -560,6 +581,9 @@ export class UserService {
     userId: string,
     environmentId: string,
   ): Promise<DataReturn<User>> {
+    await this.metadataValueService.manageMetadata(userId, 'User', {});
+    this.logger.log(`User ${userId} metadata has been deleted`);
+
     const user = await this.databaseService.user.delete({
       where: {
         id: userId,

@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { domain, logoValidator } from '@/auth/modules/shared/validators/custom-validators';
+import {
+  domain,
+  logoValidator,
+} from '@/auth/modules/shared/validators/custom-validators';
 
 export const newOrganizationSchema = z.object({
   name: z
@@ -10,12 +13,11 @@ export const newOrganizationSchema = z.object({
       domain: domain(),
     })
     .array(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 export type NewOrganizationFormData = z.infer<typeof newOrganizationSchema>;
 
-export type UpdateOrganizationLogoData = z.infer<
-  typeof logoValidator
->;
+export type UpdateOrganizationLogoData = z.infer<typeof logoValidator>;
 
 export const updateOrganizationSchema = z.object({
   name: z
@@ -26,6 +28,7 @@ export const updateOrganizationSchema = z.object({
       domain: domain(),
     })
     .array(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 export type UpdateOrganizationFormData = z.infer<
   typeof updateOrganizationSchema
