@@ -30,6 +30,8 @@ import { getFirstName, getInitials } from '@/utils/services/names-helpers';
 import { MetadataValueService } from '@/auth/modules/metadata/services/metadata-value.service';
 import { RedisService } from '@/auth/modules/shared/database/redis.service';
 import { RedisKeys } from '@/auth/modules/shared/database/redis-keys';
+import { decode as jwtDecode } from 'jsonwebtoken';
+import Crypt from '@/utils/services/crypt';
 
 export interface AuthenticateMethodsReturn {
   token: string;
@@ -77,6 +79,7 @@ export class AuthService {
         password: true,
         lastSignIn: true,
         organizationId: true,
+        authKey: true,
         environment: {
           select: {
             tokenExpiration: true,
@@ -275,6 +278,7 @@ export class AuthService {
         environmentId: true,
         lastSignIn: true,
         organizationId: true,
+        authKey: true,
         environment: {
           select: {
             tokenExpiration: true,
@@ -372,6 +376,7 @@ export class AuthService {
         fullName: true,
         environmentId: true,
         organizationId: true,
+        authKey: true,
         environment: {
           select: {
             tokenExpiration: true,
@@ -640,11 +645,31 @@ export class AuthService {
       };
     }
 
-    let session: SessionData;
+    const session = jwtDecode(token) as SessionData;
+
+    const userAuthKey = await this.databaseService.user.findFirst({
+      where: { id: session.sub },
+      select: {
+        authKey: true,
+      },
+    });
+
+    if (!userAuthKey) {
+      this.logger.warn(`Auth key not found (UID: ${session.sub})`);
+      return {
+        statusCode: StatusCodes.Unauthorized,
+        error: ErrorMessages.Unauthorized,
+      };
+    }
+
+    const plainAuthKey = await Crypt.decrypt(
+      userAuthKey.authKey,
+      process.env.ENCODE_SECRET,
+    );
 
     try {
-      session = await this.jwtService.verifyAsync(token, {
-        secret: process.env.ENCODE_SECRET,
+      await this.jwtService.verifyAsync(token, {
+        secret: plainAuthKey,
       });
     } catch (e) {
       this.logger.warn('Token verification failed', e);

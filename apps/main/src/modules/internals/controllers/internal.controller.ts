@@ -20,6 +20,9 @@ import { AuthProviders } from '@prisma/client';
 import { UserService } from '@/auth/modules/users/services/user.service';
 import { ProjectService } from '@/auth/modules/projects/services/project.service';
 import { EnvironmentService } from '@/auth/modules/environments/services/environment.service';
+import Crypt from '@/utils/services/crypt';
+import rand from '@/utils/services/rand';
+import { DatabaseService } from '../../shared/database/database.service';
 
 @Controller('internals')
 export class InternalController {
@@ -29,6 +32,7 @@ export class InternalController {
     private userService: UserService,
     private projectService: ProjectService,
     private environmentService: EnvironmentService,
+    private databaseService: DatabaseService,
   ) {}
 
   @Post('/init-owner')
@@ -137,5 +141,30 @@ export class InternalController {
         },
       ],
     });
+  }
+
+  @Post('/create-missing-auth-keys')
+  @NeedsInternalKey()
+  public async createAuthKeys() {
+    /*
+      This function should be removed after seed.
+    */
+    const usersMissingAuthKeys = await this.databaseService.user.findMany({
+      where: {
+        authKey: null,
+      },
+    });
+
+    for (const user of usersMissingAuthKeys) {
+      const authKey = await Crypt.encrypt(
+        `ak_${rand(5)}`,
+        process.env.ENCODE_SECRET,
+      );
+
+      await this.databaseService.user.update({
+        where: { id: user.id },
+        data: { authKey },
+      });
+    }
   }
 }

@@ -58,7 +58,6 @@ TL_INTERNAL_API_KEY=<internal_api_key>
 ## Encode secret keys
 
 ENCODE_SECRET=dev_encode_secret
-ENCODE_SECRET_KEYS_SECRET=dev_encode_secret_keys
 
 ## Email Provider - Resend
 

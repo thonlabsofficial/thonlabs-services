@@ -21,6 +21,7 @@ import { MetadataValueService } from '@/auth/modules/metadata/services/metadata-
 import { getFirstName, getInitials } from '@/utils/services/names-helpers';
 import { RedisService } from '@/auth/modules/shared/database/redis.service';
 import { RedisKeys } from '@/auth/modules/shared/database/redis-keys';
+import rand from '@/utils/services/rand';
 
 @Injectable()
 export class UserService {
@@ -229,6 +230,11 @@ export class UserService {
     }
 
     try {
+      const authKey = await Crypt.encrypt(
+        `ak_${rand(5)}`,
+        process.env.ENCODE_SECRET,
+      );
+
       const user = await this.databaseService.user.create({
         data: {
           email: payload.email,
@@ -238,6 +244,7 @@ export class UserService {
           environmentId: payload.environmentId,
           invitedAt: payload.invitedAt,
           organizationId: payload.organizationId,
+          authKey,
         },
         include: {
           organization: {

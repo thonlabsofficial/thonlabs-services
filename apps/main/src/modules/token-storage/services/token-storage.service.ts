@@ -164,9 +164,14 @@ export class TokenStorageService {
 
     const result = {};
 
+    const plainAuthKey = await Crypt.decrypt(
+      user.authKey,
+      process.env.ENCODE_SECRET,
+    );
+
     const token = await this.jwtService.signAsync(payload, {
       expiresIn: environment.tokenExpiration,
-      secret: process.env.ENCODE_SECRET,
+      secret: plainAuthKey,
     });
     const tokenExpiresIn = (jwtDecode(token) as SessionData).exp * 1000;
 
