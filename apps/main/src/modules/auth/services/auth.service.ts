@@ -647,25 +647,37 @@ export class AuthService {
 
     const session = jwtDecode(token) as SessionData;
 
-    const userAuthKey = await this.databaseService.user.findFirst({
-      where: { id: session.sub },
-      select: {
-        authKey: true,
-      },
-    });
-
-    if (!userAuthKey) {
-      this.logger.warn(`Auth key not found (UID: ${session.sub})`);
-      return {
-        statusCode: StatusCodes.Unauthorized,
-        error: ErrorMessages.Unauthorized,
-      };
-    }
-
-    const plainAuthKey = await Crypt.decrypt(
-      userAuthKey.authKey,
-      process.env.ENCODE_SECRET,
+    let plainAuthKey = await this.redisService.get(
+      RedisKeys.authKey(session.sub),
     );
+
+    if (!plainAuthKey) {
+      const userAuthKey = await this.databaseService.user.findFirst({
+        where: { id: session.sub },
+        select: {
+          authKey: true,
+        },
+      });
+
+      if (!userAuthKey) {
+        this.logger.warn(`Auth key not found (UID: ${session.sub})`);
+        return {
+          statusCode: StatusCodes.Unauthorized,
+          error: ErrorMessages.Unauthorized,
+        };
+      }
+
+      plainAuthKey = await Crypt.decrypt(
+        userAuthKey.authKey,
+        process.env.ENCODE_SECRET,
+      );
+
+      await this.redisService.set(
+        RedisKeys.authKey(session.sub),
+        plainAuthKey,
+        300, // Cache for 5 minutes
+      );
+    }
 
     try {
       await this.jwtService.verifyAsync(token, {
@@ -712,6 +724,7 @@ export class AuthService {
           emailConfirmed: true,
           invitedAt: true,
           thonLabsUser: true,
+          authKey: true,
           organization: {
             select: {
               id: true,
