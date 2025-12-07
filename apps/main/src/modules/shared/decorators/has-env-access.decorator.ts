@@ -99,6 +99,7 @@ export class HasEnvAccessGuard implements CanActivate {
       const tokenData = await this.tokenStorageService.getByToken(
         req.body.token,
         TokenTypes.Refresh,
+        true,
       );
 
       if (!tokenData?.relationId) {

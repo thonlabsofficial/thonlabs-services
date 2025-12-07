@@ -21,7 +21,7 @@ export class TokenStorageService {
     private jwtService: JwtService,
   ) {}
 
-  async getByToken(token: string, type: TokenTypes) {
+  async getByToken(token: string, type: TokenTypes, shouldHash = false) {
     if (!token) {
       this.logger.error(
         `Relation ID does not exists ${type}${token.substring(0, 7)}`,
@@ -29,11 +29,13 @@ export class TokenStorageService {
       return null;
     }
 
-    const tokenHash = await Crypt.hash256(token, process.env.ENCODE_SECRET);
+    const plainToken = shouldHash
+      ? await Crypt.hash256(token, process.env.ENCODE_SECRET)
+      : token;
 
     return this.databaseService.tokenStorage.findFirst({
       where: {
-        token: tokenHash,
+        token: plainToken,
         type,
       },
     });

@@ -473,7 +473,7 @@ export class AuthService {
 
     if (!tokenData) {
       this.logger.warn(
-        `validateUserTokenExpiration: Token not found (TID: ${token.substring(0, 10)} - TYPE: ${type})`,
+        `validateUserTokenExpiration: Token not found (TID: ${token} - TYPE: ${type})`,
       );
       return {
         statusCode: StatusCodes.NotFound,
@@ -496,7 +496,7 @@ export class AuthService {
 
     if (data?.statusCode) {
       this.logger.warn(
-        `validateUserTokenExpiration: token expired (TID: ${token.substring(0, 10)} - TYPE: ${type})`,
+        `validateUserTokenExpiration: token expired (TID: ${token} - TYPE: ${type})`,
       );
       return {
         statusCode: StatusCodes.Unauthorized,
