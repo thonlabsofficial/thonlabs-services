@@ -310,7 +310,7 @@ export class OrganizationService {
           [user.id],
           'User',
         );
-        return { ...user, metadata };
+        return { ...user, metadata: metadata?.[user.id] || {} };
       }),
     );
 
