@@ -8,7 +8,6 @@ import { DataReturn } from '@/utils/interfaces/data-return';
 import { Organization } from '@prisma/client';
 import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { CDNService } from '@/auth/modules/shared/services/cdn.service';
-import { UserDataService } from '@/auth/modules/users/services/user-data.service';
 import { UserDetails } from '@/auth/modules/users/models/user';
 import { MetadataValueService } from '@/auth/modules/metadata/services/metadata-value.service';
 
@@ -18,7 +17,6 @@ export class OrganizationService {
   constructor(
     private databaseService: DatabaseService,
     private cdnService: CDNService,
-    private userDataService: UserDataService,
     private metadataValueService: MetadataValueService,
   ) {}
 
@@ -308,7 +306,10 @@ export class OrganizationService {
 
     users = await Promise.all(
       users.map(async (user) => {
-        const metadata = await this.userDataService.fetchMetadata(user.id);
+        const metadata = await this.metadataValueService.getMetadataByContext(
+          [user.id],
+          'User',
+        );
         return { ...user, metadata };
       }),
     );
