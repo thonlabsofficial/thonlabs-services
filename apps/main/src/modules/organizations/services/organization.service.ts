@@ -113,6 +113,14 @@ export class OrganizationService {
       },
     });
 
+    if (data.metadata) {
+      await this.metadataValueService.manageMetadata(
+        organization.id,
+        'Organization',
+        data.metadata,
+      );
+    }
+
     return { data: organization };
   }
 

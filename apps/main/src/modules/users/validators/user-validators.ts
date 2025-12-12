@@ -29,3 +29,27 @@ export type UpdateUserGeneralDataPayload = z.infer<
 export const updateStatusValidator = z.object({
   active: z.boolean({ required_error: 'User status is required' }),
 });
+
+export const fetchUsersQueryValidator = z.object({
+  organizationId: z
+    .string()
+    .uuid({ message: 'Organization ID is invalid' })
+    .optional(),
+  active: z
+    .string()
+    .refine(
+      (value) => {
+        if (!value) {
+          return true;
+        }
+
+        return ['true', 'false'].includes(value);
+      },
+      {
+        message: 'Active status is invalid, should be true or false',
+      },
+    )
+    .optional(),
+});
+
+export type FetchUsersQuery = z.infer<typeof fetchUsersQueryValidator>;

@@ -15,7 +15,10 @@ import { EnvironmentDataService } from '@/auth/modules/environments/services/env
 import { OrganizationService } from '@/auth/modules/organizations/services/organization.service';
 import { EnvironmentDataKeys } from '@/auth/modules/environments/constants/environment-data';
 import { EmailTemplateService } from '@/auth/modules/emails/services/email-template.service';
-import { UpdateUserGeneralDataPayload } from '../validators/user-validators';
+import {
+  FetchUsersQuery,
+  UpdateUserGeneralDataPayload,
+} from '../validators/user-validators';
 import { UserDataService } from './user-data.service';
 import { MetadataValueService } from '@/auth/modules/metadata/services/metadata-value.service';
 import { getFirstName, getInitials } from '@/utils/services/names-helpers';
@@ -539,7 +542,14 @@ export class UserService {
     return count > 0;
   }
 
-  async fetch(params: { environmentId: string }) {
+  async fetch(params: { environmentId: string; filters: FetchUsersQuery }) {
+    const defaultFilters = {
+      organizationId: null,
+      active: null,
+    } as const;
+
+    const filters = { ...defaultFilters, ...params.filters };
+
     const users = await this.databaseService.user.findMany({
       select: {
         active: true,
@@ -562,6 +572,10 @@ export class UserService {
       },
       where: {
         environmentId: params.environmentId,
+        ...(filters.organizationId && {
+          organizationId: filters.organizationId,
+        }),
+        ...(filters.active && { active: filters.active === 'true' }),
       },
     });
 

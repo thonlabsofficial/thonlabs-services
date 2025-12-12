@@ -19,6 +19,8 @@ import {
 import { SchemaValidator } from '@/auth/modules/shared/decorators/schema-validator.decorator';
 import {
   createUserValidator,
+  FetchUsersQuery,
+  fetchUsersQueryValidator,
   updateStatusValidator,
   updateUserGeneralDataValidator,
 } from '../validators/user-validators';
@@ -75,11 +77,29 @@ export class UserController {
   @Get('/')
   @PublicKeyOrThonLabsOnly()
   @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
-  async fetch(@Req() req) {
+  async fetch(
+    @Req() req,
+    @Query('organizationId') organizationId: string,
+    @Query('active') active: string,
+  ) {
     const environmentId = req.headers['tl-env-id'];
+
+    const filters = {
+      organizationId,
+      active,
+    } as FetchUsersQuery;
+
+    const validatedFilters = fetchUsersQueryValidator.safeParse(filters);
+
+    if (!validatedFilters.success) {
+      throw new exceptionsMapper[StatusCodes.BadRequest](
+        JSON.parse(validatedFilters.error.message),
+      );
+    }
 
     const items = await this.userService.fetch({
       environmentId,
+      filters: validatedFilters.data,
     });
 
     return {

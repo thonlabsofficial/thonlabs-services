@@ -162,27 +162,6 @@ export class OrganizationController {
         updatedAt: true,
         environmentId: true,
         active: true,
-        users: {
-          select: {
-            active: true,
-            createdAt: true,
-            email: true,
-            fullName: true,
-            id: true,
-            lastSignIn: true,
-            profilePicture: true,
-            updatedAt: true,
-            environmentId: true,
-            emailConfirmed: true,
-            invitedAt: true,
-            organization: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
       },
     });
 
