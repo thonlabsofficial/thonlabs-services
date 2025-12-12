@@ -755,6 +755,15 @@ export class AuthService {
       };
     }
 
+    let organizationMetadata = {};
+    if (user?.organization) {
+      organizationMetadata =
+        await this.metadataValueService.getMetadataByContext(
+          [user.organization.id],
+          MetadataModelContext.Organization,
+        );
+    }
+
     const data = {
       id: user.id,
       email: user.email,
@@ -770,7 +779,12 @@ export class AuthService {
       emailConfirmed: user.emailConfirmed,
       invitedAt: user.invitedAt,
       metadata: metadataResult[user.id] || {},
-      ...(user.organization && { organization: user.organization }),
+      ...(user.organization && {
+        organization: {
+          ...user.organization,
+          metadata: organizationMetadata[user.organization.id] || {},
+        },
+      }),
       ...(user.thonLabsUser && { thonLabsUser: true }),
     };
 
