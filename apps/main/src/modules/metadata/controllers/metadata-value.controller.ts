@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Logger, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { PublicKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/public-key-or-thon-labs-user.decorator';
 import { SecretKeyOrThonLabsOnly } from '@/auth/modules/shared/decorators/secret-key-or-thon-labs-user.decorator';
 import { HasEnvAccess } from '@/auth/modules/shared/decorators/has-env-access.decorator';
@@ -7,6 +15,8 @@ import { MetadataValueService } from '../services/metadata-value.service';
 import {
   ManageMetadataPayload,
   manageMetadataValidator,
+  UpsertMetadataPayload,
+  upsertMetadataValidator,
 } from '../validators/metadata-value-validators';
 import { exceptionsMapper } from '@/utils/index';
 
@@ -44,7 +54,7 @@ export class MetadataValueController {
    * Get metadata for a specific relation and context.
    *
    * @param relationId - The relation ID
-   * @param context - The context
+   * @param context - The context which can be User, Organization or Environment
    */
   @Get('/:relationId')
   @PublicKeyOrThonLabsOnly()
@@ -63,5 +73,30 @@ export class MetadataValueController {
     );
 
     return metadata;
+  }
+
+  /**
+   * Upsert a single metadata key-value pair for a specific relation and context.
+   * This endpoint allows updating or creating a single metadata field without affecting others.
+   *
+   * @param payload - Payload with relationId, context, key and value
+   */
+  @Patch('/')
+  @SecretKeyOrThonLabsOnly()
+  @HasEnvAccess({ param: 'tl-env-id', source: 'headers' })
+  @SchemaValidator(upsertMetadataValidator)
+  async upsertMetadata(@Body() payload: UpsertMetadataPayload) {
+    const result = await this.metadataValueService.upsertMetadata(
+      payload.relationId,
+      payload.context,
+      payload.key,
+      payload.value,
+    );
+
+    if (result?.statusCode) {
+      throw new exceptionsMapper[result.statusCode](result.error);
+    }
+
+    return result?.data;
   }
 }

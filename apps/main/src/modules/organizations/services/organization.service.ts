@@ -55,6 +55,22 @@ export class OrganizationService {
 
     this.logger.log(`Organization created: ${organization.id}`);
 
+    if (data.users?.length > 0) {
+      await this.databaseService.user.updateMany({
+        where: {
+          id: { in: data.users.map((user) => user.id) },
+          environmentId,
+        },
+        data: {
+          organizationId: organization.id,
+        },
+      });
+
+      this.logger.log(
+        `Added ${data.users?.length} users to organization ${organization.id}`,
+      );
+    }
+
     if (data.metadata) {
       await this.metadataValueService.manageMetadata(
         organization.id,

@@ -19,7 +19,6 @@ import {
   FetchUsersQuery,
   UpdateUserGeneralDataPayload,
 } from '../validators/user-validators';
-import { UserDataService } from './user-data.service';
 import { MetadataValueService } from '@/auth/modules/metadata/services/metadata-value.service';
 import { getFirstName, getInitials } from '@/utils/services/names-helpers';
 import { RedisService } from '@/auth/modules/shared/database/redis.service';
@@ -37,7 +36,6 @@ export class UserService {
     private environmentDataService: EnvironmentDataService,
     private organizationService: OrganizationService,
     private emailTemplateService: EmailTemplateService,
-    private userDataService: UserDataService,
     private metadataValueService: MetadataValueService,
     private redisService: RedisService,
   ) {}

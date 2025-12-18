@@ -12,8 +12,15 @@ export const newOrganizationSchema = z.object({
     .object({
       domain: domain(),
     })
-    .array(),
+    .array()
+    .optional(),
   metadata: z.record(z.string(), z.any()).optional(),
+  users: z
+    .object({
+      id: z.string().uuid({ message: 'Invalid user ID' }),
+    })
+    .array()
+    .optional(),
 });
 export type NewOrganizationFormData = z.infer<typeof newOrganizationSchema>;
 
