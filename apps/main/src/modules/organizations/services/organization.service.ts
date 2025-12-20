@@ -10,6 +10,8 @@ import { ErrorMessages, StatusCodes } from '@/utils/enums/errors-metadata';
 import { CDNService } from '@/auth/modules/shared/services/cdn.service';
 import { UserDetails } from '@/auth/modules/users/models/user';
 import { MetadataValueService } from '@/auth/modules/metadata/services/metadata-value.service';
+import { RedisKeys } from '../../shared/database/redis-keys';
+import { RedisService } from '../../shared/database/redis.service';
 
 @Injectable()
 export class OrganizationService {
@@ -18,6 +20,7 @@ export class OrganizationService {
     private databaseService: DatabaseService,
     private cdnService: CDNService,
     private metadataValueService: MetadataValueService,
+    private redisService: RedisService,
   ) {}
 
   async create(
@@ -77,6 +80,8 @@ export class OrganizationService {
         'Organization',
         data.metadata,
       );
+    } else {
+      await this._invalidateOrganizationUsersSessionCache(organization.id);
     }
 
     return { data: organization };
@@ -135,6 +140,8 @@ export class OrganizationService {
         'Organization',
         data.metadata,
       );
+    } else {
+      await this._invalidateOrganizationUsersSessionCache(organization.id);
     }
 
     return { data: organization };
@@ -224,9 +231,13 @@ export class OrganizationService {
       );
     }
 
+    await this._invalidateOrganizationUsersSessionCache(organizationId);
+
     await this.databaseService.organization.delete({
       where: { id: organizationId },
     });
+
+    this.logger.log(`Deleted organization ${organizationId}`);
 
     return {};
   }
@@ -276,33 +287,6 @@ export class OrganizationService {
     );
 
     return { data: organization };
-  }
-
-  private async _validateDomains(
-    environmentId: string,
-    domains: string[],
-  ): Promise<DataReturn<{ domain: string }[]>> {
-    const organizations = await this.databaseService.organization.findMany({
-      where: {
-        environmentId,
-      },
-      select: {
-        domains: true,
-      },
-    });
-
-    if (organizations.length === 0) {
-      return { data: [] };
-    }
-
-    const organizationDomains = organizations.flatMap(
-      (organization) => organization.domains as { domain: string }[],
-    );
-    const existingDomains = organizationDomains.filter((domain) =>
-      domains.includes(domain.domain),
-    );
-
-    return { data: existingDomains };
   }
 
   async getUsers(
@@ -372,5 +356,51 @@ export class OrganizationService {
     }
 
     return { data: organization };
+  }
+
+  private async _validateDomains(
+    environmentId: string,
+    domains: string[],
+  ): Promise<DataReturn<{ domain: string }[]>> {
+    const organizations = await this.databaseService.organization.findMany({
+      where: {
+        environmentId,
+      },
+      select: {
+        domains: true,
+      },
+    });
+
+    if (organizations.length === 0) {
+      return { data: [] };
+    }
+
+    const organizationDomains = organizations.flatMap(
+      (organization) => organization.domains as { domain: string }[],
+    );
+    const existingDomains = organizationDomains.filter((domain) =>
+      domains.includes(domain.domain),
+    );
+
+    return { data: existingDomains };
+  }
+
+  private async _invalidateOrganizationUsersSessionCache(
+    organizationId: string,
+  ) {
+    const orgUsers = await this.databaseService.user.findMany({
+      where: { organizationId },
+      select: { id: true },
+    });
+    const orgUsersIds = orgUsers.map((user) => user.id);
+    await Promise.all(
+      orgUsersIds.map((userId) =>
+        this.redisService.delete(RedisKeys.session(userId)),
+      ),
+    );
+
+    this.logger.log(
+      `Invalidated ${orgUsersIds.length} users sessions cache (ORGANIZATION: ${organizationId})`,
+    );
   }
 }

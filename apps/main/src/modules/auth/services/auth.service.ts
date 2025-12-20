@@ -346,6 +346,7 @@ export class AuthService {
     const data = await this.tokenStorageService.getByToken(
       token,
       TokenTypes.Refresh,
+      true,
     );
 
     if (!data) {

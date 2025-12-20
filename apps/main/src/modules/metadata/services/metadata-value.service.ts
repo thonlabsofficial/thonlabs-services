@@ -574,7 +574,7 @@ export class MetadataValueService {
   ): Promise<void> {
     try {
       if (context === MetadataModelContext.User) {
-        await this.redisService.delete(RedisKeys.authKey(relationId));
+        await this.redisService.delete(RedisKeys.session(relationId));
         this.logger.log(`Invalidated user session cache (USER: ${relationId})`);
       } else if (context === MetadataModelContext.Organization) {
         const orgUsers = await this.databaseService.user.findMany({
@@ -588,11 +588,11 @@ export class MetadataValueService {
         const orgUsersIds = orgUsers.map((user) => user.id);
         await Promise.all(
           orgUsersIds.map((userId) =>
-            this.redisService.delete(RedisKeys.authKey(userId)),
+            this.redisService.delete(RedisKeys.session(userId)),
           ),
         );
         this.logger.log(
-          `Invalidated organization user's sessions cache (ORGANIZATION: ${relationId})`,
+          `Invalidated organization ${orgUsersIds.length} users sessions cache (ORGANIZATION: ${relationId})`,
         );
       }
     } catch (error) {

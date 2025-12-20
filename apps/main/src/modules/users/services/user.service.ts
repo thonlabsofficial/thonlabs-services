@@ -488,7 +488,7 @@ export class UserService {
 
     await this.redisService.delete(RedisKeys.session(userId));
 
-    this.logger.log(`General data updated for ${userId}`);
+    this.logger.log(`General data updated for ${userId} and cache invalidated`);
 
     return user;
   }
@@ -610,9 +610,13 @@ export class UserService {
       },
     });
 
-    this.logger.log(`User ${userId} has been deleted with all relations`);
+    await this.redisService.delete(RedisKeys.session(userId));
 
     this.deletePrivateData(user);
+
+    this.logger.log(
+      `User ${userId} has been deleted with all relations and cache invalidated`,
+    );
 
     return { data: user };
   }
@@ -635,7 +639,7 @@ export class UserService {
     await this.redisService.delete(RedisKeys.session(userId));
 
     this.logger.log(
-      `User ${userId} has been ${active ? 'activated' : 'deactivated'}`,
+      `User ${userId} has been ${active ? 'activated' : 'deactivated'} and cache invalidated`,
     );
 
     return { data: user };
