@@ -65,14 +65,14 @@ export class OrganizationController {
   @SchemaValidator(updateOrganizationSchema)
   async updateOrganization(
     @Param('id') id: string,
-    @Body() data: UpdateOrganizationFormData,
+    @Body() payload: UpdateOrganizationFormData,
     @Req() req,
   ) {
     const environmentId = req.headers['tl-env-id'];
     const result = await this.organizationService.update(
       id,
       environmentId,
-      data,
+      payload,
     );
 
     if (result?.statusCode) {

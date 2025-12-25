@@ -90,9 +90,13 @@ export class OrganizationService {
   async update(
     id: string,
     environmentId: string,
-    data: UpdateOrganizationFormData,
+    payload: UpdateOrganizationFormData,
   ): Promise<DataReturn<Organization>> {
-    if (data.domains?.length > 0) {
+    const data: Partial<Organization> = {
+      name: payload.name,
+    };
+
+    if (payload.domains?.length > 0) {
       const currentDomains =
         (
           (await this.databaseService.organization.findFirst({
@@ -105,7 +109,7 @@ export class OrganizationService {
 
       const { data: registeredDomains } = await this._validateDomains(
         environmentId,
-        data.domains
+        payload.domains
           .filter((domain) => !!domain.domain)
           .filter(
             (domain) => !currentDomains.some((d) => d.domain === domain.domain),
@@ -124,21 +128,20 @@ export class OrganizationService {
           error: ErrorMessages.DomainAlreadyRegistered,
         };
       }
+
+      data.domains = payload.domains;
     }
 
     const organization = await this.databaseService.organization.update({
       where: { id },
-      data: {
-        name: data.name,
-        domains: data.domains,
-      },
+      data,
     });
 
-    if (data.metadata) {
+    if (payload.metadata) {
       await this.metadataValueService.manageMetadata(
         organization.id,
         'Organization',
-        data.metadata,
+        payload.metadata,
       );
     } else {
       await this._invalidateOrganizationUsersSessionCache(organization.id);

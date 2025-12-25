@@ -34,7 +34,8 @@ export const updateOrganizationSchema = z.object({
     .object({
       domain: domain(),
     })
-    .array(),
+    .array()
+    .optional(),
   metadata: z.record(z.string(), z.any()).optional(),
 });
 export type UpdateOrganizationFormData = z.infer<
