@@ -303,6 +303,13 @@ export class EnvironmentService {
     name: string;
     projectId: string;
     appURL: string;
+    copyFromEnvironmentId?: string;
+    copyOptions?: {
+      authBuilderOptions?: boolean;
+      credentials?: boolean;
+      emailTemplates?: boolean;
+      metadataModels?: boolean;
+    };
   }): Promise<DataReturn<Environment>> {
     const { data: projectExists } = await this.projectService.getById(
       payload.projectId,
@@ -378,29 +385,261 @@ export class EnvironmentService {
       },
     });
 
-    await Promise.all([
-      this.environmentDataService.upsert(environment.id, {
-        key: EnvironmentDataKeys.Credentials,
-        value: {},
-      }),
-      this.updateAuthSettings(environment.id, {
-        ...environment,
-        authProvider: AuthProviders.EmailAndPassword,
-        enableSignUp: true,
-        enableSignUpB2BOnly: false,
-        styles: { primaryColor: '#e11d48' },
-        activeSSOProviders: [],
-      }),
-    ]);
+    const copyResult = await this._defineEnvironmentResources({
+      sourceEnvironmentId: payload.copyFromEnvironmentId,
+      targetEnvironmentId: environment.id,
+      copyOptions: payload.copyOptions,
+    });
+
+    if (copyResult?.error) {
+      return copyResult;
+    }
 
     this.logger.warn(
-      `"${environment.name}" environment created (${environment.id})`,
+      `"${environment.name}" environment copied from ${payload.copyFromEnvironmentId} (ENV: ${environment.id})`,
     );
 
-    // Create email templates for the environment above
-    await this.emailTemplateService.createDefaultTemplates(environment.id);
-
     return { data: environment };
+  }
+
+  private async _defineEnvironmentResources({
+    sourceEnvironmentId,
+    targetEnvironmentId,
+    copyOptions,
+  }: {
+    sourceEnvironmentId: string;
+    targetEnvironmentId: string;
+    copyOptions?: {
+      authBuilderOptions?: boolean;
+      credentials?: boolean;
+      emailTemplates?: boolean;
+      metadataModels?: boolean;
+    };
+  }): Promise<DataReturn> {
+    try {
+      const promises: Promise<any>[] = [];
+
+      // Copy auth builder options (styles, signup settings, etc.)
+      if (copyOptions?.authBuilderOptions) {
+        const authBuilderKeys = [
+          EnvironmentDataKeys.EnableSignUp,
+          EnvironmentDataKeys.EnableSignUpB2BOnly,
+          EnvironmentDataKeys.Styles,
+          EnvironmentDataKeys.ActiveSSOProviders,
+          EnvironmentDataKeys.EnvironmentLogo,
+        ];
+
+        const environmentQuery =
+          await this.databaseService.environment.findUnique({
+            where: { id: sourceEnvironmentId },
+            select: {
+              authProvider: true,
+              tokenExpiration: true,
+              refreshTokenExpiration: true,
+            },
+          });
+        const authBuilderEnvDataQuery =
+          this.databaseService.environmentData.findMany({
+            where: {
+              environmentId: sourceEnvironmentId,
+              key: { in: authBuilderKeys },
+            },
+            select: {
+              key: true,
+              value: true,
+            },
+          });
+
+        const [environment, authBuilderData] = await Promise.all([
+          environmentQuery,
+          authBuilderEnvDataQuery,
+        ]);
+
+        promises.push(
+          this.databaseService.environment.update({
+            where: {
+              id: targetEnvironmentId,
+            },
+            data: {
+              authProvider: environment.authProvider,
+              tokenExpiration: environment.tokenExpiration,
+              refreshTokenExpiration: environment.refreshTokenExpiration,
+            },
+          }),
+        );
+
+        authBuilderData.forEach((data) => {
+          promises.push(
+            this.environmentDataService.upsert(targetEnvironmentId, {
+              key: data.key,
+              value: data.value,
+            }),
+          );
+        });
+
+        this.logger.log(
+          `Auth builder options copied from ${sourceEnvironmentId} (ENV: ${targetEnvironmentId})`,
+        );
+      } else {
+        promises.push(
+          this.updateAuthSettings(targetEnvironmentId, {
+            authProvider: AuthProviders.MagicLogin,
+            tokenExpiration: '60m',
+            refreshTokenExpiration: '10d',
+            enableSignUp: true,
+            enableSignUpB2BOnly: false,
+            styles: { primaryColor: '#e11d48' },
+            activeSSOProviders: [],
+          }),
+        );
+
+        this.logger.log(
+          `Auth builder options created (ENV: ${targetEnvironmentId})`,
+        );
+      }
+
+      // Copy credentials
+      if (copyOptions?.credentials) {
+        const credentialsData =
+          await this.databaseService.environmentData.findFirst({
+            where: {
+              environmentId: sourceEnvironmentId,
+              key: EnvironmentDataKeys.Credentials,
+            },
+            select: {
+              key: true,
+              value: true,
+            },
+          });
+
+        if (credentialsData) {
+          promises.push(
+            this.environmentDataService.upsert(targetEnvironmentId, {
+              key: credentialsData.key,
+              value: credentialsData.value,
+            }),
+          );
+
+          this.logger.log(
+            `Credentials copied from ${sourceEnvironmentId} (ENV: ${targetEnvironmentId})`,
+          );
+        }
+      } else {
+        promises.push(
+          this.environmentDataService.upsert(targetEnvironmentId, {
+            key: EnvironmentDataKeys.Credentials,
+            value: {},
+          }),
+        );
+
+        this.logger.log(`Credentials created (ENV: ${targetEnvironmentId})`);
+      }
+
+      // Copy metadata models
+      if (copyOptions?.metadataModels) {
+        const metadataModels =
+          await this.databaseService.metadataModel.findMany({
+            where: { environmentId: sourceEnvironmentId },
+            select: {
+              name: true,
+              key: true,
+              description: true,
+              type: true,
+              options: true,
+              context: true,
+            },
+          });
+
+        if (metadataModels.length > 0) {
+          // Delete existing metadata models in target environment
+          promises.push(
+            this.databaseService.metadataModel.deleteMany({
+              where: { environmentId: targetEnvironmentId },
+            }),
+          );
+
+          // Create new metadata models
+          promises.push(
+            this.databaseService.metadataModel.createMany({
+              data: metadataModels.map((model) => ({
+                ...model,
+                environmentId: targetEnvironmentId,
+              })),
+            }),
+          );
+
+          this.logger.log(
+            `Metadata models copied from ${sourceEnvironmentId} (ENV: ${targetEnvironmentId})`,
+          );
+        }
+      }
+
+      // Copy email templates
+      if (copyOptions?.emailTemplates) {
+        const emailTemplates =
+          await this.databaseService.emailTemplate.findMany({
+            where: { environmentId: sourceEnvironmentId },
+            select: {
+              type: true,
+              name: true,
+              subject: true,
+              fromName: true,
+              fromEmail: true,
+              preview: true,
+              replyTo: true,
+              enabled: true,
+              content: true,
+              contentJSON: true,
+              bodyStyles: true,
+            },
+          });
+
+        if (emailTemplates.length > 0) {
+          // Delete existing email templates in target environment
+          promises.push(
+            this.databaseService.emailTemplate.deleteMany({
+              where: { environmentId: targetEnvironmentId },
+            }),
+          );
+
+          // Create new email templates
+          promises.push(
+            this.databaseService.emailTemplate.createMany({
+              data: emailTemplates.map((template) => ({
+                ...template,
+                environmentId: targetEnvironmentId,
+              })),
+            }),
+          );
+        }
+
+        this.logger.log(
+          `Email templates copied from ${sourceEnvironmentId} (ENV: ${targetEnvironmentId})`,
+        );
+      } else {
+        promises.push(
+          this.emailTemplateService.createDefaultTemplates(targetEnvironmentId),
+        );
+
+        this.logger.log(
+          `Email templates created (ENV: ${targetEnvironmentId})`,
+        );
+      }
+
+      await Promise.all(promises);
+
+      this.logger.log(`All promises resolved (ENV: ${targetEnvironmentId})`);
+    } catch (error) {
+      this.logger.error(
+        `Error copying resources from ${sourceEnvironmentId} (ENV: ${targetEnvironmentId})`,
+        error,
+      );
+
+      return {
+        statusCode: StatusCodes.Internal,
+        error: ErrorMessages.InternalError,
+      };
+    }
   }
 
   async fetch(): Promise<

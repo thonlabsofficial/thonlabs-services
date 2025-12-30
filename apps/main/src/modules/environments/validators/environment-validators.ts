@@ -9,6 +9,15 @@ export const createEnvironmentValidator = z.object({
     .max(25, ErrorMessages.MaxLength),
   appURL: z.string({ required_error: ErrorMessages.RequiredField }).url(),
   projectId: z.string({ required_error: ErrorMessages.RequiredField }),
+  copyFromEnvironmentId: z.string().optional(),
+  copyOptions: z
+    .object({
+      authBuilderOptions: z.boolean().optional(),
+      credentials: z.boolean().optional(),
+      emailTemplates: z.boolean().optional(),
+      metadataModels: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export const updateAuthSettingsValidator = z.object({
